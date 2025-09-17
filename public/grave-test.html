@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>G.rave - Тест системы</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.js"></script>
+</head>
+<body class="bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Заголовок -->
+        <div class="text-center mb-12">
+            <h1 class="text-6xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                🪦 G.rave
+            </h1>
+            <p class="text-xl text-gray-300 mb-8">
+                Цифровое кладбище музыки - Тест системы
+            </p>
+        </div>
+
+        <!-- Статистика -->
+        <div class="stats shadow w-full mb-12">
+            <div class="stat">
+                <div class="stat-figure text-primary">
+                    <div class="text-4xl">🪦</div>
+                </div>
+                <div class="stat-title text-white">Мемориалов</div>
+                <div class="stat-value text-primary" id="memorialCount">3</div>
+                <div class="stat-desc text-gray-300">Вечная память</div>
+            </div>
+            
+            <div class="stat">
+                <div class="stat-figure text-secondary">
+                    <div class="text-4xl">💰</div>
+                </div>
+                <div class="stat-title text-white">Общий фонд</div>
+                <div class="stat-value text-secondary" id="totalFund">4.29 ETH</div>
+                <div class="stat-desc text-gray-300">Пожертвований</div>
+            </div>
+            
+            <div class="stat">
+                <div class="stat-figure text-accent">
+                    <div class="text-4xl">♾️</div>
+                </div>
+                <div class="stat-title text-white">Хранение</div>
+                <div class="stat-value text-accent">$0</div>
+                <div class="stat-desc text-gray-300">Бесплатно навсегда</div>
+            </div>
+        </div>
+
+        <!-- Мемориалы -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            <!-- DJ Eternal -->
+            <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300">
+                <figure class="px-10 pt-10">
+                    <div class="w-full h-48 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                        <div class="text-6xl">🪦</div>
+                    </div>
+                </figure>
+                <div class="card-body items-center text-center">
+                    <h2 class="card-title text-2xl mb-2">DJ Eternal</h2>
+                    <div class="space-y-2 w-full">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Фонд:</span>
+                            <span class="font-bold text-green-600">1.25 ETH</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Наследников:</span>
+                            <span class="font-bold">1</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Пожертвований:</span>
+                            <span class="font-bold">15</span>
+                        </div>
+                    </div>
+                    <div class="card-actions justify-center mt-4 w-full">
+                        <button onclick="donate('DJ Eternal', 1.25)" class="btn btn-primary flex-1">
+                            💰 Пожертвовать
+                        </button>
+                        <button onclick="viewMemorial('DJ Eternal')" class="btn btn-secondary flex-1">
+                            👁️ Посмотреть
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Producer Ghost -->
+            <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300">
+                <figure class="px-10 pt-10">
+                    <div class="w-full h-48 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+                        <div class="text-6xl">🪦</div>
+                    </div>
+                </figure>
+                <div class="card-body items-center text-center">
+                    <h2 class="card-title text-2xl mb-2">Producer Ghost</h2>
+                    <div class="space-y-2 w-full">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Фонд:</span>
+                            <span class="font-bold text-green-600">0.89 ETH</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Наследников:</span>
+                            <span class="font-bold">1</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Пожертвований:</span>
+                            <span class="font-bold">8</span>
+                        </div>
+                    </div>
+                    <div class="card-actions justify-center mt-4 w-full">
+                        <button onclick="donate('Producer Ghost', 0.89)" class="btn btn-primary flex-1">
+                            💰 Пожертвовать
+                        </button>
+                        <button onclick="viewMemorial('Producer Ghost')" class="btn btn-secondary flex-1">
+                            👁️ Посмотреть
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Synth Master -->
+            <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300">
+                <figure class="px-10 pt-10">
+                    <div class="w-full h-48 bg-gradient-to-br from-green-500 to-blue-500 rounded-xl flex items-center justify-center">
+                        <div class="text-6xl">🪦</div>
+                    </div>
+                </figure>
+                <div class="card-body items-center text-center">
+                    <h2 class="card-title text-2xl mb-2">Synth Master</h2>
+                    <div class="space-y-2 w-full">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Фонд:</span>
+                            <span class="font-bold text-green-600">2.15 ETH</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Наследников:</span>
+                            <span class="font-bold">2</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Пожертвований:</span>
+                            <span class="font-bold">22</span>
+                        </div>
+                    </div>
+                    <div class="card-actions justify-center mt-4 w-full">
+                        <button onclick="donate('Synth Master', 2.15)" class="btn btn-primary flex-1">
+                            💰 Пожертвовать
+                        </button>
+                        <button onclick="viewMemorial('Synth Master')" class="btn btn-secondary flex-1">
+                            👁️ Посмотреть
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Создание мемориала -->
+        <div class="card bg-white/10 backdrop-blur-lg rounded-2xl p-8 mb-12">
+            <h2 class="text-3xl font-bold text-white mb-6 text-center">
+                Создать новый мемориал
+            </h2>
+            
+            <form onsubmit="createMemorial(event)" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input
+                        type="text"
+                        id="artistName"
+                        placeholder="Имя артиста"
+                        class="input input-bordered w-full"
+                        required
+                    />
+                    <input
+                        type="text"
+                        id="ipfsHash"
+                        placeholder="IPFS Hash"
+                        class="input input-bordered w-full"
+                        required
+                    />
+                </div>
+                
+                <div>
+                    <input
+                        type="text"
+                        id="heirs"
+                        placeholder="Адреса наследников (через запятую)"
+                        class="input input-bordered w-full"
+                        required
+                    />
+                </div>
+                
+                <div>
+                    <textarea
+                        id="message"
+                        placeholder="Сообщение о мемориале"
+                        class="textarea textarea-bordered w-full"
+                        rows="3"
+                    ></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-primary w-full">
+                    🪦 Создать мемориал
+                </button>
+            </form>
+        </div>
+
+        <!-- Результаты -->
+        <div id="results" class="hidden">
+            <div class="alert alert-success">
+                <div class="text-2xl">✅</div>
+                <div>
+                    <h3 class="font-bold">Успешно!</h3>
+                    <div id="resultMessage"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Функции для работы с мемориалами
+        function donate(artistName, currentFund) {
+            const amount = prompt(`Пожертвовать в мемориал ${artistName} (текущий фонд: ${currentFund} ETH):`, '0.01');
+            if (amount && parseFloat(amount) > 0) {
+                showResult(`Пожертвование ${amount} ETH в мемориал ${artistName} отправлено! 💰`);
+                updateFund(artistName, parseFloat(amount));
+            }
+        }
+
+        function viewMemorial(artistName) {
+            showResult(`Открываем мемориал ${artistName} в IPFS... 👁️`);
+        }
+
+        function createMemorial(event) {
+            event.preventDefault();
+            const artistName = document.getElementById('artistName').value;
+            const ipfsHash = document.getElementById('ipfsHash').value;
+            const heirs = document.getElementById('heirs').value;
+            const message = document.getElementById('message').value;
+            
+            showResult(`Мемориал ${artistName} создан успешно! 🪦`);
+            
+            // Очищаем форму
+            event.target.reset();
+        }
+
+        function updateFund(artistName, amount) {
+            // Обновляем статистику
+            const totalFundElement = document.getElementById('totalFund');
+            const currentTotal = parseFloat(totalFundElement.textContent);
+            totalFundElement.textContent = (currentTotal + amount).toFixed(2) + ' ETH';
+            
+            // Обновляем счетчик мемориалов
+            const memorialCountElement = document.getElementById('memorialCount');
+            memorialCountElement.textContent = parseInt(memorialCountElement.textContent) + 1;
+        }
+
+        function showResult(message) {
+            const resultsDiv = document.getElementById('results');
+            const messageDiv = document.getElementById('resultMessage');
+            messageDiv.textContent = message;
+            resultsDiv.classList.remove('hidden');
+            
+            // Скрываем через 5 секунд
+            setTimeout(() => {
+                resultsDiv.classList.add('hidden');
+            }, 5000);
+        }
+
+        // Показываем приветственное сообщение
+        window.onload = function() {
+            setTimeout(() => {
+                showResult('Добро пожаловать в G.rave! Создайте мемориал или сделайте пожертвование. 🪦🎵');
+            }, 1000);
+        };
+    </script>
+</body>
+</html>
