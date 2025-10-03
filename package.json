@@ -2,6 +2,10 @@
   "name": "normaldance-revolution",
   "version": "1.0.1",
   "description": "Децентрализованная музыкальная платформа",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AENDYSTUDIO/NORMALDANCE-REVOLUTION.git"
+  },
   "main": "index.js",
   "scripts": {
     "dev": "next dev",
