@@ -1,0 +1,126 @@
+{
+  "id": "code-refactor-agent",
+  "name": "Code Refactoring Agent",
+  "description": "Агент для автоматического рефакторинга кода в проекте NORMALDANCE с учетом специфических архитектурных паттернов",
+  "version": "1.0.0",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "targetFiles": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Список файлов для рефакторинга"
+      },
+      "refactorType": {
+        "type": "string",
+        "enum": [
+          "rename",
+          "extract-function",
+          "inline-function",
+          "move-class",
+          "convert-ts-js",
+          "optimize-imports",
+          "simplify-logic",
+          "improve-performance",
+          "security-fix",
+          "pattern-update"
+        ],
+        "description": "Тип рефакторинга для выполнения"
+      },
+      "targetLanguage": {
+        "type": "string",
+        "enum": [
+          "typescript",
+          "javascript",
+          "rust",
+          "solana-program",
+          "solidity"
+        ],
+        "description": "Целевой язык программирования"
+      },
+      "projectContext": {
+        "type": "object",
+        "properties": {
+          "usesSocketIO": {
+            "type": "boolean",
+            "description": "Проект использует Socket.IO с кастомным путем"
+          },
+          "usesWalletAdapter": {
+            "type": "boolean",
+            "description": "Проект использует кастомный wallet adapter"
+          },
+          "usesDeflationaryModel": {
+            "type": "boolean",
+            "description": "Проект использует дефляционную модель токенов"
+          },
+          "usesPrisma": {
+            "type": "boolean",
+            "description": "Проект использует Prisma ORM"
+          },
+          "customTypeScriptConfig": {
+            "type": "boolean",
+            "description": "Проект использует специфические настройки TypeScript"
+          }
+        }
+      }
+    },
+    "required": ["targetFiles", "refactorType"]
+  },
+  "capabilities": [
+    "analyze-code-structure",
+    "identify-refactoring-opportunities",
+    "apply-refactoring-patterns",
+    "multi-language-support",
+    "version-control-integration",
+    "error-handling",
+    "security-checking",
+    "performance-optimization"
+  ],
+  "constraints": [
+    "preserve-functional-behavior",
+    "maintain-project-architecture",
+    "follow-project-coding-standards",
+    "avoid-breaking-changes",
+    "respect-custom-implementations"
+  ],
+  "integration": {
+    "vcs": {
+      "type": "git",
+      "auto-commit": true,
+      "commit-message-template": "Refactor: {description}"
+    },
+    "testing": {
+      "run-tests": true,
+      "test-on-refactor": true
+    }
+  },
+  "customRules": [
+    {
+      "name": "socket-io-path-rule",
+      "description": "Проверка использования кастомного пути /api/socketio",
+      "pattern": "/api/socketio"
+    },
+    {
+      "name": "wallet-adapter-rule",
+      "description": "Проверка использования кастомного wallet adapter",
+      "pattern": "wallet-adapter.tsx"
+    },
+    {
+      "name": "deflationary-model-rule",
+      "description": "Проверка корректного использования дефляционной модели",
+      "pattern": "DeflationaryModel"
+    },
+    {
+      "name": "prisma-instance-rule",
+      "description": "Проверка использования глобального инстанса Prisma",
+      "pattern": "src/lib/db.ts"
+    },
+    {
+      "name": "typescript-config-rule",
+      "description": "Проверка специфических настроек TypeScript",
+      "pattern": "noImplicitAny: false"
+    }
+  ]
+}

@@ -138,7 +138,7 @@ const nextConfig: NextConfig = {
         minimizer: [
           ...config.optimization.minimizer,
           // Добавление оптимизатора для CSS
-          require('css-minimizer-webpack-plugin'),
+          new (require('css-minimizer-webpack-plugin'))(),
         ],
       };
     }

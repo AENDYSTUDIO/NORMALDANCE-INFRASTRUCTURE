@@ -1,0 +1,29 @@
+{
+  "name": "normaldance",
+  "version": "1.0.1",
+  "description": "Децентрализованная музыкальная платформа",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AENDYSTUDIO/NORMALDANCE-Enterprise.git"
+  },
+  "keywords": [
+    "music",
+    "web3",
+    "nft",
+    "solana",
+    "decentralized",
+    "mcp"
+  ],
+  "author": "NORMAL DANCE Team",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/AENDYSTUDIO/NORMALDANCE-Enterprise/issues"
+  },
+  "homepage": "https://normaldance.app",
+  "funding": [
+    {
+      "type": "github",
+      "url": "https://github.com/sponsors/AENDYSTUDIO"
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import './globals.css';
+import '../globals.css';
 
 // Add the Telegram WebApp script to the head
 export const metadata: Metadata = {
