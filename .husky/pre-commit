@@ -10,7 +10,7 @@ npm run type-check || exit 1
 echo "[pre-commit] Running tests..."
 npm test || exit 1
 
-echo "[pre-commit] Running secret scan..."
+echo "[pre-commit] Running unified secret scan..."
 bash scripts/hooks/pre-commit || exit 1
 
 echo "[pre-commit] All checks passed!"

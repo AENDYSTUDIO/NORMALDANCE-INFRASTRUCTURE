@@ -1,17 +1,37 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "[pre-commit] Running truffleHog and git-secrets..."
+echo "[pre-commit] Running secret scans..."
 FOUND=0
 
+# Run our internal secrets scanner
+if node scripts/check-hardcoded-secrets.js; then
+  echo "[pre-commit] Internal secret scan passed"
+else
+  echo "[pre-commit] Internal secret scan detected potential secrets" >&2
+  FOUND=1
+fi
+
+# Run truffleHog if available
 if command -v trufflehog >/dev/null 2>&1; then
-  if trufflehog git --since-commit HEAD~50 --branch HEAD --json . | grep -q 'SourceMetadata'; then FOUND=1; fi
+  if trufflehog git --since-commit HEAD~50 --branch HEAD --json . | grep -q 'SourceMetadata'; then
+    echo "[pre-commit] truffleHog detected potential secrets" >&2
+    FOUND=1
+  else
+    echo "[pre-commit] truffleHog scan passed"
+  fi
 else
   echo "trufflehog not installed, skipping" >&2
 fi
 
+# Run git-secrets if available
 if command -v git-secrets >/dev/null 2>&1; then
-  git secrets --scan || FOUND=1
+  if git secrets --scan; then
+    echo "[pre-commit] git-secrets scan passed"
+  else
+    echo "[pre-commit] git-secrets detected potential secrets" >&2
+    FOUND=1
+  fi
 else
   echo "git-secrets not installed, skipping" >&2
 fi
@@ -20,6 +40,6 @@ if [ $FOUND -ne 0 ]; then
   echo "[pre-commit] Secrets detected. Commit blocked." >&2
   exit 1
 fi
-echo "[pre-commit] OK"
+echo "[pre-commit] All secret scans passed!"
 exit 0
 
