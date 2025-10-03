@@ -67,7 +67,7 @@ export async function uploadWithReplication(
   try {
     console.log(`Starting upload for file: ${file.name} (${file.size} bytes)`)
 
-    // Используем существующую функцию загрузки из ipfs.ts
+    // Используем существующую функцию загрузки из ipfs.ts (теперь с поддержкой Helia)
     const uploadResult = await uploadLargeFileToIPFS(file, metadata, chunkSize)
     
     // Репликация на дополнительные шлюзы
@@ -104,6 +104,19 @@ async function uploadLargeFileToIPFS(
   chunkSize: number
 ): Promise<UploadResult> {
   try {
+    // For files smaller than chunkSize, use the regular uploadToIPFS function
+    if (file.size <= chunkSize) {
+      const { uploadToIPFS } = await import('./ipfs');
+      const result = await uploadToIPFS(file, metadata);
+      return {
+        cid: result.cid,
+        size: result.size,
+        timestamp: new Date(),
+        metadata
+      };
+    }
+
+    // For larger files, use chunking approach
     const totalChunks = Math.ceil(file.size / chunkSize)
     const chunks: Uint8Array[] = []
 
@@ -118,14 +131,19 @@ async function uploadLargeFileToIPFS(
 
     console.log(`File split into ${totalChunks} chunks`)
 
-    // Загружаем чанки через существующий IPFS клиент
-    const ipfsResult = await import('./ipfs')
-    const { ipfsClient } = ipfsResult
+    // Используем unified IPFS API (теперь с поддержкой Helia)
+    const { uploadToIPFS } = await import('./ipfs')
     const chunkCIDs: string[] = []
     
     for (const chunk of chunks) {
-      const chunkResult = await ipfsClient.add(chunk)
-      chunkCIDs.push(chunkResult.cid.toString())
+      // Create a Blob from the Uint8Array to match the expected type
+      const blob = new Blob([chunk]);
+      // Convert to File to match the expected type
+      const fileChunk = new File([blob], `chunk_${chunkCIDs.length}`);
+      
+      // Загружаем каждый чанк через unified API
+      const chunkResult = await uploadToIPFS(fileChunk)
+      chunkCIDs.push(chunkResult.cid)
     }
 
     // Создаем манифест для чанков
@@ -139,21 +157,24 @@ async function uploadLargeFileToIPFS(
       compression: 'none'
     }
 
-    // Загружаем манифест
-    const manifestResult = await ipfsClient.add(JSON.stringify(manifest))
-    const manifestCID = manifestResult.cid.toString()
+    // Create a blob for the manifest JSON to match the expected type
+    const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+    const manifestFile = new File([manifestBlob], 'manifest.json');
 
-    // Пинимаем через Pinata
+    // Загружаем манифест
+    const manifestResult = await uploadToIPFS(manifestFile)
+    const manifestCID = manifestResult.cid
+
+    // Пинимаем через unified API
     try {
-      const pinataResult = await import('./ipfs')
-      const { pinata } = pinataResult
-      await pinata.pinFile(manifestCID)
+      const { pinFile } = await import('./ipfs')
+      await pinFile(manifestCID)
       for (const chunkCID of chunkCIDs) {
-        await pinata.pinFile(chunkCID)
+        await pinFile(chunkCID)
       }
-      console.log('File pinned successfully via Pinata')
+      console.log('File pinned successfully via unified API')
     } catch (pinError) {
-      console.warn('Pinata pinning failed:', pinError)
+      console.warn('Pinning failed:', pinError)
     }
 
     return {

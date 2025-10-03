@@ -1,27 +1,45 @@
 import type { NextConfig } from "next";
 
+// Add bundle analyzer if enabled
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true'
+});
+
 const nextConfig: NextConfig = {
   // Оптимизация производительности
   reactStrictMode: true,
   
-  // Оптимизация сборки
-  swcMinify: true,
-  
   // Оптимизация изображений
-  images: {
+ images: {
     formats: ['image/webp', 'image/avif'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 31536000, // 1 год
+    domains: [
+      'ipfs.io', 
+      'gateway.pinata.cloud', 
+      'cloudflare-ipfs.com',
+      'localhost',
+      'normaldance.com',
+      'www.normaldance.com'
+    ],
   },
   
-  // Оптимизация шрифтов
+ // Оптимизация шрифтов
   experimental: {
     optimizeCss: true,
-    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
-    serverComponentsExternalPackages: [],
-    serverActions: true,
+    optimizePackageImports: [
+      'lucide-react', 
+      '@radix-ui/react-icons',
+      '@solana/web3.js',
+      '@solana/wallet-adapter-react'
+    ],
+    // serverComponentsExternalPackages перенесён в serverExternalPackages
+    serverActions: {},
   },
+
+  // Вне experimental начиная с Next 15
+  serverExternalPackages: [],
   
   // Конфигурация ESLint (выключен для ускорения сборки)
   eslint: {
@@ -78,6 +96,25 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // Add specific cache headers for static assets
+      {
+        source: '/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=3153600, immutable',
+          }
+        ]
+      },
+      {
+        source: '/(assets|images|icons)/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=3153600, immutable',
+          }
+        ]
+      }
     ];
   },
   
@@ -107,7 +144,7 @@ const nextConfig: NextConfig = {
   },
   
   // Конфигурация сборки
-  output: 'standalone',
+ output: 'standalone',
   
   // Оптимизация для Vercel
   trailingSlash: false,
@@ -117,9 +154,9 @@ const nextConfig: NextConfig = {
   
   // Оптимизация для разработки
   devIndicators: {
-    buildActivity: true,
-    buildActivityPosition: 'bottom-right',
-  },
+    // Переименовано: используем новый ключ position
+    position: 'bottom-right',
+ },
   
   // Конфигурация webpack
   webpack: (config, { dev, isServer }) => {
@@ -154,9 +191,25 @@ const nextConfig: NextConfig = {
       },
     });
     
+    // Add fallback for node-specific modules
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+      };
+    }
+    
     return config;
-  },
+ },
   
+  // Настройка корня трассировки для корректного определения монорепо/lockfile
+  outputFileTracingRoot: process.cwd(),
+
+  // Разрешённые origin'ы для dev (устранение предупреждения про cross-origin)
+  allowedDevOrigins: ['127.0.0.1', 'localhost'],
+
   // Конфигурация окружения
   env: {
     CUSTOM_KEY: process.env.CUSTOM_KEY,
@@ -167,6 +220,9 @@ const nextConfig: NextConfig = {
   
   // Конфигурация assetPrefix
   assetPrefix: process.env.ASSET_PREFIX || '',
+
+  // Конфигурация Sentry через @sentry/nextjs выполняется в плагине, не через next.config
 };
 
-export default nextConfig;
+// Export with bundle analyzer
+module.exports = withBundleAnalyzer(nextConfig);

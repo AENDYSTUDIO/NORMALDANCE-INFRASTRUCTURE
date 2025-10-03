@@ -40,3 +40,12 @@ export function formatDate(date: string | Date): string {
     return `${Math.floor(diffInDays / 365)} г. назад`
   }
 }
+
+export function isMobile(): boolean {
+  if (typeof window !== 'undefined') {
+    return window.innerWidth <= 768;
+  }
+  // Server-side detection based on user agent
+  const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+}

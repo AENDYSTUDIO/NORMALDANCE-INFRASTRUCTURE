@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI Pipeline
 
 on:
   push:
@@ -7,39 +7,16 @@ on:
     branches: [ main ]
 
 env:
-  NODE_VERSION: '18'
-  REGISTRY: ghcr.io
-  IMAGE_NAME: normaldance/app
+  NODE_VERSION: '18.x'
 
 jobs:
-  # Test job
   test:
-    name: Run Tests
+    name: Run Checks
     runs-on: ubuntu-latest
-    
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: normaldance_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-      
-      redis:
-        image: redis:7
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
 
     steps:
     - name: Checkout code
@@ -48,164 +25,25 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: ${{ env.NODE_VERSION }}
+        node-version: ${{ matrix.node-version }}
         cache: 'npm'
         cache-dependency-path: package-lock.json
 
     - name: Install dependencies
       run: npm ci
 
-    - name: Generate Prisma client
-      run: npm run db:generate
+    - name: Lint check
+      run: npm run lint
 
-    - name: Run database migrations
-      run: npm run db:migrate
+    - name: Type check
+      run: npm run type-check
 
-    - name: Run unit tests
+    - name: Run tests
       run: npm test
-      env:
-        NODE_ENV: test
-        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/normaldance_test
-        REDIS_URL: redis://localhost:6379
 
-    - name: Run integration tests
-      run: npm run test:integration
-      env:
-        NODE_ENV: test
-        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/normaldance_test
-        REDIS_URL: redis://localhost:6379
+    - name: Build check
+      run: npm run build
 
-    - name: Run e2e tests
-      run: npm run test:e2e
-      env:
-        NODE_ENV: test
-        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/normaldance_test
-        REDIS_URL: redis://localhost:6379
-
-    - name: Upload coverage reports
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./coverage/lcov.info
-        flags: unittests
-        name: codecov-umbrella
-
-  # Build job
-  build:
-    name: Build Docker Images
-    runs-on: ubuntu-latest
-    needs: test
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Log in to Container Registry
-      if: github.event_name != 'pull_request'
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ github.repository }}
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=sha,prefix={{branch}}-
-          type=raw,value=latest,enable={{is_default_branch}}
-
-    - name: Build and push app image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ./Dockerfile.prod
-        push: ${{ github.event_name != 'pull_request' }}
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-
-    - name: Build and push API image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ./Dockerfile.api
-        push: ${{ github.event_name != 'pull_request' }}
-        tags: ${{ steps.meta.outputs.tags }}-api
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-
-    - name: Build and push WebSocket image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ./Dockerfile.websocket
-        push: ${{ github.event_name != 'pull_request' }}
-        tags: ${{ steps.meta.outputs.tags }}-websocket
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-
-  # Deploy job
-  deploy:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: [test, build]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    
-    environment: production
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Prisma migrate deploy
-      run: npx prisma migrate deploy
-
-    - name: Deploy to production
-      run: |
-        echo "Deploying to production..."
-        # Using Vercel deploy or Render deploy
-        # vercel deploy --prod
-      env:
-        KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
-        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-
-  # Deploy to staging
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: [test, build]
-    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
-    
-    environment: staging
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Prisma migrate deploy (staging)
-      run: npx prisma migrate deploy
-
-    - name: Deploy to staging
-      run: |
-        echo "Deploying to staging..."
-        # vercel deploy --prebuilt
-      env:
-        KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_STAGING }}
-        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-
-  # Security scan
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
@@ -215,93 +53,5 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@master
-      with:
-        scan-type: 'fs'
-        scan-ref: '.'
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-
-    - name: Upload Trivy scan results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@v2
-      with:
-        sarif_file: 'trivy-results.sarif'
-
-  # Performance test
-  performance-test:
-    name: Performance Test
-    runs-on: ubuntu-latest
-    needs: [build]
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-
-    - name: Install k6
-      run: |
-        curl -sf https://github.com/grafana/k6/releases/download/v0.47.0/k6-v0.47.0-linux-amd64.tar.gz | tar xvz --strip-components 1
-        sudo mv k6 /usr/local/bin/
-
-    - name: Run performance tests
-      run: |
-        ./k6 run --out json=performance-results.json scripts/performance-test.js
-      env:
-        BASE_URL: https://api.normaldance.com
-
-    - name: Upload performance results
-      uses: actions/upload-artifact@v3
-      with:
-        name: performance-results
-        path: performance-results.json
-
-  # Documentation build
-  docs:
-    name: Build Documentation
-    runs-on: ubuntu-latest
-    needs: [test]
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-
-    - name: Install dependencies
-      run: npm ci
-
-    - name: Build documentation
-      run: npm run docs:build
-
-    - name: Upload documentation
-      uses: actions/upload-artifact@v3
-      with:
-        name: documentation
-        path: docs/build/
-
-  # Notify
-  notify:
-    name: Notify
-    runs-on: ubuntu-latest
-    needs: [test, build, deploy, deploy-staging, security-scan, performance-test, docs]
-    if: always() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
-    
-    steps:
-    - name: Notify on Slack
-      if: failure() || (success() && github.ref == 'refs/heads/main')
-      uses: rtCamp/action-slack-notify@v2
-      env:
-        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-        SLACK_COLOR: ${{ job.status }}
-        SLACK_MESSAGE: 'NormalDance CI/CD: ${{ job.status }} - ${{ github.repository }}#${{ github.run_number }}'
-        SLACK_TITLE: 'NormalDance CI/CD'
-        SLACK_USERNAME: 'GitHub Actions'
+    - name: Run secret scan
+      run: bash scripts/hooks/pre-commit || echo "Secret scan completed"

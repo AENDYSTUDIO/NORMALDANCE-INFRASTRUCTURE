@@ -1,5 +1,10 @@
 import type { NextConfig } from "next";
 
+// Add bundle analyzer if enabled
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true'
+});
+
 const nextConfig: NextConfig = {
   // Оптимизация производительности
   reactStrictMode: true,
@@ -179,4 +184,4 @@ const nextConfig: NextConfig = {
   // Конфигурация Sentry через @sentry/nextjs выполняется в плагине, не через next.config
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);

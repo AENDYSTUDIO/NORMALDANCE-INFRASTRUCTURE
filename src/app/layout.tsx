@@ -1,8 +1,12 @@
+import { ClientInit } from "@/components/ClientInit";
+import MobileNav from "@/components/layout/mobile-nav";
+import { Toaster } from "@/components/ui/toaster";
+import { isMobile } from "@/lib/utils";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "@/components/ui/toaster";
-import { ClientInit } from "@/components/ClientInit";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -39,15 +43,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
 
-  return (
-    <html lang="ru" suppressHydrationWarning>
-      <body
-        className={`${inter.variable} ${jetbrainsMono.variable} antialiased bg-background text-foreground`}
-      >
-        <ClientInit />
-        {children}
-        <Toaster />
-      </body>
-    </html>
-  );
+   return (
+     <html lang="ru" suppressHydrationWarning>
+       <body
+         className={`${inter.variable} ${jetbrainsMono.variable} antialiased bg-background text-foreground`}
+       >
+         <ClientInit />
+         {children}
+         <Toaster />
+         <Analytics />
+         <SpeedInsights />
+         {isMobile() && <MobileNav />}
+       </body>
+     </html>
+   );
 }
