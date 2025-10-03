@@ -1,20 +1,20 @@
-import { MainLayout } from '@/components/layout/main-layout'
 import { AudioPlayer } from '@/components/audio/audio-player'
-import { TrackCard } from '@/components/audio/track-card'
 import { ListeningNow } from '@/components/audio/listening-now'
-import { Button, Input, Badge, Card, CardContent, CardHeader, CardTitle, Avatar, AvatarFallback, AvatarImage } from '@/components/ui'
+import { TrackCard } from '@/components/audio/track-card'
 import {
-  Search,
-  Play,
-  Heart,
-  TrendingUp,
+  Award,
   Clock,
-  Users,
-  Sparkles,
+  Heart,
+  Play,
   Radio,
+  Search,
+  Sparkles,
   Star,
-  Award
+  TrendingUp,
+  Users
 } from '@/components/icons'
+import { MainLayout } from '@/components/layout/main-layout'
+import { Avatar, AvatarFallback, AvatarImage, Badge, Button, Card, CardContent, CardHeader, CardTitle, Input } from '@/components/ui'
 
 // Mock data for demonstration
 const mockTracks = [
@@ -84,11 +84,11 @@ export default function Home() {
             <div className="hidden md:flex items-center space-x-4">
               <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
                 <Sparkles className="h-3 w-3 mr-1" />
-                10K+ треков
+                2025: Полный план реализации выполнен
               </Badge>
               <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
                 <Users className="h-3 w-3 mr-1" />
-                5K+ слушателей
+                4 недели разработки
               </Badge>
             </div>
           </div>
