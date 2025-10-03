@@ -4,11 +4,12 @@ import { db } from '@/lib/db'
 // GET /api/users/[id] - Get a specific user
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await db.user.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: {
         id: true,
         email: true,
@@ -74,9 +75,10 @@ export async function GET(
 // PUT /api/users/[id] - Update a user
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body = await request.json()
     
     // Only allow updating certain fields
@@ -90,7 +92,7 @@ export async function PUT(
     }
 
     const user = await db.user.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
       select: {
         id: true,
@@ -121,11 +123,12 @@ export async function PUT(
 // DELETE /api/users/[id] - Delete a user (soft delete)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     await db.user.update({
-      where: { id: params.id },
+      where: { id },
       data: { isActive: false }
     })
 
@@ -137,4 +140,4 @@ export async function DELETE(
       { status: 500 }
     )
   }
-}
+}
