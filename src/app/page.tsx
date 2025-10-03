@@ -76,9 +76,9 @@ export default function Home() {
         <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg p-8 text-white">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-4xl font-bold mb-2">Добро пожаловать в NORMAL DANCE</h1>
+              <h1 className="text-4xl font-bold mb-2">Добро пожаловать в NORMAL DANCE REVOLUTION</h1>
               <p className="text-lg opacity-90">
-                Децентрализованная музыкальная платформа, где артисты и слушатели вместе создают будущее музыки
+                Революционная децентрализованная музыкальная платформа, где артисты и слушатели вместе создают будущее музыки
               </p>
             </div>
             <div className="hidden md:flex items-center space-x-4">
