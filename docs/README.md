@@ -1,4 +1,4 @@
-# 📚 Документация NORMAL DANCE v1.0.1
+# 📚 Документация NORMAL DANCE v1.0.3
 
 Добро пожаловать в официальную документацию платформы NORMAL DANCE! Здесь вы найдете всю необходимую информацию для разработки, развертывания, поддержки и использования платформы.
 
@@ -115,8 +115,8 @@ NORMAL DANCE v1.0.1
 
 ### 1. Клонирование репозитория
 ```bash
-git clone https://github.com/normaldance/normaldance.git
-cd normaldance
+git clone https://github.com/AENDYSTUDIO/NORMALDANCE-Enterprise.git
+cd NORMALDANCE-Enterprise
 ```
 
 ### 2. Установка зависимостей
@@ -193,25 +193,18 @@ npm start
 ## 📞 Контакты и поддержка
 
 ### Техническая поддержка
-- **Email:** support@normaldance.com
+- **Email:** AndyKachess@gmail.com
 - **Телефон:** +7 (495) 123-45-67
 - **Чат:** Live Chat на сайте
-- **Telegram:** @normaldance_support
+- **Telegram:** [@AndyKachess](https://t.me/AndyKachess)
 
 ### Команда разработки
-- **Email:** dev@normaldance.com
-- **Slack:** #dev-issues
-- **GitHub Issues:** https://github.com/normaldance/normaldance/issues
+- **GitHub Issues:** https://github.com/AENDYSTUDIO/NORMALDANCE-Enterprise/issues
 
-### DevOps команда
-- **Email:** devops@normaldance.com
-- **Slack:** #devops-issues
-- **PagerDuty:** Для критических инцидентов
 
 ### Сообщество
-- **Discord:** https://discord.gg/normaldance
 - **Telegram:** https://t.me/normaldance
-- **Twitter:** https://twitter.com/normaldance
+
 
 ## 📊 Метрики и статус
 
@@ -223,11 +216,11 @@ npm start
 - **Чек-листов:** 10+
 
 ### Статус платформы
-- **Доступность:** 99.9%
-- **Время отклика:** < 200ms
-- **Активных пользователей:** 10,000+
-- **Треков в библиотеке:** 50,000+
-- **NFT в marketplace:** 5,000+
+- **Доступность:** 
+- **Время отклика:** < 
+- **Активных пользователей:**
+- **Треков в библиотеке:** 
+- **NFT в marketplace:**
 
 ## 🔄 Обновления документации
 
