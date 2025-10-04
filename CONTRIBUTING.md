@@ -77,6 +77,6 @@ src/
 
 - GitHub Issues: для багов и предложений
 - Email: AndyKachess@gmail.com
-- Telegram: [[ссылка на сервер](https://t.me/AndyKachess)]
+- Telegram: [[ссылка](https://t.me/AndyKachess)]
 
 Спасибо за ваш вклад! 🚀
