@@ -1,6 +1,6 @@
-# Руководство по участию в проекте NormalDance
+# Руководство по участию в проекте Normal Dance
 
-Спасибо за интерес к участию в развитии NormalDance! 🎵
+Спасибо за интерес к участию в развитии Normal Dance! 🎵
 
 ## Как внести вклад
 
@@ -49,8 +49,8 @@
 
 ```bash
 # Клонирование репозитория
-git clone https://github.com/AENDYSTUDIO/normaldance-production-ready.git
-cd normaldance-production-ready
+git clone https://github.com/AENDYSTUDIO/NORMALDANCE-Enterprise.git
+cd NORMALDANCE-Enterprise
 
 # Установка зависимостей
 npm install
@@ -76,7 +76,7 @@ src/
 ## Контакты
 
 - GitHub Issues: для багов и предложений
-- Email: dev@normaldance.com
-- Discord: [ссылка на сервер]
+- Email: AndyKachess@gmail.com
+- Telegram: [[ссылка на сервер](https://t.me/AndyKachess)]
 
 Спасибо за ваш вклад! 🚀
