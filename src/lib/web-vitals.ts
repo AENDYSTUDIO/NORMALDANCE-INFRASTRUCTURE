@@ -179,7 +179,7 @@ export class WebVitalsService {
 
     // Отправка в Sentry (если доступно)
     if (typeof window !== 'undefined' && (window as any).Sentry) {
-      ;(window as any).Sentry.addBreadcrumb({
+      (window as any).Sentry.addBreadcrumb({
         category: 'web-vitals',
         message: `${type}: ${metric.value}ms`,
         level: 'info',
@@ -197,7 +197,7 @@ export class WebVitalsService {
 
     // Отправка в Vercel Analytics (если доступно)
     if (typeof window !== 'undefined' && (window as any).vercel) {
-      ;(window as any).vercel.analytics.track('web-vital', {
+      (window as any).vercel.analytics.track('web-vital', {
         type,
         value: metric.value,
         url: metric.url,
@@ -230,7 +230,7 @@ export class WebVitalsService {
 
     // Отправка в Sentry (если доступно)
     if (typeof window !== 'undefined' && (window as any).Sentry) {
-      ;(window as any).Sentry.addBreadcrumb({
+      (window as any).Sentry.addBreadcrumb({
         category: 'custom-metrics',
         message: 'Custom performance metrics',
         level: 'info',
@@ -240,7 +240,7 @@ export class WebVitalsService {
 
     // Отправка в Vercel Analytics (если доступно)
     if (typeof window !== 'undefined' && (window as any).vercel) {
-      ;(window as any).vercel.analytics.track('custom-metrics', customMetrics)
+      (window as any).vercel.analytics.track('custom-metrics', customMetrics)
     }
   }
 
@@ -260,7 +260,7 @@ export class WebVitalsService {
 
     // Отправка в Sentry (если доступно)
     if (typeof window !== 'undefined' && (window as any).Sentry) {
-      ;(window as any).Sentry.addBreadcrumb({
+      (window as any).Sentry.addBreadcrumb({
         category: 'user-interaction',
         message: `User ${type} on ${interactionData.element}`,
         level: 'info',
@@ -270,7 +270,7 @@ export class WebVitalsService {
 
     // Отправка в Vercel Analytics (если доступно)
     if (typeof window !== 'undefined' && (window as any).vercel) {
-      ;(window as any).vercel.analytics.track('user-interaction', interactionData)
+      (window as any).vercel.analytics.track('user-interaction', interactionData)
     }
   }
 
@@ -289,7 +289,7 @@ export class WebVitalsService {
 
     // Отправка в Sentry (если доступно)
     if (typeof window !== 'undefined' && (window as any).Sentry) {
-      ;(window as any).Sentry.addBreadcrumb({
+      (window as any).Sentry.addBreadcrumb({
         category: 'resource-load',
         message: `Resource loaded: ${resourceData.name}`,
         level: 'info',
@@ -299,7 +299,7 @@ export class WebVitalsService {
 
     // Отправка в Vercel Analytics (если доступно)
     if (typeof window !== 'undefined' && (window as any).vercel) {
-      ;(window as any).vercel.analytics.track('resource-load', resourceData)
+      (window as any).vercel.analytics.track('resource-load', resourceData)
     }
   }
 

@@ -1,17 +1,6 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/next"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/$1"
-    }
-  ],
+  "framework": "nextjs",
   "headers": [
     {
       "source": "/(.*)",
@@ -37,14 +26,18 @@
       "memory": 1024
     }
   },
+  "github": {
+    "enabled": true,
+    "autoAlias": true
+  },
   "crons": [
     {
       "path": "/api/recommendations",
-      "schedule": "0 */6 * * *"
+      "schedule": "0 0 * * *"
     },
     {
       "path": "/api/analytics",
-      "schedule": "0 0 * * *"
+      "schedule": "0 1 * * *"
     },
     {
       "path": "/api/cleanup",
