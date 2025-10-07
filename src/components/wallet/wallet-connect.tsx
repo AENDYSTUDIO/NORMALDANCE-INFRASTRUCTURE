@@ -1,23 +1,25 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Badge, Avatar, AvatarFallback, AvatarImage } from '@/components/ui'
-import { 
-  Wallet, 
-  CheckCircle, 
-  XCircle, 
-  Copy, 
-  ExternalLink,
-  Loader2,
-  AlertCircle,
-  QrCode
-} from '@/components/icons'
-import { useSolanaWallet } from './wallet-adapter'
-import { formatAddress } from './wallet-adapter'
-import { cn } from '@/lib/utils'
+import { AlertCircle, CheckCircle, Wallet } from "@/components/icons";
+
+import {
+  Avatar,
+  AvatarFallback,
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui";
+import { cn } from "@/lib/utils";
+import { Copy, ExternalLink, Loader2, QrCode } from "lucide-react";
+import { useEffect, useState } from "react";
+import { formatAddress, useSolanaWallet } from "./wallet-adapter";
 
 interface WalletConnectProps {
-  className?: string
+  className?: string;
 }
 
 export function WalletConnect({ className }: WalletConnectProps) {
@@ -29,66 +31,133 @@ export function WalletConnect({ className }: WalletConnectProps) {
     disconnectWallet,
     getBalance,
     getTokenBalance,
-    formatSol
-  } = useSolanaWallet()
+    formatSol,
+  } = useSolanaWallet();
 
-  const [isConnecting, setIsConnecting] = useState(false)
-  const [balanceLoading, setBalanceLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [showQR, setShowQR] = useState(false)
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [balanceLoading, setBalanceLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showQR, setShowQR] = useState(false);
+  const [walletsAvailable, setWalletsAvailable] = useState(false);
+
+  // В реальном приложении здесь нужно получить список доступных кошельков
+  // и проверить, доступен ли кошелек для подключения
+  useEffect(() => {
+    // Проверяем, что мы в TMA
+    if (typeof window !== "undefined" && window.Telegram?.WebApp) {
+      setWalletsAvailable(false); // В TMA традиционные кошельки недоступны
+    } else {
+      // В обычном браузере проверяем доступность кошельков
+      setWalletsAvailable(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (connected && publicKey) {
-      loadBalance()
+      loadBalance();
     }
-  }, [connected, publicKey])
+  }, [connected, publicKey]);
 
   const loadBalance = async () => {
-    setBalanceLoading(true)
+    setBalanceLoading(true);
     try {
-      await getBalance()
-      const ndtBalance = await getTokenBalance('NDT_MINT_ADDRESS')
+      await getBalance();
+      const ndtBalance = await getTokenBalance("NDT_MINT_ADDRESS");
       // Store NDT balance in state if needed
     } catch (err) {
-      setError('Failed to load balance')
+      setError("Failed to load balance");
     } finally {
-      setBalanceLoading(false)
+      setBalanceLoading(false);
     }
-  }
+  };
 
-  const handleConnect = async () => {
-    setIsConnecting(true)
-    setError(null)
+  const handleConnect = async (walletName: string) => {
+    setIsConnecting(true);
+    setError(null);
     try {
-      await connectWallet()
-      setShowQR(false)
+      // Для Telegram Mini App используем специальный способ подключения
+      if (isTelegramWebView()) {
+        await initWalletConnectForTMA();
+      } else {
+        await connectWallet();
+      }
+      setShowQR(false);
     } catch (err) {
-      setError('Failed to connect wallet')
-      console.error('Connection error:', err)
+      setError("Failed to connect wallet");
+      console.error("Connection error:", err);
     } finally {
-      setIsConnecting(false)
+      setIsConnecting(false);
     }
-  }
+  };
 
   const handleDisconnect = async () => {
     try {
-      await disconnectWallet()
+      await disconnectWallet();
     } catch (err) {
-      console.error('Disconnection error:', err)
+      console.error("Disconnection error:", err);
     }
-  }
+  };
 
   const copyToClipboard = async (text: string) => {
     try {
-      await navigator.clipboard.writeText(text)
+      await navigator.clipboard.writeText(text);
     } catch (err) {
-      console.error('Failed to copy:', err)
+      console.error("Failed to copy:", err);
     }
-  }
+  };
+
+  // Проверяем, запущено ли приложение в Telegram WebView
+  const isTelegramWebView = (): boolean => {
+    if (typeof window !== "undefined" && window.Telegram?.WebApp) {
+      return true;
+    }
+    return false;
+  };
+
+  // Инициализация WalletConnect для Telegram Mini App
+  const initWalletConnectForTMA = async () => {
+    try {
+      // В TMA используем WalletConnect Universal или deeplink
+      // Для этого потребуется настроить WalletConnect
+      console.log("Initializing WalletConnect for Telegram Mini App");
+
+      // В реальном приложении здесь будет инициализация WalletConnect
+      // с использованием @walletconnect/modal-react-native или @walletconnect/sign-client
+      // В зависимости от окружения (TMA или веб)
+
+      // Для TMA используем QR-код или deeplink
+      if (showQR) {
+        // Показываем QR-код для сканирования пользователем
+        console.log("Show QR code for WalletConnect");
+        // В реальном приложении здесь будет отображение QR-кода
+        // и установка соединения через WalletConnect
+      } else {
+        // Используем deeplink для открытия мобильного кошелька
+        const universalLink = "https://solana-wallet.app";
+        const deepLink = `solana://`;
+
+        // Открываем deeplink
+        window.open(deepLink, "_blank");
+
+        // Альтернатива: использовать универсальную ссылку
+        // window.open(universalLink, '_blank');
+      }
+
+      // В реальном приложении здесь будет ожидание установки соединения
+      // и обработка событий от WalletConnect
+      // await waitForWalletConnectConnection();
+
+      // Пока просто вызываем стандартное подключение
+      await connectWallet();
+    } catch (err) {
+      console.error("WalletConnect initialization error:", err);
+      throw err;
+    }
+  };
 
   if (connected && publicKey) {
     return (
-      <Card className={cn('w-full max-w-md', className)}>
+      <Card className={cn("w-full max-w-md", className)}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Wallet className="h-5 w-5" />
@@ -109,9 +178,7 @@ export function WalletConnect({ className }: WalletConnectProps) {
                 <p className="text-sm font-medium">
                   {formatAddress(publicKey, 6)}
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  Solana
-                </p>
+                <p className="text-xs text-muted-foreground">Solana</p>
               </div>
             </div>
             <Button
@@ -155,18 +222,18 @@ export function WalletConnect({ className }: WalletConnectProps) {
 
           {/* Actions */}
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setShowQR(!showQR)}
               className="flex-1"
             >
               <QrCode className="h-4 w-4 mr-2" />
               QR Code
             </Button>
-            <Button 
-              variant="destructive" 
-              size="sm" 
+            <Button
+              variant="destructive"
+              size="sm"
               onClick={handleDisconnect}
               className="flex-1"
             >
@@ -183,11 +250,11 @@ export function WalletConnect({ className }: WalletConnectProps) {
           )}
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
-    <Card className={cn('w-full max-w-md', className)}>
+    <Card className={cn("w-full max-w-md", className)}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Wallet className="h-5 w-5" />
@@ -200,20 +267,46 @@ export function WalletConnect({ className }: WalletConnectProps) {
       <CardContent className="space-y-4">
         {/* Wallet options */}
         <div className="space-y-2">
-          <Button
-            className="w-full justify-start"
-            onClick={handleConnect}
-            disabled={isConnecting}
-          >
-            {isConnecting ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 bg-purple-600 rounded"></div>
-                Phantom Wallet
-              </div>
-            )}
-          </Button>
+          {/* Показываем кнопку WalletConnect в TMA */}
+          {isTelegramWebView() && (
+            <Button
+              className="w-full justify-start"
+              onClick={() => handleConnect("WalletConnect")}
+              disabled={isConnecting}
+            >
+              {isConnecting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 bg-green-600 rounded"></div>
+                  WalletConnect
+                </div>
+              )}
+            </Button>
+          )}
+          {/* Показываем Phantom если доступен и не в TMA */}
+          {!isTelegramWebView() && walletsAvailable && (
+            <Button
+              className="w-full justify-start"
+              onClick={() => handleConnect("Phantom")}
+              disabled={isConnecting}
+            >
+              {isConnecting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 bg-purple-60 rounded"></div>
+                  Phantom Wallet
+                </div>
+              )}
+            </Button>
+          )}
+          {/* Если не в TMA и нет доступных кошельков, показываем рекомендацию */}
+          {!isTelegramWebView() && !walletsAvailable && (
+            <div className="text-sm text-muted-foreground text-center py-2">
+              Установите кошелек Phantom для подключения
+            </div>
+          )}
         </div>
 
         {/* Features */}
@@ -238,5 +331,5 @@ export function WalletConnect({ className }: WalletConnectProps) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

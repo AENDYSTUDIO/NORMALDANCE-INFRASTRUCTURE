@@ -1,18 +1,18 @@
-version: '3.8'
+version: "3.8"
 
 services:
   # Основное приложение
   app:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://user:password@db:5432/normaldance
-      - NEXTAUTH_URL=http://localhost:3000
-      - NEXTAUTH_SECRET=your_super_secret_key_change_me
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://${DB_USER:-normaldance}:${DB_PASSWORD:-secure_password}@db:5432/normaldance
+      - NEXTAUTH_URL=https://normaldance.com
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-default_secret_key_for_dev}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
     volumes:
@@ -25,14 +25,38 @@ services:
       redis:
         condition: service_started
     restart: unless-stopped
+    # Добавляем security конфигурации
+    security_opt:
+      - no-new-privileges:true
+    # Добавляем healthcheck для приложения
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3000/api/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    # Ограничиваем ресурсы для безопасности
+    mem_limit: 1g
+    mem_reservation: 512m
+    cpus: "0.5"
+    # Устанавливаем пользователя
+    user: "1000:1000"
 
   # База данных PostgreSQL
   db:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: normaldance
+      POSTGRES_USER: ${DB_USER:-normaldance}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secure_password}
+      POSTGRES_DB: ${DB_NAME:-normaldance}
     ports:
       - "5432:5432"
     volumes:
@@ -43,6 +67,14 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    # Добавляем security конфигурации
+    security_opt:
+      - no-new-privileges:true
+    # Ограничиваем ресурсы
+    mem_limit: 512m
+    mem_reservation: 256m
+    # Запускаем от непривилегированного пользователя
+    user: "999:999"
 
   # Redis для кэширования и сессий
   redis:
@@ -52,6 +84,14 @@ services:
     volumes:
       - redis_data:/data
     restart: unless-stopped
+    # Добавляем security конфигурации
+    security_opt:
+      - no-new-privileges:true
+    # Ограничиваем ресурсы
+    mem_limit: 256m
+    mem_reservation: 128m
+    # Запускаем от непривилегированного пользователя
+    user: "999:999"
 
 volumes:
   postgres-data:
