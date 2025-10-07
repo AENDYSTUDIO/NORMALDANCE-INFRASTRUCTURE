@@ -1,0 +1,318 @@
+name: Deploy to Kubernetes
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy"
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  NODE_VERSION: "20.x"
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+
+jobs:
+  # Проверка кода
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run TypeScript check
+        run: npm run type-check
+
+  # Тестирование
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    needs: lint
+
+    strategy:
+      matrix:
+        test-type: [unit, integration, mobile]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        if: matrix.test-type == 'unit'
+        run: npm test
+
+      - name: Run integration tests
+        if: matrix.test-type == 'integration'
+        run: npm run test:integration
+
+      - name: Run mobile tests
+        if: matrix.test-type == 'mobile'
+        run: |
+          cd mobile-app
+          npm ci
+          npm test
+
+  # Сборка Docker образов
+  build:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Деплой в staging Kubernetes
+  deploy-staging-k8s:
+    name: Deploy to Staging Kubernetes
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.ref == 'refs/heads/develop' || (github.event_name == 'workflow_dispatch' && inputs.environment == 'staging')
+
+    environment: staging
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "latest"
+
+      - name: Set up KUBECONFIG
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Update deployment with new image
+        run: |
+          kubectl set image deployment/normaldance-app normaldance-app=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image-tag }}
+          kubectl rollout status deployment/normaldance-app
+          kubectl get services
+
+      - name: Run smoke tests
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const axios = require('axios');
+
+            // Проверка основного приложения
+            try {
+              const response = await axios.get('https://staging.normaldance.com/health');
+              console.log('Health check passed:', response.status);
+            } catch (error) {
+              console.error('Health check failed:', error.message);
+              core.setFailed('Smoke tests failed');
+            }
+
+            // Проверка API
+            try {
+              const response = await axios.get('https://staging.normaldance.com/api/health');
+              console.log('API health check passed:', response.status);
+            } catch (error) {
+              console.error('API health check failed:', error.message);
+              core.setFailed('Smoke tests failed');
+            }
+
+  # Деплой в production Kubernetes
+  deploy-production-k8s:
+    name: Deploy to Production Kubernetes
+    runs-on: ubuntu-latest
+    needs: [build, deploy-staging-k8s]
+    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && inputs.environment == 'production')
+
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "latest"
+
+      - name: Set up KUBECONFIG
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG_PRODUCTION }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Update deployment with new image
+        run: |
+          kubectl set image deployment/normaldance-app normaldance-app=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image-tag }}
+          kubectl rollout status deployment/normaldance-app
+          kubectl get services
+
+      - name: Run smoke tests
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const axios = require('axios');
+
+            // Проверка основного приложения
+            try {
+              const response = await axios.get('https://normaldance.com/health');
+              console.log('Health check passed:', response.status);
+            } catch (error) {
+              console.error('Health check failed:', error.message);
+              core.setFailed('Smoke tests failed');
+            }
+
+            // Проверка API
+            try {
+              const response = await axios.get('https://normaldance.com/api/health');
+              console.log('API health check passed:', response.status);
+            } catch (error) {
+              console.error('API health check failed:', error.message);
+              core.setFailed('Smoke tests failed');
+            }
+
+      - name: Notify deployment
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: "#deployments"
+          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+          text: "Production Kubernetes deployment completed successfully!"
+
+  # Обновление документации
+  update-docs:
+    name: Update Documentation
+    runs-on: ubuntu-latest
+    needs: [deploy-staging-k8s, deploy-production-k8s]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Update documentation
+        run: node scripts/update-docs.js
+
+      - name: Commit and push documentation
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add docs/
+          git commit -m "docs: Update documentation" || exit 0
+          git push
+
+  # Уведомления
+  notify:
+    name: Send Notifications
+    runs-on: ubuntu-latest
+    needs:
+      [
+        lint,
+        test,
+        build,
+        deploy-staging-k8s,
+        deploy-production-k8s,
+        update-docs,
+      ]
+
+    steps:
+      - name: Notify success
+        if: needs.*.result == 'success'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          channel: "#deployments"
+          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+          text: "🎉 All jobs completed successfully!"
+
+      - name: Notify failure
+        if: contains(needs.*.result, 'failure')
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          channel: "#deployments"
+          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+          text: "❌ Some jobs failed!"
