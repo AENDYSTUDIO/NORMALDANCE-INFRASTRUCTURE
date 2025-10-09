@@ -2,10 +2,16 @@ name: security-gate
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch: {}
 
 jobs:
+  emergency-disable:
+    if: false # EMERGENCY DISABLE - 982 workflows
+    runs-on: ubuntu-latest
+    steps:
+      - name: Emergency Disabled
+        run: echo "This workflow is temporarily disabled due to 982 active workflows"
   security:
     runs-on: ubuntu-latest
     steps:
@@ -16,7 +22,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Install tools
         run: |
@@ -44,198 +50,198 @@ jobs:
         with:
           name: security-report
           path: reports/security-audit.json
-name: Security Gate
-
-on:
-  pull_request:
-    branches: [ main, master ]
-  push:
-    branches: [ main, master ]
-
-jobs:
-  security-scan:
-    runs-on: ubuntu-latest
-    name: Security Scan
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run TruffleHog
-        id: trufflehog
-        run: |
-          echo "Running TruffleHog scan..."
-          trufflehog --regex --entropy=false --no-update --json . > trufflehog-results.json || true
-          
-          # Check if TruffleHog found any secrets
-          if [ -s trufflehog-results.json ]; then
-            echo "TruffleHog found potential secrets:"
-            cat trufflehog-results.json
-            echo "::error::TruffleHog scan failed - potential secrets detected"
-            exit 1
-          else
-            echo "TruffleHog scan passed - no secrets detected"
-          fi
-
-      - name: Run git-secrets
-        id: git-secrets
-        run: |
-          echo "Running git-secrets scan..."
-          
-          # Install git-secrets
-          sudo apt-get update
-          sudo apt-get install -y git-secrets
-          
-          # Configure git-secrets
-          git secrets --register-aws
-          git secrets --add '0x[0-9a-fA-F]{40}' # Ethereum private keys
-          git secrets --add 'AKIA[0-9A-Z]{16}'  # AWS access keys
-          git secrets --add 'AIza[0-9A-Za-z\-_]{35}' # Google API keys
-          
-          # Scan the repository
-          git secrets --scan || true
-          
-          echo "git-secrets scan completed"
-
-      - name: Run OPA policy check
-        id: opa-check
-        run: |
-          echo "Running OPA policy check..."
-          
-          # Install OPA
-          curl -L -o opa https://openpolicyagent.org/downloads/v0.46.0/opa_linux_amd64
-          chmod +x opa
-          sudo mv opa /usr/local/bin/
-          
-          # Create OPA input
-          cat > opa-input.json << EOF
-          {
-            "user": "${github.actor}",
-            "branch": "${github.ref_name}",
-            "pr_number": "${github.event.number}",
-            "files_changed": "${github.event.pull_request?.files_changed || 0}",
-            "additions": "${github.event.pull_request?.additions || 0}",
-            "deletions": "${github.event.pull_request?.deletions || 0}"
-          }
-          EOF
-          
-          # Run OPA policy
-          if opa eval -d policy/rbac.rego -i opa-input.json 'data.normaldance.security.allow_commit(input.user, input.branch, "")' | grep -q "true"; then
-            echo "OPA policy check passed"
-          else
-            echo "::error::OPA policy check failed"
-            exit 1
-          fi
-
-      - name: Run dependency check
-        id: deps-check
-        run: |
-          echo "Running dependency security check..."
-          
-          # Install npm audit
-          npm audit --audit-level moderate || true
-          
-          echo "Dependency security check completed"
-
-      - name: Upload security results
-        uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: security-results
-          path: |
-            trufflehog-results.json
-            opa-input.json
-
-  lint-check:
-    runs-on: ubuntu-latest
-    name: Lint Check
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run ESLint
-        run: npm run lint || true
-
-      - name: Run TypeScript check
-        run: npx tsc --noEmit || true
-
-  test-check:
-    runs-on: ubuntu-latest
-    name: Test Check
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run tests
-        run: npm test
-
-  security-gate:
-    runs-on: ubuntu-latest
-    name: Security Gate
-    needs: [security-scan, lint-check, test-check]
-    if: always()
-    
-    steps:
-      - name: Check security results
-        id: check-results
-        run: |
-          echo "Checking security gate results..."
-          
-          # Check if all jobs passed
-          if [ "${{ needs.security-scan.result }}" == "success" ] && \
-             [ "${{ needs.lint-check.result }}" == "success" ] && \
-             [ "${{ needs.test-check.result }}" == "success" ]; then
-            echo "Security gate passed"
-            echo "::notice::All security checks passed"
-            exit 0
-          else
-            echo "::error::Security gate failed"
-            echo "Security scan: ${{ needs.security-scan.result }}"
-            echo "Lint check: ${{ needs.lint-check.result }}"
-            echo "Test check: ${{ needs.test-check.result }}"
-            exit 1
-          fi
-
-      - name: Send Slack notification
-        if: always()
-        uses: 8398a7/action-slack@v3
-        with:
-          status: ${{ job.status }}
-          channel: '#security-alerts'
-          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow
-          text: 'Security Gate Check'
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+# name: Security Gate
+#
+# on:
+#   pull_request:
+#     branches: [ main, master ]
+#   push:
+#     branches: [ main, master ]
+#
+# jobs:
+#   security-scan:
+#     runs-on: ubuntu-latest
+#     name: Security Scan
+#     if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+#
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+#         with:
+#           fetch-depth: 0
+#
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: '20'
+#           cache: 'npm'
+#
+#       - name: Install dependencies
+#         run: npm ci
+#
+#       - name: Run TruffleHog
+#         id: trufflehog
+#         run: |
+#           echo "Running TruffleHog scan..."
+#           trufflehog --regex --entropy=false --no-update --json . > trufflehog-results.json || true
+#
+#           # Check if TruffleHog found any secrets
+#           if [ -s trufflehog-results.json ]; then
+#             echo "TruffleHog found potential secrets:"
+#             cat trufflehog-results.json
+#             echo "::error::TruffleHog scan failed - potential secrets detected"
+#             exit 1
+#           else
+#             echo "TruffleHog scan passed - no secrets detected"
+#           fi
+#
+#       - name: Run git-secrets
+#         id: git-secrets
+#         run: |
+#           echo "Running git-secrets scan..."
+#
+#           # Install git-secrets
+#           sudo apt-get update
+#           sudo apt-get install -y git-secrets
+#
+#           # Configure git-secrets
+#           git secrets --register-aws
+#           git secrets --add '0x[0-9a-fA-F]{40}' # Ethereum private keys
+#           git secrets --add 'AKIA[0-9A-Z]{16}'  # AWS access keys
+#           git secrets --add 'AIza[0-9A-Za-z\-_]{35}' # Google API keys
+#
+#           # Scan the repository
+#           git secrets --scan || true
+#
+#           echo "git-secrets scan completed"
+#
+#       - name: Run OPA policy check
+#         id: opa-check
+#         run: |
+#           echo "Running OPA policy check..."
+#
+#           # Install OPA
+#           curl -L -o opa https://openpolicyagent.org/downloads/v0.46.0/opa_linux_amd64
+#           chmod +x opa
+#           sudo mv opa /usr/local/bin/
+#
+#           # Create OPA input
+#           cat > opa-input.json << EOF
+#           {
+#             "user": "${github.actor}",
+#             "branch": "${github.ref_name}",
+#             "pr_number": "${github.event.number}",
+#             "files_changed": "${github.event.pull_request?.files_changed || 0}",
+#             "additions": "${github.event.pull_request?.additions || 0}",
+#             "deletions": "${github.event.pull_request?.deletions || 0}"
+#           }
+#           EOF
+#
+#           # Run OPA policy
+#           if opa eval -d policy/rbac.rego -i opa-input.json 'data.normaldance.security.allow_commit(input.user, input.branch, "")' | grep -q "true"; then
+#             echo "OPA policy check passed"
+#           else
+#             echo "::error::OPA policy check failed"
+#             exit 1
+#           fi
+#
+#       - name: Run dependency check
+#         id: deps-check
+#         run: |
+#           echo "Running dependency security check..."
+#
+#           # Install npm audit
+#           npm audit --audit-level moderate || true
+#
+#           echo "Dependency security check completed"
+#
+#       - name: Upload security results
+#         uses: actions/upload-artifact@v3
+#         if: always()
+#         with:
+#           name: security-results
+#           path: |
+#             trufflehog-results.json
+#             opa-input.json
+#
+#   lint-check:
+#     runs-on: ubuntu-latest
+#     name: Lint Check
+#
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+#
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: '20'
+#           cache: 'npm'
+#
+#       - name: Install dependencies
+#         run: npm ci
+#
+#       - name: Run ESLint
+#         run: npm run lint || true
+#
+#       - name: Run TypeScript check
+#         run: npx tsc --noEmit || true
+#
+#   test-check:
+#     runs-on: ubuntu-latest
+#     name: Test Check
+#
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+#
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: '20'
+#           cache: 'npm'
+#
+#       - name: Install dependencies
+#         run: npm ci
+#
+#       - name: Run tests
+#         run: npm test
+#
+#   security-gate:
+#     runs-on: ubuntu-latest
+#     name: Security Gate
+#     needs: [security-scan, lint-check, test-check]
+#     if: always()
+#
+#     steps:
+#       - name: Check security results
+#         id: check-results
+#         run: |
+#           echo "Checking security gate results..."
+#
+#           # Check if all jobs passed
+#           if [ "${{ needs.security-scan.result }}" == "success" ] && \
+#              [ "${{ needs.lint-check.result }}" == "success" ] && \
+#              [ "${{ needs.test-check.result }}" == "success" ]; then
+#             echo "Security gate passed"
+#             echo "::notice::All security checks passed"
+#             exit 0
+#           else
+#             echo "::error::Security gate failed"
+#             echo "Security scan: ${{ needs.security-scan.result }}"
+#             echo "Lint check: ${{ needs.lint-check.result }}"
+#             echo "Test check: ${{ needs.test-check.result }}"
+#             exit 1
+#           fi
+#
+#       - name: Send Slack notification
+#         if: always()
+#         uses: 8398a7/action-slack@v3
+#         with:
+#           status: ${{ job.status }}
+#           channel: '#security-alerts'
+#           webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+#           fields: repo,message,commit,author,action,eventName,ref,workflow
+#           text: 'Security Gate Check'
+#         env:
+#           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

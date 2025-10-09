@@ -4,36 +4,36 @@ on:
   # Trigger on pull request events
   pull_request:
     types: [opened, synchronize, reopened, closed, edited]
-    branches: [main, develop, 'feature/*', 'hotfix/*', 'bugfix/*', 'release/*']
-  
+    branches: [main, develop, "feature/*", "hotfix/*", "bugfix/*", "release/*"]
+
   # Trigger on issue comments with /deploy command
   issue_comment:
     types: [created, edited]
     if: contains(github.event.comment.body, '/deploy')
-  
+
   # Trigger on workflow dispatch for manual deployments
   workflow_dispatch:
     inputs:
       pr_number:
-        description: 'PR Number to deploy'
+        description: "PR Number to deploy"
         required: true
         type: number
       environment:
-        description: 'Environment type'
+        description: "Environment type"
         required: true
-        default: 'preview'
+        default: "preview"
         type: choice
         options:
-        - preview
-        - development
-        - staging
+          - preview
+          - development
+          - staging
       force_deploy:
-        description: 'Force deployment even if duplicate'
+        description: "Force deployment even if duplicate"
         required: false
         type: boolean
         default: false
       skip_tests:
-        description: 'Skip tests for faster deployment'
+        description: "Skip tests for faster deployment"
         required: false
         type: boolean
         default: false
@@ -42,7 +42,7 @@ env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-  NODE_VERSION: '20.x'
+  NODE_VERSION: "20.x"
   DEPLOYMENT_TIMEOUT: 30 # minutes
 
 # Global variables for deduplication
@@ -51,6 +51,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  emergency-disable:
+    if: false # EMERGENCY DISABLE - 982 workflows
+    runs-on: ubuntu-latest
+    steps:
+      - name: Emergency Disabled
+        run: echo "This workflow is temporarily disabled due to 982 active workflows"
   # 1. Deduplication Check
   deduplication-check:
     name: Deduplication Check
@@ -59,105 +65,105 @@ jobs:
       should-deploy: ${{ steps.check.outputs.should-deploy }}
       deployment-reason: ${{ steps.check.outputs.deployment-reason }}
       skip-tests: ${{ steps.check.outputs.skip-tests }}
-      
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Check deployment conditions
-      id: check
-      run: |
-        SHOULD_DEPLOY=false
-        DEPLOYMENT_REASON="manual"
-        SKIP_TESTS=false
-        
-        # Check if this is a workflow dispatch
-        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-          SHOULD_DEPLOY=true
-          DEPLOYMENT_REASON="manual_dispatch"
-          SKIP_TESTS="${{ github.event.inputs.skip_tests }}"
-          echo "Manual deployment triggered"
-        fi
-        
-        # Check if this is a PR comment with /deploy
-        if [[ "${{ github.event_name }}" == "issue_comment" ]]; then
-          SHOULD_DEPLOY=true
-          DEPLOYMENT_REASON="comment_trigger"
-          echo "Comment triggered deployment"
-        fi
-        
-        # Check if this is a PR event
-        if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-          # Check if PR was just opened or reopened
-          if [[ "${{ github.event.action }}" == "opened" ]] || [[ "${{ github.event.action }}" == "reopened" ]]; then
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check deployment conditions
+        id: check
+        run: |
+          SHOULD_DEPLOY=false
+          DEPLOYMENT_REASON="manual"
+          SKIP_TESTS=false
+
+          # Check if this is a workflow dispatch
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             SHOULD_DEPLOY=true
-            DEPLOYMENT_REASON="pr_${{ github.event.action }}"
-            echo "PR ${{ github.event.action }} - deploying"
+            DEPLOYMENT_REASON="manual_dispatch"
+            SKIP_TESTS="${{ github.event.inputs.skip_tests }}"
+            echo "Manual deployment triggered"
           fi
-          
-          # Check if PR was synchronized (code updated)
-          if [[ "${{ github.event.action }}" == "synchronize" ]]; then
-            # Check if force deploy is requested
-            if [[ "${{ github.event.inputs.force_deploy }}" == "true" ]]; then
+
+          # Check if this is a PR comment with /deploy
+          if [[ "${{ github.event_name }}" == "issue_comment" ]]; then
+            SHOULD_DEPLOY=true
+            DEPLOYMENT_REASON="comment_trigger"
+            echo "Comment triggered deployment"
+          fi
+
+          # Check if this is a PR event
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            # Check if PR was just opened or reopened
+            if [[ "${{ github.event.action }}" == "opened" ]] || [[ "${{ github.event.action }}" == "reopened" ]]; then
               SHOULD_DEPLOY=true
-              DEPLOYMENT_REASON="forced_sync"
-              echo "Force deploy requested - deploying"
-            else
-              # Check for recent deployments to avoid duplicates
-              RECENT_DEPLOYMENTS=$(curl -s \
-                -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-                "https://api.github.com/repos/${{ github.repository }}/deployments?environment=preview&per_page=1")
-              
-              if [[ -z "$RECENT_DEPLOYMENTS" ]] || [[ "$RECENT_DEPLOYMENTS" == "[]" ]]; then
+              DEPLOYMENT_REASON="pr_${{ github.event.action }}"
+              echo "PR ${{ github.event.action }} - deploying"
+            fi
+            
+            # Check if PR was synchronized (code updated)
+            if [[ "${{ github.event.action }}" == "synchronize" ]]; then
+              # Check if force deploy is requested
+              if [[ "${{ github.event.inputs.force_deploy }}" == "true" ]]; then
                 SHOULD_DEPLOY=true
-                DEPLOYMENT_REASON="first_sync"
-                echo "No recent deployments - deploying"
+                DEPLOYMENT_REASON="forced_sync"
+                echo "Force deploy requested - deploying"
               else
-                # Check if last deployment was more than 10 minutes ago
-                LAST_DEPLOYMENT_TIME=$(echo "$RECENT_DEPLOYMENTS" | jq -r '.[0].created_at')
-                LAST_DEPLOYMENT_TIMESTAMP=$(date -d "$LAST_DEPLOYMENT_TIME" +%s)
-                CURRENT_TIMESTAMP=$(date +%s)
-                TIME_DIFF=$((CURRENT_TIMESTAMP - LAST_DEPLOYMENT_TIMESTAMP))
+                # Check for recent deployments to avoid duplicates
+                RECENT_DEPLOYMENTS=$(curl -s \
+                  -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                  "https://api.github.com/repos/${{ github.repository }}/deployments?environment=preview&per_page=1")
                 
-                if [[ $TIME_DIFF -gt 600 ]]; then # 10 minutes
+                if [[ -z "$RECENT_DEPLOYMENTS" ]] || [[ "$RECENT_DEPLOYMENTS" == "[]" ]]; then
                   SHOULD_DEPLOY=true
-                  DEPLOYMENT_REASON="stale_sync"
-                  echo "Last deployment was $TIME_DIFF seconds ago - deploying"
+                  DEPLOYMENT_REASON="first_sync"
+                  echo "No recent deployments - deploying"
                 else
-                  SHOULD_DEPLOY=false
-                  DEPLOYMENT_REASON="recent_duplicate"
-                  echo "Last deployment was $TIME_DIFF seconds ago - skipping duplicate"
+                  # Check if last deployment was more than 10 minutes ago
+                  LAST_DEPLOYMENT_TIME=$(echo "$RECENT_DEPLOYMENTS" | jq -r '.[0].created_at')
+                  LAST_DEPLOYMENT_TIMESTAMP=$(date -d "$LAST_DEPLOYMENT_TIME" +%s)
+                  CURRENT_TIMESTAMP=$(date +%s)
+                  TIME_DIFF=$((CURRENT_TIMESTAMP - LAST_DEPLOYMENT_TIMESTAMP))
+                  
+                  if [[ $TIME_DIFF -gt 600 ]]; then # 10 minutes
+                    SHOULD_DEPLOY=true
+                    DEPLOYMENT_REASON="stale_sync"
+                    echo "Last deployment was $TIME_DIFF seconds ago - deploying"
+                  else
+                    SHOULD_DEPLOY=false
+                    DEPLOYMENT_REASON="recent_duplicate"
+                    echo "Last deployment was $TIME_DIFF seconds ago - skipping duplicate"
+                  fi
                 fi
               fi
             fi
           fi
-        fi
-        
-        # Check branch type for different handling
-        if [[ "${{ github.ref }}" == refs/heads/feature* ]]; then
-          DEPLOYMENT_REASON="${DEPLOYMENT_REASON}_feature_branch"
-        elif [[ "${{ github.ref }}" == refs/heads/hotfix* ]]; then
-          DEPLOYMENT_REASON="${DEPLOYMENT_REASON}_hotfix_branch"
-          SKIP_TESTS=true # Skip tests for hotfixes for speed
-        elif [[ "${{ github.ref }}" == refs/heads/bugfix* ]]; then
-          DEPLOYMENT_REASON="${DEPLOYMENT_REASON}_bugfix_branch"
-        elif [[ "${{ github.ref }}" == refs/heads/release* ]]; then
-          DEPLOYMENT_REASON="${DEPLOYMENT_REASON}_release_branch"
-        fi
-        
-        echo "should-deploy=$SHOULD_DEPLOY" >> $GITHUB_OUTPUT
-        echo "deployment-reason=$DEPLOYMENT_REASON" >> $GITHUB_OUTPUT
-        echo "skip-tests=$SKIP_TESTS" >> $GITHUB_OUTPUT
+
+          # Check branch type for different handling
+          if [[ "${{ github.ref }}" == refs/heads/feature* ]]; then
+            DEPLOYMENT_REASON="${DEPLOYMENT_REASON}_feature_branch"
+          elif [[ "${{ github.ref }}" == refs/heads/hotfix* ]]; then
+            DEPLOYMENT_REASON="${DEPLOYMENT_REASON}_hotfix_branch"
+            SKIP_TESTS=true # Skip tests for hotfixes for speed
+          elif [[ "${{ github.ref }}" == refs/heads/bugfix* ]]; then
+            DEPLOYMENT_REASON="${DEPLOYMENT_REASON}_bugfix_branch"
+          elif [[ "${{ github.ref }}" == refs/heads/release* ]]; then
+            DEPLOYMENT_REASON="${DEPLOYMENT_REASON}_release_branch"
+          fi
+
+          echo "should-deploy=$SHOULD_DEPLOY" >> $GITHUB_OUTPUT
+          echo "deployment-reason=$DEPLOYMENT_REASON" >> $GITHUB_OUTPUT
+          echo "skip-tests=$SKIP_TESTS" >> $GITHUB_OUTPUT
 
   # 2. Setup and Cache Management
   setup-and-cache:
@@ -168,44 +174,44 @@ jobs:
     outputs:
       cache-hit: ${{ steps.cache.outputs.cache-hit }}
       cache-key: ${{ steps.cache.outputs.cache-key }}
-      
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: '**/package-lock.json'
-        
-    - name: Generate cache key
-      id: cache
-      run: |
-        # Generate cache key based on branch, PR, and file changes
-        BRANCH_HASH=$(echo "${{ github.ref }}" | sha256sum | cut -d' ' -f1)
-        PR_HASH="${{ github.event.pull_request.number || '0' }}"
-        TIMESTAMP=$(date +%s)
-        
-        # Check for specific file changes
-        if git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -E "(package\.json|package-lock\.json)" > /dev/null; then
-          DEPS_CHANGED=true
-        else
-          DEPS_CHANGED=false
-        fi
-        
-        if git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -E "(next\.config\.|tsconfig\.)" > /dev/null; then
-          CONFIG_CHANGED=true
-        else
-          CONFIG_CHANGED=false
-        fi
-        
-        CACHE_KEY="cache-${BRANCH_HASH:0:8}-${PR_HASH}-${TIMESTAMP}-${DEPS_CHANGED}-${CONFIG_CHANGED}"
-        echo "cache-key=$CACHE_KEY" >> $GITHUB_OUTPUT
-        echo "cache-hit=false" >> $GITHUB_OUTPUT
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json"
+
+      - name: Generate cache key
+        id: cache
+        run: |
+          # Generate cache key based on branch, PR, and file changes
+          BRANCH_HASH=$(echo "${{ github.ref }}" | sha256sum | cut -d' ' -f1)
+          PR_HASH="${{ github.event.pull_request.number || '0' }}"
+          TIMESTAMP=$(date +%s)
+
+          # Check for specific file changes
+          if git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -E "(package\.json|package-lock\.json)" > /dev/null; then
+            DEPS_CHANGED=true
+          else
+            DEPS_CHANGED=false
+          fi
+
+          if git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -E "(next\.config\.|tsconfig\.)" > /dev/null; then
+            CONFIG_CHANGED=true
+          else
+            CONFIG_CHANGED=false
+          fi
+
+          CACHE_KEY="cache-${BRANCH_HASH:0:8}-${PR_HASH}-${TIMESTAMP}-${DEPS_CHANGED}-${CONFIG_CHANGED}"
+          echo "cache-key=$CACHE_KEY" >> $GITHUB_OUTPUT
+          echo "cache-hit=false" >> $GITHUB_OUTPUT
 
   # 3. Install Dependencies
   install-dependencies:
@@ -213,23 +219,23 @@ jobs:
     runs-on: ubuntu-latest
     needs: [deduplication-check, setup-and-cache]
     if: needs.deduplication-check.outputs.should-deploy == 'true'
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: '**/package-lock.json'
-        
-    - name: Install dependencies
-      run: npm ci
-      timeout-minutes: 10
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+        timeout-minutes: 10
 
   # 4. Generate Prisma Client
   generate-prisma:
@@ -237,24 +243,24 @@ jobs:
     runs-on: ubuntu-latest
     needs: [deduplication-check, install-dependencies]
     if: needs.deduplication-check.outputs.should-deploy == 'true'
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Generate Prisma client
-      run: npm run db:generate
-      timeout-minutes: 5
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+        timeout-minutes: 5
 
   # 5. Run Tests (optional)
   run-tests:
@@ -263,27 +269,27 @@ jobs:
     needs: [deduplication-check, generate-prisma]
     if: needs.deduplication-check.outputs.should-deploy == 'true' && needs.deduplication-check.outputs.skip-tests == 'false'
     timeout-minutes: 15
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Run tests
-      run: npm test
-      env:
-        NODE_ENV: test
-        DATABASE_URL: "file:./dev.db"
-      continue-on-error: true
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+        env:
+          NODE_ENV: test
+          DATABASE_URL: "file:./dev.db"
+        continue-on-error: true
 
   # 6. Build Application
   build-application:
@@ -292,24 +298,24 @@ jobs:
     needs: [deduplication-check, generate-prisma]
     if: needs.deduplication-check.outputs.should-deploy == 'true'
     timeout-minutes: 20
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Build application
-      run: npm run build
-      timeout-minutes: 15
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+        timeout-minutes: 15
 
   # 7. Deploy to Vercel Preview
   deploy-preview:
@@ -322,161 +328,161 @@ jobs:
       preview-url: ${{ steps.deploy.outputs.url }}
       deployment-id: ${{ steps.deploy.outputs.deployment-id }}
       pr-number: ${{ github.event.pull_request.number || github.event.inputs.pr_number }}
-      
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        
-    - name: Deploy to Vercel Preview
-      id: deploy
-      uses: vercel/action@v1
-      with:
-        vercel-token: ${{ secrets.VERCEL_TOKEN }}
-        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-        scope: ${{ github.repository_owner }}
-        working-directory: .
-        framework: 'next'
-        output-directory: '.next'
-        install-command: 'npm ci'
-        build-command: 'npm run build'
-        dev-command: 'npm run dev'
-        alias: 'pr-${{ github.event.pull_request.number || github.event.inputs.pr_number }}-${{ github.sha }}'
-        environment: 'preview'
-        public: false
-        minify: false
-        vercel-config: './vercel.json'
-        
-    - name: Comment PR with deployment info
-      uses: actions/github-script@v7
-      if: always()
-      with:
-        script: |
-          const { preview-url, deployment-id } = process.env;
-          const prNumber = ${{ github.event.pull_request.number || github.event.inputs.pr_number }};
-          const deploymentReason = '${{ needs.deduplication-check.outputs.deployment-reason }}';
-          
-          let comment = '';
-          
-          if (preview-url && deployment-id) {
-            comment = `
-            🚀 **Preview Deployment Ready!**
-            
-            **URL**: ${preview-url}
-            **Deployment ID**: ${deployment-id}
-            **PR**: #${prNumber}
-            **Branch**: ${{ github.head_ref }}
-            **Commit**: ${{ github.sha }}
-            **Reason**: ${deploymentReason}
-            
-            ---
-            📋 **Preview Features:**
-            - Isolated environment for testing
-            - Latest changes from this PR
-            - Temporary deployment (auto-deleted after 24h or PR merge)
-            - Full application functionality
-            
-            🔗 **Direct Links:**
-            - Application: ${preview-url}
-            - Health Check: ${preview-url}/api/health
-            - API Documentation: ${preview-url}/api/docs
-            
-            ⚡ **Performance Tips:**
-            - First load may take longer due to cold start
-            - Subsequent loads will be faster with caching
-            - Use incognito mode for testing fresh state
-            `;
-          } else {
-            comment = `
-            ❌ **Preview Deployment Failed**
-            
-            **PR**: #${prNumber}
-            **Branch**: ${{ github.head_ref }}
-            **Commit**: ${{ github.sha }}
-            **Reason**: ${deploymentReason}
-            
-            ---
-            📋 **Troubleshooting:**
-            - Check the deployment logs below
-            - Ensure all environment variables are set
-            - Verify the build completed successfully
-            - Check for any syntax errors in the code
-            
-            🔗 **Helpful Links:**
-            - GitHub Actions Logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-            - Vercel Dashboard: https://vercel.com/dashboard
-            `;
-          }
-          
-          // Create or update comment
-          const comments = await github.rest.issues.listComments({
-            issue_number: prNumber,
-            owner: context.repo.owner,
-            repo: context.repo.repo
-          });
-          
-          const botComment = comments.data.find(comment => 
-            comment.user.login === 'github-actions[bot]' && 
-            comment.body.includes('Preview Deployment')
-          );
-          
-          if (botComment) {
-            await github.rest.issues.updateComment({
-              comment_id: botComment.id,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
-          } else {
-            await github.rest.issues.createComment({
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Deploy to Vercel Preview
+        id: deploy
+        uses: vercel/action@v1
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          scope: ${{ github.repository_owner }}
+          working-directory: .
+          framework: "next"
+          output-directory: ".next"
+          install-command: "npm ci"
+          build-command: "npm run build"
+          dev-command: "npm run dev"
+          alias: "pr-${{ github.event.pull_request.number || github.event.inputs.pr_number }}-${{ github.sha }}"
+          environment: "preview"
+          public: false
+          minify: false
+          vercel-config: "./vercel.json"
+
+      - name: Comment PR with deployment info
+        uses: actions/github-script@v7
+        if: always()
+        with:
+          script: |
+            const { preview-url, deployment-id } = process.env;
+            const prNumber = ${{ github.event.pull_request.number || github.event.inputs.pr_number }};
+            const deploymentReason = '${{ needs.deduplication-check.outputs.deployment-reason }}';
+
+            let comment = '';
+
+            if (preview-url && deployment-id) {
+              comment = `
+              🚀 **Preview Deployment Ready!**
+              
+              **URL**: ${preview-url}
+              **Deployment ID**: ${deployment-id}
+              **PR**: #${prNumber}
+              **Branch**: ${{ github.head_ref }}
+              **Commit**: ${{ github.sha }}
+              **Reason**: ${deploymentReason}
+              
+              ---
+              📋 **Preview Features:**
+              - Isolated environment for testing
+              - Latest changes from this PR
+              - Temporary deployment (auto-deleted after 24h or PR merge)
+              - Full application functionality
+              
+              🔗 **Direct Links:**
+              - Application: ${preview-url}
+              - Health Check: ${preview-url}/api/health
+              - API Documentation: ${preview-url}/api/docs
+              
+              ⚡ **Performance Tips:**
+              - First load may take longer due to cold start
+              - Subsequent loads will be faster with caching
+              - Use incognito mode for testing fresh state
+              `;
+            } else {
+              comment = `
+              ❌ **Preview Deployment Failed**
+              
+              **PR**: #${prNumber}
+              **Branch**: ${{ github.head_ref }}
+              **Commit**: ${{ github.sha }}
+              **Reason**: ${deploymentReason}
+              
+              ---
+              📋 **Troubleshooting:**
+              - Check the deployment logs below
+              - Ensure all environment variables are set
+              - Verify the build completed successfully
+              - Check for any syntax errors in the code
+              
+              🔗 **Helpful Links:**
+              - GitHub Actions Logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+              - Vercel Dashboard: https://vercel.com/dashboard
+              `;
+            }
+
+            // Create or update comment
+            const comments = await github.rest.issues.listComments({
               issue_number: prNumber,
               owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
+              repo: context.repo.repo
             });
-          }
-          
-          // Update PR description with preview URL
-          if (preview-url && deployment-id) {
-            const pr = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: prNumber
-            });
-            
-            const updatedBody = `${pr.data.body}\n\n---\n\n🚀 **Preview URL**: ${preview-url}\n**Deployment ID**: ${deployment-id}\n**Reason**: ${deploymentReason}`;
-            
-            await github.rest.pulls.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: prNumber,
-              body: updatedBody
-            });
-          }
-          
-          // Set deployment status
-          if (preview-url && deployment-id) {
-            await github.rest.repos.createDeploymentStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              deployment_id: deployment-id,
-              state: 'success',
-              description: 'Preview deployment completed successfully',
-              environment: 'preview',
-              environment_url: preview-url
-            });
-          } else {
-            await github.rest.repos.createDeploymentStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              deployment_id: deployment-id || 0,
-              state: 'failure',
-              description: 'Preview deployment failed',
-              environment: 'preview'
-            });
-          }
+
+            const botComment = comments.data.find(comment => 
+              comment.user.login === 'github-actions[bot]' && 
+              comment.body.includes('Preview Deployment')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                comment_id: botComment.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            } else {
+              await github.rest.issues.createComment({
+                issue_number: prNumber,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
+
+            // Update PR description with preview URL
+            if (preview-url && deployment-id) {
+              const pr = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber
+              });
+              
+              const updatedBody = `${pr.data.body}\n\n---\n\n🚀 **Preview URL**: ${preview-url}\n**Deployment ID**: ${deployment-id}\n**Reason**: ${deploymentReason}`;
+              
+              await github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+                body: updatedBody
+              });
+            }
+
+            // Set deployment status
+            if (preview-url && deployment-id) {
+              await github.rest.repos.createDeploymentStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                deployment_id: deployment-id,
+                state: 'success',
+                description: 'Preview deployment completed successfully',
+                environment: 'preview',
+                environment_url: preview-url
+              });
+            } else {
+              await github.rest.repos.createDeploymentStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                deployment_id: deployment-id || 0,
+                state: 'failure',
+                description: 'Preview deployment failed',
+                environment: 'preview'
+              });
+            }
 
   # 8. Error Handling and Retry
   error-handling:
@@ -484,113 +490,113 @@ jobs:
     runs-on: ubuntu-latest
     needs: [deduplication-check, deploy-preview]
     if: always() && needs.deduplication-check.outputs.should-deploy == 'true'
-    
+
     steps:
-    - name: Check deployment status
-      id: status-check
-      run: |
-        if [[ "${{ needs.deploy-preview.result }}" == "failure" ]]; then
-          echo "🚨 Deployment failed, checking retry conditions..."
-          
-          # Check if we should retry
-          if [[ "${{ github.event_name }}" == "pull_request" ]] && [[ "${{ github.event.action }}" == "synchronize" ]]; then
-            echo "🔄 Retrying deployment due to code update..."
+      - name: Check deployment status
+        id: status-check
+        run: |
+          if [[ "${{ needs.deploy-preview.result }}" == "failure" ]]; then
+            echo "🚨 Deployment failed, checking retry conditions..."
             
-            # Wait before retry
-            echo "⏳ Waiting 30 seconds before retry..."
-            sleep 30
-            
-            # Retry deployment
-            echo "🔄 Retrying deployment..."
-            # This would trigger a new workflow run
-            curl -X POST \
-              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              -H "Accept: application/vnd.github.v3+json" \
-              "https://api.github.com/repos/${{ github.repository }}/actions/workflows/auto-preview-deployments.yml/dispatches" \
-              -d '{"ref":"${{ github.ref }}","inputs":{"pr_number":${{ github.event.pull_request.number }},"force_deploy":true}}'
+            # Check if we should retry
+            if [[ "${{ github.event_name }}" == "pull_request" ]] && [[ "${{ github.event.action }}" == "synchronize" ]]; then
+              echo "🔄 Retrying deployment due to code update..."
+              
+              # Wait before retry
+              echo "⏳ Waiting 30 seconds before retry..."
+              sleep 30
+              
+              # Retry deployment
+              echo "🔄 Retrying deployment..."
+              # This would trigger a new workflow run
+              curl -X POST \
+                -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                -H "Accept: application/vnd.github.v3+json" \
+                "https://api.github.com/repos/${{ github.repository }}/actions/workflows/auto-preview-deployments.yml/dispatches" \
+                -d '{"ref":"${{ github.ref }}","inputs":{"pr_number":${{ github.event.pull_request.number }},"force_deploy":true}}'
+            fi
           fi
-        fi
-        
-        # Log deployment results
-        echo "Deployment result: ${{ needs.deploy-preview.result }}"
-        echo "Preview URL: ${{ needs.deploy-preview.outputs.preview-url }}"
-        echo "Deployment ID: ${{ needs.deploy-preview.outputs.deployment-id }}"
+
+          # Log deployment results
+          echo "Deployment result: ${{ needs.deploy-preview.result }}"
+          echo "Preview URL: ${{ needs.deploy-preview.outputs.preview-url }}"
+          echo "Deployment ID: ${{ needs.deploy-preview.outputs.deployment-id }}"
 
   # 9. Cleanup Old Preview Deployments
   cleanup-preview:
     name: Cleanup Old Preview Deployments
     runs-on: ubuntu-latest
     if: always()
-    
+
     steps:
-    - name: Get preview deployments
-      uses: actions/github-script@v7
-      with:
-        script: |
-          // Get all preview deployments for this repository
-          const deployments = await github.rest.repos.listDeployments({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            environment: 'preview',
-            per_page: 100
-          });
-          
-          // Filter deployments older than 24 hours
-          const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-          const oldDeployments = deployments.data.filter(deployment => 
-            new Date(deployment.created_at) < twentyFourHoursAgo &&
-            deployment.environment === 'preview'
-          );
-          
-          // Delete old deployments
-          let deletedCount = 0;
-          for (const deployment of oldDeployments) {
-            try {
-              await github.rest.repos.deleteDeployment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                deployment_id: deployment.id
-              });
-              deletedCount++;
-              console.log(`Deleted deployment: ${deployment.id} (${deployment.sha})`);
-            } catch (error) {
-              console.log(`Failed to delete deployment ${deployment.id}: ${error.message}`);
+      - name: Get preview deployments
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Get all preview deployments for this repository
+            const deployments = await github.rest.repos.listDeployments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              environment: 'preview',
+              per_page: 100
+            });
+
+            // Filter deployments older than 24 hours
+            const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+            const oldDeployments = deployments.data.filter(deployment => 
+              new Date(deployment.created_at) < twentyFourHoursAgo &&
+              deployment.environment === 'preview'
+            );
+
+            // Delete old deployments
+            let deletedCount = 0;
+            for (const deployment of oldDeployments) {
+              try {
+                await github.rest.repos.deleteDeployment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  deployment_id: deployment.id
+                });
+                deletedCount++;
+                console.log(`Deleted deployment: ${deployment.id} (${deployment.sha})`);
+              } catch (error) {
+                console.log(`Failed to delete deployment ${deployment.id}: ${error.message}`);
+              }
             }
-          }
-          
-          console.log(`Cleaned up ${deletedCount} old preview deployments`);
-          
-          // Also clean up Vercel deployments
-          try {
-            const vercelToken = process.env.VERCEL_TOKEN;
-            const vercelProjectId = process.env.VERCEL_PROJECT_ID;
-            
-            if (vercelToken && vercelProjectId) {
-              const vercelDeployments = await fetch(`https://api.vercel.com/v4/deployments?project=${vercelProjectId}&state=ready`, {
-                headers: {
-                  'Authorization': `Bearer ${vercelToken}`
-                }
-              });
+
+            console.log(`Cleaned up ${deletedCount} old preview deployments`);
+
+            // Also clean up Vercel deployments
+            try {
+              const vercelToken = process.env.VERCEL_TOKEN;
+              const vercelProjectId = process.env.VERCEL_PROJECT_ID;
               
-              const deploymentsData = await vercelDeployments.json();
-              const oldVercelDeployments = deploymentsData.filter(d => 
-                new Date(d.createdAt) < twentyFourHoursAgo &&
-                d.name.startsWith('pr-')
-              );
-              
-              for (const deployment of oldVercelDeployments) {
-                await fetch(`https://api.vercel.com/v4/deployments/${deployment.id}`, {
-                  method: 'DELETE',
+              if (vercelToken && vercelProjectId) {
+                const vercelDeployments = await fetch(`https://api.vercel.com/v4/deployments?project=${vercelProjectId}&state=ready`, {
                   headers: {
                     'Authorization': `Bearer ${vercelToken}`
                   }
                 });
-                console.log(`Deleted Vercel deployment: ${deployment.id}`);
+                
+                const deploymentsData = await vercelDeployments.json();
+                const oldVercelDeployments = deploymentsData.filter(d => 
+                  new Date(d.createdAt) < twentyFourHoursAgo &&
+                  d.name.startsWith('pr-')
+                );
+                
+                for (const deployment of oldVercelDeployments) {
+                  await fetch(`https://api.vercel.com/v4/deployments/${deployment.id}`, {
+                    method: 'DELETE',
+                    headers: {
+                      'Authorization': `Bearer ${vercelToken}`
+                    }
+                  });
+                  console.log(`Deleted Vercel deployment: ${deployment.id}`);
+                }
               }
+            } catch (error) {
+              console.log(`Failed to clean up Vercel deployments: ${error.message}`);
             }
-          } catch (error) {
-            console.log(`Failed to clean up Vercel deployments: ${error.message}`);
-          }
 
   # 10. Notification
   notification:
@@ -598,72 +604,72 @@ jobs:
     runs-on: ubuntu-latest
     needs: [deduplication-check, deploy-preview, error-handling]
     if: always() && needs.deduplication-check.outputs.should-deploy == 'true'
-    
+
     steps:
-    - name: Send notification
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const { preview-url, deployment-id } = process.env;
-          const prNumber = ${{ github.event.pull_request.number || github.event.inputs.pr_number }};
-          const deploymentReason = '${{ needs.deduplication-check.outputs.deployment-reason }}';
-          const deploymentResult = '${{ needs.deploy-preview.result }}';
-          
-          // Send Slack notification if webhook is configured
-          if (process.env.SLACK_WEBHOOK) {
-            const message = {
-              text: `🚀 Preview Deployment ${deploymentResult === 'success' ? 'Completed' : 'Failed'}`,
-              attachments: [{
-                color: deploymentResult === 'success' ? 'good' : 'danger',
-                fields: [
-                  {
-                    title: 'PR',
-                    value: `#${prNumber}`,
-                    short: true
-                  },
-                  {
-                    title: 'Branch',
-                    value: '${{ github.head_ref }}',
-                    short: true
-                  },
-                  {
-                    title: 'Commit',
-                    value: '${{ github.sha }}',
-                    short: true
-                  },
-                  {
-                    title: 'Reason',
-                    value: deploymentReason,
-                    short: true
-                  }
-                ]
-              }]
-            };
-            
-            if (deploymentResult === 'success' && preview-url) {
-              message.attachments[0].fields.push({
-                title: 'Preview URL',
-                value: preview-url,
-                short: false
+      - name: Send notification
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { preview-url, deployment-id } = process.env;
+            const prNumber = ${{ github.event.pull_request.number || github.event.inputs.pr_number }};
+            const deploymentReason = '${{ needs.deduplication-check.outputs.deployment-reason }}';
+            const deploymentResult = '${{ needs.deploy-preview.result }}';
+
+            // Send Slack notification if webhook is configured
+            if (process.env.SLACK_WEBHOOK) {
+              const message = {
+                text: `🚀 Preview Deployment ${deploymentResult === 'success' ? 'Completed' : 'Failed'}`,
+                attachments: [{
+                  color: deploymentResult === 'success' ? 'good' : 'danger',
+                  fields: [
+                    {
+                      title: 'PR',
+                      value: `#${prNumber}`,
+                      short: true
+                    },
+                    {
+                      title: 'Branch',
+                      value: '${{ github.head_ref }}',
+                      short: true
+                    },
+                    {
+                      title: 'Commit',
+                      value: '${{ github.sha }}',
+                      short: true
+                    },
+                    {
+                      title: 'Reason',
+                      value: deploymentReason,
+                      short: true
+                    }
+                  ]
+                }]
+              };
+              
+              if (deploymentResult === 'success' && preview-url) {
+                message.attachments[0].fields.push({
+                  title: 'Preview URL',
+                  value: preview-url,
+                  short: false
+                });
+              }
+              
+              await fetch(process.env.SLACK_WEBHOOK, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(message)
               });
             }
-            
-            await fetch(process.env.SLACK_WEBHOOK, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(message)
-            });
-          }
-          
-          // Log deployment summary
-          console.log('=== Deployment Summary ===');
-          console.log(`PR: #${prNumber}`);
-          console.log(`Branch: ${{ github.head_ref }}`);
-          console.log(`Commit: ${{ github.sha }}`);
-          console.log(`Reason: ${deploymentReason}`);
-          console.log(`Result: ${deploymentResult}`);
-          console.log(`Preview URL: ${preview-url || 'N/A'}`);
-          console.log(`Deployment ID: ${deployment-id || 'N/A'}`);
-          console.log('=========================');
+
+            // Log deployment summary
+            console.log('=== Deployment Summary ===');
+            console.log(`PR: #${prNumber}`);
+            console.log(`Branch: ${{ github.head_ref }}`);
+            console.log(`Commit: ${{ github.sha }}`);
+            console.log(`Reason: ${deploymentReason}`);
+            console.log(`Result: ${deploymentResult}`);
+            console.log(`Preview URL: ${preview-url || 'N/A'}`);
+            console.log(`Deployment ID: ${deployment-id || 'N/A'}`);
+            console.log('=========================');

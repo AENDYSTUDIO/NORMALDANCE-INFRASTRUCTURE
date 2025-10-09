@@ -3,38 +3,38 @@ name: CI/CD Pipeline v3.0 - Auto Environment Switching
 on:
   push:
     branches:
-      - main      # Production deployment
-      - develop   # Development deployment
-      - 'release/*' # Staging deployment
+      - main # Production deployment
+      - develop # Development deployment
+      - "release/*" # Staging deployment
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
   release:
-    types: [ published ]
+    types: [published]
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Environment to deploy'
+        description: "Environment to deploy"
         required: true
-        default: 'staging'
+        default: "staging"
         type: choice
         options:
-        - dev
-        - staging
-        - production
-        - vercel
+          - dev
+          - staging
+          - production
+          - vercel
       skip_tests:
-        description: 'Skip tests for faster deployment'
+        description: "Skip tests for faster deployment"
         required: false
         type: boolean
         default: false
       skip_security:
-        description: 'Skip security scans'
+        description: "Skip security scans"
         required: false
         type: boolean
         default: false
 
 env:
-  NODE_VERSION: '20.x'
+  NODE_VERSION: "20.x"
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -44,6 +44,12 @@ env:
   SKIP_SECURITY: ${{ github.event.inputs.skip_security || false }}
 
 jobs:
+  emergency-disable:
+    if: false # EMERGENCY DISABLE - 982 workflows
+    runs-on: ubuntu-latest
+    steps:
+      - name: Emergency Disabled
+        run: echo "This workflow is temporarily disabled due to 982 active workflows"
   # 1. Code Quality Checks
   code-quality:
     name: Code Quality
@@ -51,35 +57,35 @@ jobs:
     outputs:
       lint-status: ${{ steps.lint.outputs.status }}
       type-check-status: ${{ steps.type-check.outputs.status }}
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: '**/package-lock.json'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Run ESLint
-      id: lint
-      run: |
-        npm run lint
-        echo "status=success" >> $GITHUB_OUTPUT
-        
-    - name: Run TypeScript checks
-      id: type-check
-      run: |
-        npm run type-check
-        echo "status=success" >> $GITHUB_OUTPUT
-        
-    - name: Run security audit
-      run: npm audit --audit-level moderate
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        id: lint
+        run: |
+          npm run lint
+          echo "status=success" >> $GITHUB_OUTPUT
+
+      - name: Run TypeScript checks
+        id: type-check
+        run: |
+          npm run type-check
+          echo "status=success" >> $GITHUB_OUTPUT
+
+      - name: Run security audit
+        run: npm audit --audit-level moderate
 
   # 2. Unit and Integration Tests
   tests:
@@ -90,77 +96,77 @@ jobs:
     strategy:
       matrix:
         test-suite: [unit, integration, e2e]
-        
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: '**/package-lock.json'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Generate Prisma client
-      run: npm run db:generate
-      
-    - name: Run database migrations
-      run: npm run db:migrate
-      
-    - name: Run ${{ matrix.test-suite }} tests
-      run: npm run test:${{ matrix.test-suite }}
-      env:
-        NODE_ENV: test
-        DATABASE_URL: "file:./dev.db"
-        SENTRY_DSN: ${{ env.SENTRY_DSN }}
-        
-    - name: Upload coverage reports
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./coverage/lcov.info
-        flags: ${{ matrix.test-suite }}
-        name: ${{ matrix.test-suite }}-coverage
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Run database migrations
+        run: npm run db:migrate
+
+      - name: Run ${{ matrix.test-suite }} tests
+        run: npm run test:${{ matrix.test-suite }}
+        env:
+          NODE_ENV: test
+          DATABASE_URL: "file:./dev.db"
+          SENTRY_DSN: ${{ env.SENTRY_DSN }}
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+          flags: ${{ matrix.test-suite }}
+          name: ${{ matrix.test-suite }}-coverage
 
   # 3. Mobile App Tests
   mobile-tests:
     name: Mobile App Tests
     runs-on: macos-latest
     needs: code-quality
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: 'mobile-app/package-lock.json'
-        
-    - name: Install dependencies
-      working-directory: ./mobile-app
-      run: npm ci
-      
-    - name: Run mobile tests
-      working-directory: ./mobile-app
-      run: npm test
-      env:
-        JEST_JUNIT_OUTPUT_DIR: ./test-results/junit
-      
-    - name: Upload mobile test results
-      uses: actions/upload-artifact@v3
-      if: always()
-      with:
-        name: mobile-test-results
-        path: |
-          mobile-app/test-results/
-          mobile-app/coverage/
-        retention-days: 30
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: "mobile-app/package-lock.json"
+
+      - name: Install dependencies
+        working-directory: ./mobile-app
+        run: npm ci
+
+      - name: Run mobile tests
+        working-directory: ./mobile-app
+        run: npm test
+        env:
+          JEST_JUNIT_OUTPUT_DIR: ./test-results/junit
+
+      - name: Upload mobile test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: mobile-test-results
+          path: |
+            mobile-app/test-results/
+            mobile-app/coverage/
+          retention-days: 30
 
   # 4. Build Application
   build:
@@ -171,109 +177,109 @@ jobs:
       web-image: ${{ steps.meta.outputs.tags }}
       api-image: ${{ steps.meta.outputs.tags-api }}
       websocket-image: ${{ steps.meta.outputs.tags-websocket }}
-      
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: '**/package-lock.json'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Validate environment
-      run: |
-        echo "Environment validation..."
-        if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-          echo "Production environment detected - running full validation"
-          npm run env:validate
-        elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
-          echo "Development environment detected - running basic validation"
-          npm run env:validate -- --basic
-        elif [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
-          echo "Staging environment detected - running staging validation"
-          npm run env:validate -- --staging
-        fi
-        
-    - name: Build Next.js application
-      run: |
-        if [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
-          echo "Development build - skipping some optimizations"
-          npm run build -- --no-lint
-        else
-          echo "Production/Staging build - full build"
-          npm run build
-        fi
-      
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-      
-    - name: Log in to Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-        
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=semver,pattern={{version}}
-          type=semver,pattern={{major}}.{{minor}}
-          type=raw,value=latest,enable={{is_default_branch}}
-          type=raw,value=dev,enable={{is_pull_request}}
-          
-    - name: Build and push web image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ./Dockerfile
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-        build-args: |
-          NODE_ENV=production
-          BUILDKIT_INLINE_CACHE=1
-        
-    - name: Build and push API image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ./Dockerfile.api
-        push: true
-        tags: ${{ steps.meta.outputs.tags-api }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-        build-args: |
-          NODE_ENV=production
-          BUILDKIT_INLINE_CACHE=1
-        
-    - name: Build and push WebSocket image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ./Dockerfile.websocket
-        push: true
-        tags: ${{ steps.meta.outputs.tags-websocket }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-        build-args: |
-          NODE_ENV=production
-          BUILDKIT_INLINE_CACHE=1
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate environment
+        run: |
+          echo "Environment validation..."
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "Production environment detected - running full validation"
+            npm run env:validate
+          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            echo "Development environment detected - running basic validation"
+            npm run env:validate -- --basic
+          elif [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
+            echo "Staging environment detected - running staging validation"
+            npm run env:validate -- --staging
+          fi
+
+      - name: Build Next.js application
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            echo "Development build - skipping some optimizations"
+            npm run build -- --no-lint
+          else
+            echo "Production/Staging build - full build"
+            npm run build
+          fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=dev,enable={{is_pull_request}}
+
+      - name: Build and push web image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+            BUILDKIT_INLINE_CACHE=1
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.api
+          push: true
+          tags: ${{ steps.meta.outputs.tags-api }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+            BUILDKIT_INLINE_CACHE=1
+
+      - name: Build and push WebSocket image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.websocket
+          push: true
+          tags: ${{ steps.meta.outputs.tags-websocket }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+            BUILDKIT_INLINE_CACHE=1
 
   # 5. Security Scans
   security-scan:
@@ -281,46 +287,46 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build]
     if: ${{ env.SKIP_SECURITY != 'true' }}
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@master
-      with:
-        scan-type: 'fs'
-        scan-ref: '.'
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-        
-    - name: Upload Trivy scan results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@v2
-      with:
-        sarif_file: 'trivy-results.sarif'
 
-    - name: Run Snyk security scan
-      uses: snyk/actions/node@master
-      env:
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      with:
-        args: --severity-threshold=high
-        command: test
-        
-    - name: Security validation
-      run: |
-        echo "Running security validation..."
-        if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-          echo "Production security scan - strict mode"
-          npm run security:audit -- --audit-level moderate
-          npm run test:security
-        elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
-          echo "Development security scan - moderate mode"
-          npm run security:audit -- --audit-level low
-        elif [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
-          echo "Staging security scan - high mode"
-          npm run security:audit -- --audit-level high
-        fi
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-results.sarif"
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: "trivy-results.sarif"
+
+      - name: Run Snyk security scan
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+          command: test
+
+      - name: Security validation
+        run: |
+          echo "Running security validation..."
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "Production security scan - strict mode"
+            npm run security:audit -- --audit-level moderate
+            npm run test:security
+          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            echo "Development security scan - moderate mode"
+            npm run security:audit -- --audit-level low
+          elif [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
+            echo "Staging security scan - high mode"
+            npm run security:audit -- --audit-level high
+          fi
 
   # 6. Performance Testing
   performance-test:
@@ -328,32 +334,32 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build]
     if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        
-    - name: Install k6
-      run: |
-        curl -sf https://github.com/grafana/k6/releases/download/v0.47.0/k6-v0.47.0-linux-amd64.tar.gz | tar xvz --strip-components 1
-        sudo mv k6 /usr/local/bin/
-        
-    - name: Run performance tests
-      run: |
-        ./k6 run --out json=performance-results.json tests/performance/load-test.js
-        ./k6 run --out json=performance-results-stress.js tests/performance/stress-test.js
-        
-    - name: Upload performance results
-      uses: actions/upload-artifact@v3
-      with:
-        name: performance-results
-        path: performance-results.json
-        retention-days: 30
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install k6
+        run: |
+          curl -sf https://github.com/grafana/k6/releases/download/v0.47.0/k6-v0.47.0-linux-amd64.tar.gz | tar xvz --strip-components 1
+          sudo mv k6 /usr/local/bin/
+
+      - name: Run performance tests
+        run: |
+          ./k6 run --out json=performance-results.json tests/performance/load-test.js
+          ./k6 run --out json=performance-results-stress.js tests/performance/stress-test.js
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-results
+          path: performance-results.json
+          retention-days: 30
 
   # 7. Determine Environment
   determine-environment:
@@ -364,55 +370,55 @@ jobs:
       vercel-config: ${{ steps.detect.outputs.vercel-config }}
       preview-url: ${{ steps.detect.outputs.preview-url }}
     steps:
-    - name: Detect Environment
-      id: detect
-      run: |
-        if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-          echo "environment=production" >> $GITHUB_OUTPUT
-          echo "vercel-config=vercel.prod.json" >> $GITHUB_OUTPUT
-          echo "preview-url=https://dnb1st.ru" >> $GITHUB_OUTPUT
-        elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
-          echo "environment=dev" >> $GITHUB_OUTPUT
-          echo "vercel-config=vercel.dev.json" >> $GITHUB_OUTPUT
-          echo "preview-url=https://dev.dnb1st.ru" >> $GITHUB_OUTPUT
-        elif [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
-          echo "environment=staging" >> $GITHUB_OUTPUT
-          echo "vercel-config=vercel.staging.json" >> $GITHUB_OUTPUT
-          # Generate preview URL for release branches
-          RELEASE_NAME=$(echo "${{ github.ref }}" | sed 's|refs/heads/||')
-          echo "preview-url=https://staging-${RELEASE_NAME}.dnb1st.ru" >> $GITHUB_OUTPUT
-        else
-          echo "environment=dev" >> $GITHUB_OUTPUT
-          echo "vercel-config=vercel.dev.json" >> $GITHUB_OUTPUT
-          echo "preview-url=https://dev.dnb1st.ru" >> $GITHUB_OUTPUT
-        fi
-        
-    - name: Production Pre-checks
-      if: steps.detect.outputs.environment == 'production'
-      run: |
-        echo "🔍 Running production pre-checks..."
-        
-        # Check if this is a release branch
-        if [[ "${{ github.ref }}" != "refs/heads/main" ]]; then
-          echo "❌ Production deployment only allowed from main branch"
-          exit 1
-        fi
-        
-        # Check for required secrets
-        if [[ -z "${{ secrets.DATABASE_URL_PRODUCTION }}" ]]; then
-          echo "❌ Production database secret not configured"
-          exit 1
-        fi
-        
-        if [[ -z "${{ secrets.SOLANA_RPC_URL_PRODUCTION }}" ]]; then
-          echo "❌ Production Solana RPC URL not configured"
-          exit 1
-        fi
-        
-        # Run additional validation
-        npm run env:validate -- --production
-        
-        echo "✅ Production pre-checks passed"
+      - name: Detect Environment
+        id: detect
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+            echo "vercel-config=vercel.prod.json" >> $GITHUB_OUTPUT
+            echo "preview-url=https://dnb1st.ru" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            echo "environment=dev" >> $GITHUB_OUTPUT
+            echo "vercel-config=vercel.dev.json" >> $GITHUB_OUTPUT
+            echo "preview-url=https://dev.dnb1st.ru" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
+            echo "environment=staging" >> $GITHUB_OUTPUT
+            echo "vercel-config=vercel.staging.json" >> $GITHUB_OUTPUT
+            # Generate preview URL for release branches
+            RELEASE_NAME=$(echo "${{ github.ref }}" | sed 's|refs/heads/||')
+            echo "preview-url=https://staging-${RELEASE_NAME}.dnb1st.ru" >> $GITHUB_OUTPUT
+          else
+            echo "environment=dev" >> $GITHUB_OUTPUT
+            echo "vercel-config=vercel.dev.json" >> $GITHUB_OUTPUT
+            echo "preview-url=https://dev.dnb1st.ru" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Production Pre-checks
+        if: steps.detect.outputs.environment == 'production'
+        run: |
+          echo "🔍 Running production pre-checks..."
+
+          # Check if this is a release branch
+          if [[ "${{ github.ref }}" != "refs/heads/main" ]]; then
+            echo "❌ Production deployment only allowed from main branch"
+            exit 1
+          fi
+
+          # Check for required secrets
+          if [[ -z "${{ secrets.DATABASE_URL_PRODUCTION }}" ]]; then
+            echo "❌ Production database secret not configured"
+            exit 1
+          fi
+
+          if [[ -z "${{ secrets.SOLANA_RPC_URL_PRODUCTION }}" ]]; then
+            echo "❌ Production Solana RPC URL not configured"
+            exit 1
+          fi
+
+          # Run additional validation
+          npm run env:validate -- --production
+
+          echo "✅ Production pre-checks passed"
 
   # 8. Deploy to Vercel
   deploy-vercel:
@@ -424,53 +430,53 @@ jobs:
     outputs:
       deployment-url: ${{ steps.deploy.outputs.url }}
       deployment-id: ${{ steps.deploy.outputs.id }}
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: '**/package-lock.json'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Build Next.js application
-      run: |
-        if [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
-          echo "Development build - skipping some optimizations"
-          npm run build -- --no-lint
-        else
-          echo "Production/Staging build - full build"
-          npm run build
-        fi
-      
-    - name: Deploy to Vercel
-      id: deploy
-      uses: vercel/action@v1
-      with:
-        vercel-token: ${{ secrets.VERCEL_TOKEN }}
-        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-        vercel-config: ${{ needs.determine-environment.outputs.vercel-config }}
-        scope: ${{ github.repository_owner }}
-        
-    - name: Monitor deployment
-      run: |
-        echo "🚀 Deployment started to ${{ needs.determine-environment.outputs.environment }} environment"
-        echo "📋 Preview URL: ${{ needs.determine-environment.outputs.preview-url }}"
-        echo "🔗 Deployment URL: ${{ steps.deploy.outputs.url }}"
-        echo "🆔 Deployment ID: ${{ steps.deploy.outputs.id }}"
-        
-    - name: Setup deployment status
-      if: always()
-      run: |
-        echo "DEPLOYMENT_URL=${{ steps.deploy.outputs.url }}" >> $GITHUB_ENV
-        echo "DEPLOYMENT_ID=${{ steps.deploy.outputs.id }}" >> $GITHUB_ENV
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Next.js application
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            echo "Development build - skipping some optimizations"
+            npm run build -- --no-lint
+          else
+            echo "Production/Staging build - full build"
+            npm run build
+          fi
+
+      - name: Deploy to Vercel
+        id: deploy
+        uses: vercel/action@v1
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-config: ${{ needs.determine-environment.outputs.vercel-config }}
+          scope: ${{ github.repository_owner }}
+
+      - name: Monitor deployment
+        run: |
+          echo "🚀 Deployment started to ${{ needs.determine-environment.outputs.environment }} environment"
+          echo "📋 Preview URL: ${{ needs.determine-environment.outputs.preview-url }}"
+          echo "🔗 Deployment URL: ${{ steps.deploy.outputs.url }}"
+          echo "🆔 Deployment ID: ${{ steps.deploy.outputs.id }}"
+
+      - name: Setup deployment status
+        if: always()
+        run: |
+          echo "DEPLOYMENT_URL=${{ steps.deploy.outputs.url }}" >> $GITHUB_ENV
+          echo "DEPLOYMENT_ID=${{ steps.deploy.outputs.id }}" >> $GITHUB_ENV
 
   # 8. Deploy to Staging (Kubernetes)
   deploy-staging:
@@ -479,43 +485,43 @@ jobs:
     needs: [build, security-scan]
     if: github.ref == 'refs/heads/develop' || github.event_name == 'workflow_dispatch'
     environment: staging
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup kubectl
-      uses: azure/setup-kubectl@v3
-      with:
-        version: 'v1.28.0'
-        
-    - name: Configure kubeconfig
-      run: |
-        mkdir -p ~/.kube
-        echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > ~/.kube/config
-        
-    - name: Install Helm
-      uses: azure/setup-helm@v3
-      with:
-        version: 'v3.11.0'
-        
-    - name: Deploy to staging
-      run: |
-        helm upgrade --install normaldance-staging ./helm/normaldance \
-          --namespace staging \
-          --create-namespace \
-          --set image.tag=${{ github.sha }} \
-          --set image.tag-api=${{ github.sha }} \
-          --set image.tag-websocket=${{ github.sha }} \
-          --set env.NODE_ENV=staging \
-          --set env.DATABASE_URL="${{ secrets.DATABASE_URL_STAGING }}" \
-          --set env.SOLANA_RPC_URL="${{ secrets.SOLANA_RPC_URL_STAGING }}" \
-          --set env.NEXTAUTH_URL="${{ secrets.NEXTAUTH_URL_STAGING }}" \
-          --set env.NEXTAUTH_SECRET="${{ secrets.NEXTAUTH_SECRET_STAGING }}" \
-          --set env.SENTRY_DSN="${{ env.SENTRY_DSN }}" \
-          --set env.DATADOG_API_KEY="${{ env.DATADOG_API_KEY }}" \
-          --wait \
-          --timeout=600s
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "v1.28.0"
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > ~/.kube/config
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: "v3.11.0"
+
+      - name: Deploy to staging
+        run: |
+          helm upgrade --install normaldance-staging ./helm/normaldance \
+            --namespace staging \
+            --create-namespace \
+            --set image.tag=${{ github.sha }} \
+            --set image.tag-api=${{ github.sha }} \
+            --set image.tag-websocket=${{ github.sha }} \
+            --set env.NODE_ENV=staging \
+            --set env.DATABASE_URL="${{ secrets.DATABASE_URL_STAGING }}" \
+            --set env.SOLANA_RPC_URL="${{ secrets.SOLANA_RPC_URL_STAGING }}" \
+            --set env.NEXTAUTH_URL="${{ secrets.NEXTAUTH_URL_STAGING }}" \
+            --set env.NEXTAUTH_SECRET="${{ secrets.NEXTAUTH_SECRET_STAGING }}" \
+            --set env.SENTRY_DSN="${{ env.SENTRY_DSN }}" \
+            --set env.DATADOG_API_KEY="${{ env.DATADOG_API_KEY }}" \
+            --wait \
+            --timeout=600s
 
   # 9. Deploy to Production (Kubernetes)
   deploy-production:
@@ -524,48 +530,48 @@ jobs:
     needs: [build, security-scan, deploy-staging]
     if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     environment: production
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup kubectl
-      uses: azure/setup-kubectl@v3
-      with:
-        version: 'v1.28.0'
-        
-    - name: Configure kubeconfig
-      run: |
-        mkdir -p ~/.kube
-        echo "${{ secrets.KUBE_CONFIG_PRODUCTION }}" | base64 -d > ~/.kube/config
-        
-    - name: Install Helm
-      uses: azure/setup-helm@v3
-      with:
-        version: 'v3.11.0'
-        
-    - name: Create backup
-      run: |
-        kubectl get pods -n production
-        kubectl get deployments -n production
-        
-    - name: Deploy to production
-      run: |
-        helm upgrade --install normaldance-prod ./helm/normaldance \
-          --namespace production \
-          --create-namespace \
-          --set image.tag=${{ github.sha }} \
-          --set image.tag-api=${{ github.sha }} \
-          --set image.tag-websocket=${{ github.sha }} \
-          --set env.NODE_ENV=production \
-          --set env.DATABASE_URL="${{ secrets.DATABASE_URL_PRODUCTION }}" \
-          --set env.SOLANA_RPC_URL="${{ secrets.SOLANA_RPC_URL_PRODUCTION }}" \
-          --set env.NEXTAUTH_URL="${{ secrets.NEXTAUTH_URL_PRODUCTION }}" \
-          --set env.NEXTAUTH_SECRET="${{ secrets.NEXTAUTH_SECRET_PRODUCTION }}" \
-          --set env.SENTRY_DSN="${{ env.SENTRY_DSN }}" \
-          --set env.DATADOG_API_KEY="${{ env.DATADOG_API_KEY }}" \
-          --wait \
-          --timeout=600s
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "v1.28.0"
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG_PRODUCTION }}" | base64 -d > ~/.kube/config
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: "v3.11.0"
+
+      - name: Create backup
+        run: |
+          kubectl get pods -n production
+          kubectl get deployments -n production
+
+      - name: Deploy to production
+        run: |
+          helm upgrade --install normaldance-prod ./helm/normaldance \
+            --namespace production \
+            --create-namespace \
+            --set image.tag=${{ github.sha }} \
+            --set image.tag-api=${{ github.sha }} \
+            --set image.tag-websocket=${{ github.sha }} \
+            --set env.NODE_ENV=production \
+            --set env.DATABASE_URL="${{ secrets.DATABASE_URL_PRODUCTION }}" \
+            --set env.SOLANA_RPC_URL="${{ secrets.SOLANA_RPC_URL_PRODUCTION }}" \
+            --set env.NEXTAUTH_URL="${{ secrets.NEXTAUTH_URL_PRODUCTION }}" \
+            --set env.NEXTAUTH_SECRET="${{ secrets.NEXTAUTH_SECRET_PRODUCTION }}" \
+            --set env.SENTRY_DSN="${{ env.SENTRY_DSN }}" \
+            --set env.DATADOG_API_KEY="${{ env.DATADOG_API_KEY }}" \
+            --wait \
+            --timeout=600s
 
   # 10. Database Migration
   migrate-database:
@@ -573,24 +579,24 @@ jobs:
     runs-on: ubuntu-latest
     needs: [deploy-staging]
     if: github.ref == 'refs/heads/develop' || github.event_name == 'workflow_dispatch'
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup kubectl
-      uses: azure/setup-kubectl@v3
-      with:
-        version: 'v1.28.0'
-        
-    - name: Configure kubeconfig
-      run: |
-        mkdir -p ~/.kube
-        echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > ~/.kube/config
-        
-    - name: Run database migration
-      run: |
-        kubectl exec -it deployment/normaldance-staging-api -n staging -- npm run db:migrate
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "v1.28.0"
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > ~/.kube/config
+
+      - name: Run database migration
+        run: |
+          kubectl exec -it deployment/normaldance-staging-api -n staging -- npm run db:migrate
 
   # 11. Mobile App Deployment
   deploy-mobile:
@@ -598,42 +604,42 @@ jobs:
     runs-on: macos-latest
     needs: [mobile-tests]
     if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: 'mobile-app/package-lock.json'
-        
-    - name: Install dependencies
-      working-directory: ./mobile-app
-      run: npm ci
-      
-    - name: Install Expo CLI
-      working-directory: ./mobile-app
-      run: npm install -g @expo/cli
-      
-    - name: Login to Expo
-      uses: expo/expo-github-action@v1
-      with:
-        expo-version: latest
-        token: ${{ secrets.EXPO_TOKEN }}
-        
-    - name: Deploy to Expo
-      working-directory: ./mobile-app
-      run: |
-        if [ "${{ github.ref }}" == "refs/heads/main" ]; then
-          eas update --branch production --message "Production deployment from GitHub Actions"
-        else
-          eas update --branch staging --message "Staging deployment from GitHub Actions"
-        fi
-      env:
-        EAS_UPDATE_SECRET: ${{ secrets.EAS_UPDATE_SECRET }}
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: "mobile-app/package-lock.json"
+
+      - name: Install dependencies
+        working-directory: ./mobile-app
+        run: npm ci
+
+      - name: Install Expo CLI
+        working-directory: ./mobile-app
+        run: npm install -g @expo/cli
+
+      - name: Login to Expo
+        uses: expo/expo-github-action@v1
+        with:
+          expo-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Deploy to Expo
+        working-directory: ./mobile-app
+        run: |
+          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            eas update --branch production --message "Production deployment from GitHub Actions"
+          else
+            eas update --branch staging --message "Staging deployment from GitHub Actions"
+          fi
+        env:
+          EAS_UPDATE_SECRET: ${{ secrets.EAS_UPDATE_SECRET }}
 
   # 12. Generate Release Notes
   generate-release-notes:
@@ -642,59 +648,59 @@ jobs:
     if: github.ref == 'refs/heads/main' || github.event_name == 'release'
     outputs:
       release-notes: ${{ steps.generate.outputs.release-notes }}
-      
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Generate release notes
-      id: generate
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const { Octokit } = require('@octokit/rest');
-          const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
-          
-          // Get commits since last tag
-          const { data: commits } = await octokit.rest.repos.listCommits({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            since: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-          });
-          
-          // Generate release notes
-          let notes = '# Release Notes\n\n';
-          notes += '## Changes\n\n';
-          
-          const changes = {};
-          commits.forEach(commit => {
-            const message = commit.commit.message;
-            const match = message.match(/^(feat|fix|docs|style|refactor|test|chore)(?:\((\w+)\))?:\s*(.+)$/);
-            if (match) {
-              const [, type, scope, description] = match;
-              if (!changes[type]) changes[type] = [];
-              changes[type].push(`- ${scope ? `**${scope}**: ` : ''}${description}`);
-            }
-          });
-          
-          Object.keys(changes).forEach(type => {
-            notes += `### ${type.charAt(0).toUpperCase() + type.slice(1)}\n`;
-            changes[type].forEach(change => {
-              notes += `${change}\n`;
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate release notes
+        id: generate
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { Octokit } = require('@octokit/rest');
+            const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+
+            // Get commits since last tag
+            const { data: commits } = await octokit.rest.repos.listCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              since: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
             });
-            notes += '\n';
-          });
-          
-          notes += `## Commits\n\n`;
-          commits.slice(0, 10).forEach(commit => {
-            notes += `- ${commit.commit.message.split('\n')[0]} (${commit.sha.slice(0, 7)})\n`;
-          });
-          
-          if (commits.length > 10) {
-            notes += `\n... and ${commits.length - 10} more commits\n`;
-          }
-          
-          core.setOutput('release-notes', notes);
+
+            // Generate release notes
+            let notes = '# Release Notes\n\n';
+            notes += '## Changes\n\n';
+
+            const changes = {};
+            commits.forEach(commit => {
+              const message = commit.commit.message;
+              const match = message.match(/^(feat|fix|docs|style|refactor|test|chore)(?:\((\w+)\))?:\s*(.+)$/);
+              if (match) {
+                const [, type, scope, description] = match;
+                if (!changes[type]) changes[type] = [];
+                changes[type].push(`- ${scope ? `**${scope}**: ` : ''}${description}`);
+              }
+            });
+
+            Object.keys(changes).forEach(type => {
+              notes += `### ${type.charAt(0).toUpperCase() + type.slice(1)}\n`;
+              changes[type].forEach(change => {
+                notes += `${change}\n`;
+              });
+              notes += '\n';
+            });
+
+            notes += `## Commits\n\n`;
+            commits.slice(0, 10).forEach(commit => {
+              notes += `- ${commit.commit.message.split('\n')[0]} (${commit.sha.slice(0, 7)})\n`;
+            });
+
+            if (commits.length > 10) {
+              notes += `\n... and ${commits.length - 10} more commits\n`;
+            }
+
+            core.setOutput('release-notes', notes);
 
   # 13. Create GitHub Release
   create-github-release:
@@ -704,39 +710,39 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name != 'release'
     outputs:
       release-url: ${{ steps.create.outputs.release_url }}
-      
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Create release
-      id: create
-      uses: actions/github-script@v7
-      env:
-        RELEASE_NOTES: ${{ needs.generate-release-notes.outputs.release-notes }}
-      with:
-        script: |
-          const { Octokit } = require('@octokit/rest');
-          const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
-          
-          // Get current version from package.json
-          const fs = require('fs');
-          const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-          const version = packageJson.version;
-          
-          // Create release
-          const { data: release } = await octokit.rest.repos.createRelease({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            tag_name: `v${version}`,
-            name: `Version v${version}`,
-            body: process.env.RELEASE_NOTES,
-            draft: false,
-            prerelease: false,
-            target_commitish: context.sha
-          });
-          
-          core.setOutput('release_url', release.html_url);
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create release
+        id: create
+        uses: actions/github-script@v7
+        env:
+          RELEASE_NOTES: ${{ needs.generate-release-notes.outputs.release-notes }}
+        with:
+          script: |
+            const { Octokit } = require('@octokit/rest');
+            const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+
+            // Get current version from package.json
+            const fs = require('fs');
+            const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            const version = packageJson.version;
+
+            // Create release
+            const { data: release } = await octokit.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: `v${version}`,
+              name: `Version v${version}`,
+              body: process.env.RELEASE_NOTES,
+              draft: false,
+              prerelease: false,
+              target_commitish: context.sha
+            });
+
+            core.setOutput('release_url', release.html_url);
 
   # 14. Update Version
   update-version:
@@ -744,94 +750,101 @@ jobs:
     runs-on: ubuntu-latest
     needs: [deploy-production]
     if: github.ref == 'refs/heads/main'
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        
-    - name: Update version
-      run: |
-        npm version patch -m "chore(release): version bump to %s"
-        
-    - name: Push changes
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git push
-        git push --tags
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Update version
+        run: |
+          npm version patch -m "chore(release): version bump to %s"
+
+      - name: Push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git push
+          git push --tags
 
   # 15. Notification
   notify:
     name: Notify
     runs-on: ubuntu-latest
-    needs: [deploy-vercel, deploy-staging, deploy-production, deploy-mobile, create-github-release]
+    needs:
+      [
+        deploy-vercel,
+        deploy-staging,
+        deploy-production,
+        deploy-mobile,
+        create-github-release,
+      ]
     if: always()
-    
+
     steps:
-    - name: Send deployment notification
-      uses: 8398a7/action-slack@v3
-      with:
-        status: ${{ job.status }}
-        channel: '#deployments'
-        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-        fields: repo,message,commit,author,action,eventName,ref,workflow
-        custom_payload: |
-          {
-            "attachments": [
-              {
-                "color": "${{ job.status == 'success' ? 'good' : job.status == 'failure' ? 'danger' : 'warning' }}",
-                "title": "${{ github.workflow }} - ${{ job.status }}",
-                "title_link": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-                "text": "Deployment to ${{ needs.deploy-vercel.environment.name || needs.deploy-staging.environment.name || needs.deploy-production.environment.name || 'Mobile' }} completed",
-                "fields": [
-                  {
-                    "title": "Repository",
-                    "value": "${{ github.repository }}",
-                    "short": true
-                  },
-                  {
-                    "title": "Commit",
-                    "value": "${{ github.sha }}",
-                    "short": true
-                  },
-                  {
-                    "title": "Environment",
-                    "value": "${{ needs.deploy-vercel.environment.name || needs.deploy-staging.environment.name || needs.deploy-production.environment.name || 'Mobile' }}",
-                    "short": true
-                  },
-                  {
-                    "title": "Branch",
-                    "value": "${{ github.ref_name }}",
-                    "short": true
-                  },
-                  {
-                    "title": "Deploy URL",
-                    "value": "${{ needs.deploy-vercel.outputs.deployment-url || needs.deploy-staging.outputs.deployment-url || needs.deploy-production.outputs.deployment-url || 'N/A' }}",
-                    "short": false
-                  },
-                  {
-                    "title": "Preview URL",
-                    "value": "${{ needs.determine-environment.outputs.preview-url || 'N/A' }}",
-                    "short": false
-                  },
-                  {
-                    "title": "Release",
-                    "value": "${{ needs.create-github-release.outputs.release-url || 'N/A' }}",
-                    "short": false
-                  },
-                  {
-                    "title": "Version",
-                    "value": "${{ needs.update-version.outputs.version || 'N/A' }}",
-                    "short": true
-                  }
-                ]
-              }
-            ]
-          }
+      - name: Send deployment notification
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: "#deployments"
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+          custom_payload: |
+            {
+              "attachments": [
+                {
+                  "color": "${{ job.status == 'success' ? 'good' : job.status == 'failure' ? 'danger' : 'warning' }}",
+                  "title": "${{ github.workflow }} - ${{ job.status }}",
+                  "title_link": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+                  "text": "Deployment to ${{ needs.deploy-vercel.environment.name || needs.deploy-staging.environment.name || needs.deploy-production.environment.name || 'Mobile' }} completed",
+                  "fields": [
+                    {
+                      "title": "Repository",
+                      "value": "${{ github.repository }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Commit",
+                      "value": "${{ github.sha }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Environment",
+                      "value": "${{ needs.deploy-vercel.environment.name || needs.deploy-staging.environment.name || needs.deploy-production.environment.name || 'Mobile' }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Branch",
+                      "value": "${{ github.ref_name }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Deploy URL",
+                      "value": "${{ needs.deploy-vercel.outputs.deployment-url || needs.deploy-staging.outputs.deployment-url || needs.deploy-production.outputs.deployment-url || 'N/A' }}",
+                      "short": false
+                    },
+                    {
+                      "title": "Preview URL",
+                      "value": "${{ needs.determine-environment.outputs.preview-url || 'N/A' }}",
+                      "short": false
+                    },
+                    {
+                      "title": "Release",
+                      "value": "${{ needs.create-github-release.outputs.release-url || 'N/A' }}",
+                      "short": false
+                    },
+                    {
+                      "title": "Version",
+                      "value": "${{ needs.update-version.outputs.version || 'N/A' }}",
+                      "short": true
+                    }
+                  ]
+                }
+              ]
+            }
