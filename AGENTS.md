@@ -79,3 +79,21 @@ This file provides guidance to agents when working with code in this repository.
 - **Файл**: `src/app/risk-management/page.tsx`
 - **Цель**: 4-ступенчатая модель страховки, анти-хрупкая архитектура
 - **Статус**: Активная стратегия минимизации рисков
+
+## AI Агенты
+
+- **Структура файлов**:
+  - `.roo/` - конфигурации и правила для архитектурных агентов
+  - `.kilocode/` - настройки режимов для kilocode агента
+  - `.roo/rules-code/` - правила кодирования
+  - `.roo/rules-architect/` - архитектурные правила
+  - `.roo/rules-ask/` - правила вопросов
+  - `.roo/rules-debug/` - правила отладки
+- **Файлы конфигурации**:
+  - `.vscode/ai-agents.json` - основная конфигурация агентов
+  - `.vscode/agent-prompts.json` - системные промпты и примеры
+  - `.roo/roo-code-settings.json` - настройки Roo code
+  - `.kilocode/agent-config.json` - настройки kilocode
+- **Использование**:
+  - `@roocode:` или `@roo:` для основного агента
+  - `@kilocode:` или `@kilo:` для ассистента кода

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { checkRateLimit as rateLimiterCheck } from "./middleware/rate-limiter";
 
+// Enhanced security middleware for NORMALDANCE
+
 // Define allowed origins
 const allowedOrigins = [
   process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
@@ -23,10 +25,60 @@ function isOriginAllowed(origin: string): boolean {
   });
 }
 
+// Enhanced security headers
+const securityHeaders = {
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "X-XSS-Protection": "1; mode=block",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
+  "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+};
+
+// Check suspicious patterns in request
+function checkSuspiciousRequest(request: any): { isSuspicious: boolean; reason?: string } {
+  const userAgent = request.headers.get("user-agent") || "";
+  const url = request.url;
+  
+  // Check for common bot patterns
+  const botPatterns = [
+    /bot/i,
+    /crawler/i,
+    /spider/i,
+    /scraper/i,
+    /curl/i,
+    /wget/i,
+  ];
+  
+  const isBot = botPatterns.some(pattern => pattern.test(userAgent));
+  
+  // Check for suspicious URL patterns
+  const suspiciousPatterns = [
+    /\.\./,
+    /<script/i,
+    /javascript:/i,
+    /data:text/i,
+  ];
+  
+  const isSuspiciousUrl = suspiciousPatterns.some(pattern => pattern.test(url));
+  
+  return {
+    isSuspicious: isBot && isSuspiciousUrl,
+    reason: isBot ? "Bot with suspicious patterns detected" : undefined,
+  };
+}
+
 export async function middleware(request: any) {
   const origin = request.headers.get("origin");
   const url = request.nextUrl;
   const ip = request.ip || "unknown";
+
+  // Check for suspicious requests
+  const securityCheck = checkSuspiciousRequest(request);
+  if (securityCheck.isSuspicious) {
+    console.warn(`Suspicious request blocked: ${securityCheck.reason}`);
+    return new Response("Request blocked", { status: 403 });
+  }
 
   // Extract endpoint from URL path
   const pathParts = url.pathname.split("/");
@@ -61,7 +113,7 @@ export async function middleware(request: any) {
     });
   }
 
-  // CORS handling
+  // CORS handling with enhanced security
   const response = NextResponse.next();
 
   if (origin) {
@@ -70,7 +122,7 @@ export async function middleware(request: any) {
     if (isAllowed) {
       response.headers.set("Access-Control-Allow-Origin", origin);
     } else {
-      // For non-allowed origins, don't set the header or set a default
+      // For non-allowed origins, don't set the header
       response.headers.set("Access-Control-Allow-Origin", "");
     }
   }
@@ -84,6 +136,12 @@ export async function middleware(request: any) {
     "Content-Type,Authorization,X-Requested-With"
   );
   response.headers.set("Access-Control-Allow-Credentials", "true");
+  response.headers.set("Access-Control-Max-Age", "86400"); // 24 hours
+
+  // Add security headers
+  Object.entries(securityHeaders).forEach(([key, value]) => {
+    response.headers.set(key, value);
+  });
 
   // Handle preflight requests
   if (request.method === "OPTIONS") {

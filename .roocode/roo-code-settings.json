@@ -1,0 +1,40 @@
+{
+  "version": "1.0.0",
+  "settings": {
+    "agentName": "NormalDance Enterprise Agent",
+    "description": "AI агент для проекта NORMALDANCE с поддержкой автоматизации и интеграции",
+    "enabled": true,
+    "autoUpdate": true,
+    "maxConcurrency": 4,
+    "timeout": 30000,
+    "retryAttempts": 3,
+    "logging": {
+      "level": "info",
+      "output": "console",
+      "file": ".roocode/logs/agent.log"
+    },
+    "integrations": {
+      "git": {
+        "enabled": true,
+        "autoCommit": false,
+        "branch": "main"
+      },
+      "vscode": {
+        "enabled": true,
+        "extensions": ["ms-vscode.vscode-json", "bradlc.vscode-tailwindcss"]
+      }
+    },
+    "security": {
+      "allowCodeExecution": true,
+      "allowFileAccess": true,
+      "allowNetworkAccess": true
+    },
+    "capabilities": [
+      "code-generation",
+      "refactoring",
+      "testing",
+      "documentation",
+      "deployment"
+    ]
+  }
+}

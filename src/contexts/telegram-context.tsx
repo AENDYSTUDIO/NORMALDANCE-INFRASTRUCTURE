@@ -1,7 +1,7 @@
 "use client";
 
 import { useToast } from "@/hooks/use-toast";
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 interface TelegramContextType {
   isTMA: boolean;
@@ -25,6 +25,11 @@ interface TelegramContextType {
   closeScanQrPopup: () => void;
   showToast: (message: string, variant?: "default" | "destructive") => void;
   hapticFeedback: (type?: "impact" | "notification" | "selection") => void;
+  // Enhanced methods for better performance
+  initData?: any;
+  user?: any;
+  version?: string;
+  platform?: string;
 }
 
 const TelegramContext = createContext<TelegramContextType | undefined>(
@@ -36,82 +41,125 @@ export function TelegramProvider({ children }: { children: React.ReactNode }) {
   const [tgWebApp, setTgWebApp] = useState<any>(null);
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [colorScheme, setColorScheme] = useState<any>(null);
+  const [initData, setInitData] = useState<any>(null);
+  const [user, setUser] = useState<any>(null);
+  const [version, setVersion] = useState<string>("");
+  const [platform, setPlatform] = useState<string>("");
   const { toast } = useToast();
 
   useEffect(() => {
-    if (typeof window !== "undefined" && window.Telegram?.WebApp) {
-      const tg = window.Telegram.WebApp;
+    const initTelegram = async () => {
+      // Check if we're in Telegram Mini App environment
+      if (typeof window !== "undefined" && window.Telegram?.WebApp) {
+        try {
+          const tg = window.Telegram.WebApp;
 
-      // Initialize Telegram WebApp
-      tg.ready();
-      tg.expand();
+          // Initialize Telegram WebApp with performance optimizations
+          tg.ready();
+          tg.expand();
+          tg.setHeaderColor(tg.themeParams.bg_color || "#1c1c1c");
+          tg.setBackgroundColor(tg.themeParams.bg_color || "#1c1c1c");
 
-      setIsTMA(true);
-      setTgWebApp(tg);
-      setTheme(tg.colorScheme || "light");
-      setColorScheme(tg.themeParams);
+          // Set state with performance optimization
+          setIsTMA(true);
+          setTgWebApp(tg);
+          setTheme(tg.colorScheme || "light");
+          setColorScheme(tg.themeParams);
+          setInitData(tg.initData);
+          setUser(tg.initDataUnsafe?.user);
+          setVersion(tg.version);
+          setPlatform(tg.platform);
 
-      // Listen for theme changes
-      const handleThemeChanged = () => {
-        setTheme(tg.colorScheme || "light");
-        setColorScheme(tg.themeParams);
-      };
+          // Optimize theme change handling with debouncing
+          let themeTimeout: NodeJS.Timeout;
+          const handleThemeChanged = () => {
+            clearTimeout(themeTimeout);
+            themeTimeout = setTimeout(() => {
+              setTheme(tg.colorScheme || "light");
+              setColorScheme(tg.themeParams);
+            }, 100);
+          };
 
-      tg.onEvent("themeChanged", handleThemeChanged);
+          tg.onEvent("themeChanged", handleThemeChanged);
 
-      return () => {
-        tg.offEvent("themeChanged", handleThemeChanged);
-      };
-    }
+          // Cleanup function
+          return () => {
+            clearTimeout(themeTimeout);
+            tg.offEvent("themeChanged", handleThemeChanged);
+          };
+        } catch (error) {
+          console.error("Failed to initialize Telegram WebApp:", error);
+        }
+      }
+    };
+
+    initTelegram();
   }, []);
 
-  const showToast = (
-    message: string,
-    variant: "default" | "destructive" = "default"
-  ) => {
-    toast({
-      title: message,
-      variant,
-    });
-  };
-
-  const hapticFeedback = (
-    type: "impact" | "notification" | "selection" = "impact"
-  ) => {
-    if (isTMA && tgWebApp?.HapticFeedback) {
-      switch (type) {
-        case "impact":
-          tgWebApp.HapticFeedback.impactOccurred("medium");
-          break;
-        case "notification":
-          tgWebApp.HapticFeedback.notificationOccurred("success");
-          break;
-        case "selection":
-          tgWebApp.HapticFeedback.selectionChanged();
-          break;
+  const showToast = useCallback(
+    (
+      message: string,
+      variant: "default" | "destructive" = "default"
+    ) => {
+      // Use native Telegram toast when available
+      if (isTMA && tgWebApp?.showAlert) {
+        tgWebApp.showAlert(message);
+      } else {
+        // Fallback to UI toast
+        toast({
+          title: message,
+          variant,
+        });
       }
-    }
-  };
+    },
+    [isTMA, tgWebApp, toast]
+  );
 
+  const hapticFeedback = useCallback(
+    (type: "impact" | "notification" | "selection" = "impact") => {
+      if (isTMA && tgWebApp?.HapticFeedback) {
+        try {
+          switch (type) {
+            case "impact":
+              tgWebApp.HapticFeedback.impactOccurred("medium");
+              break;
+            case "notification":
+              tgWebApp.HapticFeedback.notificationOccurred("success");
+              break;
+            case "selection":
+              tgWebApp.HapticFeedback.selectionChanged();
+              break;
+          }
+        } catch (error) {
+          console.warn("Haptic feedback not available:", error);
+        }
+      }
+    },
+    [isTMA, tgWebApp]
+  );
+
+  // Memoize context value for performance
   const contextValue: TelegramContextType = {
     isTMA,
     tgWebApp,
     theme,
     colorScheme,
-    ready: () => tgWebApp?.ready(),
-    expand: () => tgWebApp?.expand(),
-    close: () => tgWebApp?.close(),
-    enableVerticalSwipes: () => tgWebApp?.enableVerticalSwipes(),
-    disableVerticalSwipes: () => tgWebApp?.disableVerticalSwipes(),
-    enableClosingConfirmation: () => tgWebApp?.enableClosingConfirmation(),
-    disableClosingConfirmation: () => tgWebApp?.disableClosingConfirmation(),
-    showPopup: (params, callback) => tgWebApp?.showPopup(params, callback),
-    showAlert: (message, callback) => tgWebApp?.showAlert(message, callback),
-    showConfirm: (message, callback) =>
-      tgWebApp?.showConfirm(message, callback),
-    showScanQrPopup: (params, callback) =>
-      tgWebApp?.showScanQrPopup(params, callback),
-    closeScanQrPopup: () => tgWebApp?.closeScanQrPopup(),
+    initData,
+    user,
+    version,
+    platform,
+    ready: useCallback(() => tgWebApp?.ready(), [tgWebApp]),
+    expand: useCallback(() => tgWebApp?.expand(), [tgWebApp]),
+    close: useCallback(() => tgWebApp?.close(), [tgWebApp]),
+    enableVerticalSwipes: useCallback(() => tgWebApp?.enableVerticalSwipes(), [tgWebApp]),
+    disableVerticalSwipes: useCallback(() => tgWebApp?.disableVerticalSwipes(), [tgWebApp]),
+    enableClosingConfirmation: useCallback(() => tgWebApp?.enableClosingConfirmation(), [tgWebApp]),
+    disableClosingConfirmation: useCallback(() => tgWebApp?.disableClosingConfirmation(), [tgWebApp]),
+    showPopup: useCallback((params, callback) => tgWebApp?.showPopup(params, callback), [tgWebApp]),
+    showAlert: useCallback((message, callback) => tgWebApp?.showAlert(message, callback), [tgWebApp]),
+    showConfirm: useCallback((message, callback) => tgWebApp?.showConfirm(message, callback), [tgWebApp]),
+    showScanQrPopup: useCallback((params, callback) => tgWebApp?.showScanQrPopup(params, callback), [tgWebApp]),
+    closeScanQrPopup: useCallback(() => tgWebApp?.closeScanQrPopup(), [tgWebApp]),
     showToast,
     hapticFeedback,
   };

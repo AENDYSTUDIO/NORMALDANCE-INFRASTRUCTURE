@@ -1,0 +1,46 @@
+{
+  "version": "1.0.0",
+  "agent": {
+    "name": "kilocode",
+    "description": "Code generation and optimization assistant for NORMALDANCE project",
+    "version": "1.0.0"
+  },
+  "settings": {
+    "defaultMode": "code",
+    "contextWindowSize": 6400,
+    "enableTelemetry": false,
+    "maxConcurrency": 2,
+    "timeout": 30000
+  },
+  "capabilities": [
+    "code-generation",
+    "code-optimization",
+    "refactoring",
+    "pattern-recognition",
+    "performance-tuning",
+    "best-practices",
+    "error-correction",
+    "documentation-generation"
+  ],
+  "integration": {
+    "project": {
+      "name": "NORMALDANCE",
+      "type": "web3-music-platform",
+      "framework": "nextjs-react-nodejs",
+      "language": "typescript",
+      "web3": ["solana", "ton"]
+    }
+  },
+  "rules": {
+    "codingStandards": {
+      "typescript": true,
+      "web3": true,
+      "performance": true,
+      "security": true
+    },
+    "documentation": {
+      "jsdoc": true,
+      "comments": "russian"
+    }
+  }
+}

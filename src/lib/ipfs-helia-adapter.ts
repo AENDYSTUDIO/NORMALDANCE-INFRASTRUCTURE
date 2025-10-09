@@ -2,6 +2,9 @@ import { type Helia } from '@helia/interface';
 import { unixfs } from '@helia/unixfs';
 import { createHelia } from 'helia';
 import { type IPFSTrackMetadata } from './ipfs';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('ipfs-helia');
 
 // Singleton instance for Helia
 let heliaInstance: Helia | null = null;
@@ -12,48 +15,92 @@ let unixfsInstance: ReturnType<typeof unixfs> | null = null;
  */
 async function getHelia(): Promise<{ helia: Helia, fs: ReturnType<typeof unixfs> }> {
   if (!heliaInstance || !unixfsInstance) {
-    heliaInstance = await createHelia();
-    unixfsInstance = unixfs(heliaInstance);
+    try {
+      logger.info('Initializing Helia IPFS instance...');
+      heliaInstance = await createHelia({
+        // Add security-focused configuration
+        start: true,
+        libp2p: {
+          connectionManager: {
+            maxConnections: 50,
+            minConnections: 10,
+          }
+        }
+      });
+      unixfsInstance = unixfs(heliaInstance);
+      logger.info('Helia IPFS instance initialized successfully');
+    } catch (error) {
+      logger.error('Failed to initialize Helia:', error);
+      throw new Error(`Helia initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
   
   return { helia: heliaInstance, fs: unixfsInstance };
 }
 
 /**
- * Upload file to IPFS using Helia
+ * Upload file to IPFS using Helia with enhanced security
  */
 export async function uploadToIPFSHelia(
   file: File | Buffer,
   metadata?: IPFSTrackMetadata
 ): Promise<{ cid: string; size: number }> {
  try {
-    console.log('Starting Helia IPFS upload...');
+    // Validate input parameters
+    if (!file) {
+      throw new Error('File is required');
+    }
+    
+    // File size validation (max 100MB)
+    const maxSize = 100 * 1024 * 1024; // 100MB
+    const fileSize = file instanceof File ? file.size : (file as Buffer).length;
+    
+    if (fileSize > maxSize) {
+      throw new Error(`File size ${fileSize} exceeds maximum allowed size of ${maxSize} bytes`);
+    }
+    
+    logger.info(`Starting Helia IPFS upload for file size: ${fileSize} bytes`);
     
     const { fs } = await getHelia();
     
-    // Convert file/buffer to Uint8Array
+    // Validate and convert file/buffer to Uint8Array
     let fileBytes: Uint8Array;
     
     if (file instanceof File) {
-      // Convert File to ArrayBuffer then to Uint8Array
+      // Additional validation for File objects
+      if (!file.type || file.type === '') {
+        logger.warn('File has no MIME type, proceeding with caution');
+      }
+      
       const arrayBuffer = await file.arrayBuffer();
       fileBytes = new Uint8Array(arrayBuffer);
     } else if (Buffer.isBuffer(file)) {
-      // Convert Buffer to Uint8Array
       fileBytes = new Uint8Array(file);
     } else {
-      throw new Error('Unsupported file type');
+      throw new Error('Unsupported file type: expected File or Buffer');
     }
+    
+    // Sanitize metadata if provided
+    const sanitizedMetadata = metadata ? {
+      title: metadata.title?.substring(0, 255) || '',
+      artist: metadata.artist?.substring(0, 255) || '',
+      genre: metadata.genre?.substring(0, 100) || '',
+      duration: typeof metadata.duration === 'number' && metadata.duration > 0 ? metadata.duration : 0,
+      format: metadata.format?.substring(0, 50) || '',
+      sampleRate: typeof metadata.sampleRate === 'number' ? metadata.sampleRate : 44100,
+      bitDepth: typeof metadata.bitDepth === 'number' ? metadata.bitDepth : 16,
+    } : undefined;
     
     let resultCid: string;
     let resultSize: number;
     
-    if (metadata) {
-      // If metadata is provided, create a combined object
+    if (sanitizedMetadata) {
+      // Create secure metadata object
       const metadataWithFile = {
-        ...metadata,
-        file: file instanceof File ? file.name : 'buffer',
+        ...sanitizedMetadata,
+        file: file instanceof File ? file.name.substring(0, 255) : 'buffer',
         timestamp: new Date().toISOString(),
+        version: '1.0',
       };
       
       // Add metadata to IPFS
@@ -63,11 +110,13 @@ export async function uploadToIPFSHelia(
       // Add file to IPFS
       const fileCid = await fs.addBytes(fileBytes);
       
-      // Create combined object
+      // Create combined object with validation
       const combined = {
         metadata: metadataCid.toString(),
         file: fileCid.toString(),
         type: 'track',
+        checksum: await calculateChecksum(fileBytes),
+        createdAt: new Date().toISOString(),
       };
       
       const combinedBytes = new TextEncoder().encode(JSON.stringify(combined));
@@ -76,18 +125,18 @@ export async function uploadToIPFSHelia(
       resultCid = combinedCid.toString();
       resultSize = combinedBytes.length;
     } else {
-      // Just add the file
+      // Just add the file with basic metadata
       const cid = await fs.addBytes(fileBytes);
       resultCid = cid.toString();
       resultSize = fileBytes.length;
     }
     
-    console.log(`Helia IPFS upload successful: ${resultCid} (${resultSize} bytes)`);
+    logger.info(`Helia IPFS upload successful: ${resultCid} (${resultSize} bytes)`);
     
     return { cid: resultCid, size: resultSize };
   } catch (error) {
-    console.error('Helia IPFS upload failed:', error);
-    throw new Error(`Failed to upload to Helia IPFS: ${error}`);
+    logger.error('Helia IPFS upload failed:', error);
+    throw new Error(`Failed to upload to Helia IPFS: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
@@ -142,25 +191,38 @@ export async function uploadToIPFSHeliaWithProgress(
 }
 
 /**
- * Get file from IPFS using Helia
+ * Get file from IPFS using Helia with enhanced security
  */
 export async function getFileFromIPFSHelia(cid: string): Promise<Buffer> {
   try {
-    console.log(`Fetching file from Helia IPFS: ${cid}`);
+    // Validate CID
+    if (!cid || typeof cid !== 'string' || cid.trim().length === 0) {
+      throw new Error('Invalid CID provided');
+    }
+    
+    logger.info(`Fetching file from Helia IPFS: ${cid}`);
     
     const { fs } = await getHelia();
     
-    // Get the file content
+    // Get the file content with size limit
     const stream = fs.cat(cid);
     const chunks: Uint8Array[] = [];
+    let totalSize = 0;
+    const maxSize = 100 * 1024 * 1024; // 100MB limit
     
     for await (const chunk of stream) {
+      totalSize += chunk.length;
+      
+      // Check size limit
+      if (totalSize > maxSize) {
+        throw new Error(`File size ${totalSize} exceeds maximum allowed size of ${maxSize} bytes`);
+      }
+      
       chunks.push(chunk);
     }
     
     // Combine all chunks into a single Uint8Array
-    const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
-    const combined = new Uint8Array(totalLength);
+    const combined = new Uint8Array(totalSize);
     
     let offset = 0;
     for (const chunk of chunks) {
@@ -170,12 +232,12 @@ export async function getFileFromIPFSHelia(cid: string): Promise<Buffer> {
     
     // Convert Uint8Array to Buffer
     const fileData = Buffer.from(combined);
-    console.log(`File retrieved successfully: ${fileData.length} bytes`);
+    logger.info(`File retrieved successfully: ${fileData.length} bytes`);
     
     return fileData;
   } catch (error) {
-    console.error('Failed to fetch file from Helia IPFS:', error);
-    throw new Error(`Failed to fetch file from Helia IPFS: ${error}`);
+    logger.error('Failed to fetch file from Helia IPFS:', error);
+    throw new Error(`Failed to fetch file from Helia IPFS: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
@@ -235,33 +297,51 @@ export async function unpinFileHelia(cid: string): Promise<boolean> {
 }
 
 /**
- * Check file availability using Helia
+ * Check file availability using Helia with enhanced security
  */
 export async function checkFileAvailabilityHelia(cid: string): Promise<{
   available: boolean;
   gateways: string[];
 }> {
   try {
-    // In Helia, we can try to retrieve the file as a way to check availability
+    // Validate CID
+    if (!cid || typeof cid !== 'string' || cid.trim().length === 0) {
+      return {
+        available: false,
+        gateways: [],
+      };
+    }
+    
     const { fs } = await getHelia();
     
     // Try to get the file (this will fail if the CID doesn't exist)
-    const stream = fs.cat(cid);
     let available = false;
     
     try {
+      const stream = fs.cat(cid);
+      
       // Try to read the first chunk to verify the file exists
-      for await (const chunk of stream) {
-        // If we get here, the file is available
-        available = true;
-        break; // We only need to verify it exists, not read the whole thing
-      }
+      // Set a timeout for this operation
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout checking file availability')), 10000);
+      });
+      
+      const readPromise = (async () => {
+        for await (const chunk of stream) {
+          // If we get here, the file is available
+          available = true;
+          break; // We only need to verify it exists, not read the whole thing
+        }
+      })();
+      
+      await Promise.race([readPromise, timeoutPromise]);
     } catch (error) {
       // If there's an error, the file is not available
       available = false;
+      logger.warn(`File availability check failed for CID ${cid}:`, error);
     }
     
-    // Also check via public gateways as a secondary verification
+    // Check via public gateways as a secondary verification with timeout
     const gateways = [
       'https://ipfs.io/ipfs/',
       'https://gateway.pinata.cloud/ipfs/',
@@ -272,18 +352,30 @@ export async function checkFileAvailabilityHelia(cid: string): Promise<{
     
     if (available) {
       // If Helia could access it, check which gateways also have it
-      for (const gateway of gateways) {
+      const gatewayPromises = gateways.map(async (gateway) => {
         try {
           const url = `${gateway}${cid}`;
-          const response = await fetch(url, { method: 'HEAD' });
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+          
+          const response = await fetch(url, { 
+            method: 'HEAD',
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
           
           if (response.ok) {
-            availableGateways.push(gateway);
+            return gateway;
           }
         } catch (error) {
-          console.warn(`Gateway ${gateway} not available:`, error);
+          logger.warn(`Gateway ${gateway} not available:`, error);
         }
-      }
+        return null;
+      });
+      
+      const results = await Promise.all(gatewayPromises);
+      availableGateways.push(...results.filter(Boolean) as string[]);
     }
     
     return {
@@ -291,10 +383,75 @@ export async function checkFileAvailabilityHelia(cid: string): Promise<{
       gateways: availableGateways,
     };
   } catch (error) {
-    console.error('Failed to check file availability via Helia:', error);
+    logger.error('Failed to check file availability via Helia:', error);
     return {
       available: false,
       gateways: [],
+    };
+  }
+}
+
+/**
+ * Calculate checksum for data integrity
+ */
+async function calculateChecksum(data: Uint8Array): Promise<string> {
+  // Simple checksum calculation - in production use crypto.hash
+  let hash = 0;
+  for (let i = 0; i < data.length; i++) {
+    const char = data[i];
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return Math.abs(hash).toString(16);
+}
+
+/**
+ * Cleanup unpinned files using Helia with enhanced security
+ */
+export async function cleanupHeliaFiles(): Promise<{
+  pinnedCount: number;
+  cleanedCount: number;
+  errors: string[];
+}> {
+  const errors: string[] = [];
+  
+  try {
+    logger.info('Starting cleanup of unpinned files using Helia...');
+    
+    const { helia } = await getHelia();
+    
+    // Get all pinned CIDs
+    const pinnedCids: string[] = [];
+    try {
+      for await (const { cid } of helia.pins.ls()) {
+        pinnedCids.push(cid.toString());
+      }
+    } catch (error) {
+      errors.push(`Failed to list pinned files: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+    
+    logger.info(`Found ${pinnedCids.length} pinned files in Helia`);
+    
+    // For now, just return the count
+    // In a production environment, you might want to:
+    // 1. Check file age and remove old files
+    // 2. Check file usage in your database
+    // 3. Implement a retention policy
+    
+    return {
+      pinnedCount: pinnedCids.length,
+      cleanedCount: 0, // No cleanup implemented yet
+      errors,
+    };
+  } catch (error) {
+    const errorMsg = `Failed to cleanup Helia files: ${error instanceof Error ? error.message : 'Unknown error'}`;
+    logger.error(errorMsg);
+    errors.push(errorMsg);
+    
+    return {
+      pinnedCount: 0,
+      cleanedCount: 0,
+      errors,
     };
   }
 }

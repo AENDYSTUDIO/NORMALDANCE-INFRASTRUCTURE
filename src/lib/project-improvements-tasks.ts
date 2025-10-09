@@ -100,3 +100,7 @@ export const projectImprovementTasks: Task[] = [
     category: "Безопасность",
     dueDate: new Date("2025-06-30"),
     createdAt: new Date(),
+    updatedAt: new Date(),
+    userId: "project-manager"
+  }
+];

@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -136,9 +135,42 @@ export function TelegramStarsWallet({
               <Copy className="h-3 w-3" />
             </Button>
           </div>
+        </div>
         
         <Separator />
         
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-2">
           <Button
+            variant="outline"
+            className="flex items-center gap-2"
+            onClick={onPurchaseStars}
+            disabled={isLoading}
+          >
+            <ShoppingCart className="h-4 w-4" />
+            Пополнить
+          </Button>
+          <Button
+            variant="outline"
+            className="flex items-center gap-2"
+            onClick={onViewTransactions}
+          >
+            <ExternalLink className="h-4 w-4" />
+            История
+          </Button>
+        </div>
+      </CardContent>
+      
+      <CardFooter className="flex flex-col space-y-2">
+        <div className="w-full text-center">
+          <p className="text-xs text-muted-foreground">
+            Курс: 1 Star = {exchangeRate} USD
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Telegram Stars - официальная валюта Telegram
+          </p>
+        </div>
+      </CardFooter>
+    </Card>
+  );
+}
