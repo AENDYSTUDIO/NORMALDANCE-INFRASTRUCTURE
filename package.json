@@ -1,6 +1,6 @@
 {
   "name": "normaldance",
-  "version": "1.0.4",
+  "version": "0.0.1",
   "description": "Децентрализованная музыкальная платформа",
   "repository": {
     "type": "git",
@@ -19,6 +19,10 @@
     "test:unit": "jest --testPathPattern=unit",
     "test:integration": "jest --testPathPattern=integration",
     "test:e2e": "playwright test",
+    "test:all": "./scripts/test-all.sh",
+    "test:deploy": "./scripts/test-deploy.sh",
+    "deploy:production": "./scripts/deploy-production.sh deploy",
+    "monitoring": "node scripts/monitoring.js",
     "check:imports": "tsx scripts/check-imports.ts",
     "check:detect": "tsx scripts/detect-and-fix.ts",
     "check:detect:fix-icons": "tsx scripts/detect-and-fix.ts --fix-icons",
@@ -36,7 +40,20 @@
     "security:fix": "npm audit fix",
     "security:secrets": "node -e \"require('./scripts/security-check').runSecurityCheck()\"",
     "deps:outdated": "npm outdated",
-    "deps:update": "npm update"
+    "deps:update": "npm update",
+    "version:major": "node scripts/version-manager.js bump major",
+    "version:minor": "node scripts/version-manager.js bump minor",
+    "version:patch": "node scripts/version-manager.js bump patch",
+    "version:prerelease": "node scripts/version-manager.js bump-prerelease",
+    "version:alpha": "node scripts/version-manager.js bump-prerelease alpha",
+    "version:beta": "node scripts/version-manager.js bump-prerelease beta",
+    "version:rc": "node scripts/version-manager.js bump-prerelease rc",
+    "version:build": "node scripts/version-manager.js bump-build",
+    "version:current": "node scripts/version-manager.js current",
+    "version:report": "node scripts/version-manager.js report",
+    "version:tags": "node scripts/version-manager.js tags",
+    "version:changelog": "node scripts/version-manager.js changelog",
+    "version:release": "node scripts/version-manager.js release"
   },
   "dependencies": {
     "@helia/unixfs": "^3.0.0",
