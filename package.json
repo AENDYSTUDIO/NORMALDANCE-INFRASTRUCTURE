@@ -1,6 +1,6 @@
 {
   "name": "normaldance",
-  "version": "1.0.1",
+  "version": "1.0.4",
   "description": "Децентрализованная музыкальная платформа",
   "repository": {
     "type": "git",
@@ -11,11 +11,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint . --fix",
     "type-check": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:unit": "jest --testPathPattern=unit",
+    "test:integration": "jest --testPathPattern=integration",
+    "test:e2e": "playwright test",
     "check:imports": "tsx scripts/check-imports.ts",
     "check:detect": "tsx scripts/detect-and-fix.ts",
     "check:detect:fix-icons": "tsx scripts/detect-and-fix.ts --fix-icons",
@@ -26,7 +29,9 @@
     "db:studio": "prisma studio",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "env:validate": "node scripts/validate-env.js",
+    "security:audit": "npm audit"
   },
   "dependencies": {
     "@helia/unixfs": "^3.0.0",
@@ -73,8 +78,12 @@
     "@solana/wallet-adapter-react-ui": "^0.9.39",
     "@solana/wallet-adapter-wallets": "^0.19.37",
     "@solana/web3.js": "^1.98.4",
+    "@ton/ton": "^15.4.0",
+    "@tonconnect/sdk": "^3.3.1",
+    "@tonconnect/ui-react": "^2.3.1",
     "@twa-dev/types": "^8.0.2",
     "@types/jsonwebtoken": "^9.0.0",
+    "@upstash/vector": "^1.2.2",
     "@vercel/analytics": "^1.5.0",
     "@vercel/speed-insights": "^1.2.0",
     "ai": "^5.0.29",
@@ -95,6 +104,7 @@
     "lucide-react": "^0.544.0",
     "mixpanel-browser": "^2.48.0",
     "multiformats": "^13.1.0",
+    "n8n-nodes-dewiar-collection": "^1.1.4",
     "next": "^15.0.0",
     "next-auth": "^4.24.11",
     "next-themes": "^0.4.6",
@@ -125,6 +135,7 @@
     "@babel/preset-react": "^7.27.1",
     "@babel/preset-typescript": "^7.27.1",
     "@next/bundle-analyzer": "^15.0.0",
+    "@next/eslint-plugin-next": "^15.5.4",
     "@playwright/test": "^1.55.0",
     "@storybook/addon-a11y": "^8.6.14",
     "@storybook/addon-essentials": "^8.6.14",
@@ -147,6 +158,8 @@
     "css-minimizer-webpack-plugin": "^7.0.2",
     "eslint": "^8.0.0",
     "eslint-config-next": "^15.0.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^6.1.1",
     "husky": "^9.0.0",
     "jest": "^29.0.0",
     "jest-environment-jsdom": "^30.2.0",
@@ -154,7 +167,8 @@
     "tailwindcss": "^4.1.13",
     "tailwindcss-animate": "^1.0.7",
     "ts-jest": "^29.4.4",
-    "tsx": "^4.0.0"
+    "tsx": "^4.0.0",
+    "typescript-eslint": "^8.45.0"
   },
   "keywords": [
     "music",

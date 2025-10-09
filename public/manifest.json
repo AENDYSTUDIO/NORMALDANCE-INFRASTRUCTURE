@@ -1,0 +1,37 @@
+{
+  "name": "NormalDance Music Platform",
+  "short_name": "NormalDance",
+  "description": "Music platform with NFTs and Web3 integration",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#673ab7",
+  "theme_color": "#673ab7",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-1.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ]
+}
