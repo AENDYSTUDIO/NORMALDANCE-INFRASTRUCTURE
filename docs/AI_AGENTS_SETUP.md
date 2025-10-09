@@ -6,7 +6,7 @@
 
 ```bash
 # Установка основного агента
-code --install-extension roocode.roo-code      # Roo code
+code --install-extension rooveterinaryinc.roo-cline      # Roo code
 
 # Установка ассистента кода
 code --install-extension kilocode.kilo-code    # kilocode
@@ -34,9 +34,9 @@ code --install-extension kilocode.kilo-code    # kilocode
 Примеры использования:
 
 ```typescript
-// @roocode: Create a wallet connection component for Solana and TON
-// @roocode: Implement deflationary token model
-// @roocode: Optimize database queries for music metadata
+// @roo: Create a wallet connection component for Solana and TON
+// @roo: Implement deflationary token model
+// @roo: Optimize database queries for music metadata
 ```
 
 ### kilocode (Code generation and optimization assistant)
@@ -51,9 +51,9 @@ code --install-extension kilocode.kilo-code    # kilocode
 Примеры использования:
 
 ```typescript
-// @kilocode: Create API route for user profile management
-// @kilocode: Optimize image loading component
-// @kilocode: Refactor authentication service
+// @kilo: Create API route for user profile management
+// @kilo: Optimize image loading component
+// @kilo: Refactor authentication service
 ```
 
 ## Структура проекта для агентов

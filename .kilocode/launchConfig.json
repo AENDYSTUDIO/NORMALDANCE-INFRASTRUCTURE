@@ -1,0 +1,67 @@
+{
+  "version": "1.0.0",
+  "agent": {
+    "id": "kilocode.kilo-code",
+    "name": "kilocode",
+    "description": "Code generation and optimization assistant",
+    "settings": {
+      "defaultMode": "code",
+      "contextWindowSize": 6400,
+      "enableTelemetry": false,
+      "maxTokens": 4096,
+      "temperature": 0.7,
+      "topP": 1,
+      "frequencyPenalty": 0,
+      "presencePenalty": 0
+    }
+  },
+  "modes": {
+    "code": {
+      "enabled": true,
+      "description": "Code generation and optimization mode"
+    },
+    "refactor": {
+      "enabled": true,
+      "description": "Code refactoring mode"
+    },
+    "optimize": {
+      "enabled": true,
+      "description": "Performance optimization mode"
+    },
+    "document": {
+      "enabled": true,
+      "description": "Documentation generation mode"
+    }
+  },
+  "project": {
+    "type": "web3",
+    "framework": "nextjs",
+    "language": "typescript",
+    "database": "prisma",
+    "blockchain": ["solana", "ton"],
+    "features": [
+      "deflationary-token-model",
+      "real-time-communication",
+      "wallet-integration"
+    ]
+  },
+  "rules": {
+    "web3": {
+      "solana": {
+        "programIds": {
+          "NDT_PROGRAM_ID": "NDT_program_id_here",
+          "TRACKNFT_PROGRAM_ID": "TRACKNFT_program_id_here",
+          "STAKING_PROGRAM_ID": "STAKING_program_id_here"
+        }
+      }
+    },
+    "deflationary": {
+      "burnRate": 0.02,
+      "distribution": {
+        "stakingRewards": 0.2,
+        "treasury": 0.3,
+        "liquidity": 0.5
+      }
+    }
+  }
+}
