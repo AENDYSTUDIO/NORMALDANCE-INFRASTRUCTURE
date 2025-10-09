@@ -1,0 +1,94 @@
+{
+  "recommendations": [
+    // Essential Extensions
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "bradlc.vscode-tailwindcss",
+    "ms-vscode.vscode-typescript-next",
+
+    // React & Next.js
+    "ms-vscode.vscode-react-native",
+    "formulahendry.auto-rename-tag",
+    "christian-kohler.path-intellisense",
+    "christian-kohler.npm-intellisense",
+
+    // Git & Version Control
+    "eamodio.gitlens",
+    "github.vscode-pull-request-github",
+    "github.copilot",
+    "github.copilot-chat",
+
+    // Testing
+    "firsttris.vscode-jest-runner",
+    "ms-playwright.playwright",
+    "orta.vscode-jest",
+
+    // Database
+    "prisma.prisma",
+    "ms-mssql.mssql",
+
+    // Web3 & Blockchain
+    "JuanBlanco.solidity",
+    "tintinweb.solidity-visual-auditor",
+
+    // Productivity
+    "ms-vscode.vscode-json",
+    "redhat.vscode-yaml",
+    "ms-vscode.vscode-markdown",
+    "yzhang.markdown-all-in-one",
+    "shd101wyy.markdown-preview-enhanced",
+
+    // UI & Icons
+    "pkief.material-icon-theme",
+    "zhuangtongfa.material-theme",
+    "github.github-vscode-theme",
+
+    // Utilities
+    "ms-vscode.vscode-typescript-next",
+    "ms-vscode.vscode-json",
+    "redhat.vscode-yaml",
+    "ms-vscode.vscode-markdown",
+    "ms-vscode.vscode-css-peek",
+    "ms-vscode.vscode-html-css-support",
+
+    // Code Quality
+    "sonarsource.sonarlint-vscode",
+    "ms-vscode.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "bradlc.vscode-tailwindcss",
+
+    // Documentation
+    "yzhang.markdown-all-in-one",
+    "shd101wyy.markdown-preview-enhanced",
+    "davidanson.vscode-markdownlint",
+
+    // Docker & DevOps
+    "ms-azuretools.vscode-docker",
+    "ms-kubernetes-tools.vscode-kubernetes-tools",
+    "hashicorp.terraform",
+
+    // Performance & Monitoring
+    "ms-vscode.vscode-json",
+    "redhat.vscode-yaml",
+    "ms-vscode.vscode-markdown",
+
+    // Security
+    "ms-vscode.vscode-json",
+    "redhat.vscode-yaml",
+    "ms-vscode.vscode-markdown",
+
+    // Mobile Development
+    "ms-vscode.vscode-react-native",
+    "ms-vscode.vscode-typescript-next",
+
+    // Audio & Media
+    "ms-vscode.vscode-json",
+    "redhat.vscode-yaml",
+    "ms-vscode.vscode-markdown"
+  ],
+  "unwantedRecommendations": [
+    "ms-vscode.vscode-typescript",
+    "hookyqr.beautify",
+    "ms-vscode.vscode-json"
+  ]
+}

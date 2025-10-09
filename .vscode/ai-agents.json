@@ -1,0 +1,64 @@
+{
+  "agents": [
+    {
+      "id": "roocode.roocode",
+      "name": "Roo code",
+      "description": "Enterprise Web3 + AI development assistant",
+      "version": "1.0.0",
+      "activation": {
+        "prefixes": ["@roocode:", "@roo:"],
+        "fileTypes": ["*"],
+        "context": ["workspace", "git", "web3", "ai"]
+      },
+      "capabilities": [
+        "full-project-understanding",
+        "web3-development",
+        "ai-integration",
+        "enterprise-architecture",
+        "security-auditing",
+        "performance-optimization",
+        "testing-automation",
+        "deployment-orchestration"
+      ],
+      "settings": {
+        "defaultMode": "code",
+        "contextWindowSize": 128000,
+        "enableTelemetry": false,
+        "trustedDomains": [
+          "github.com",
+          "npmjs.com",
+          "solana.com",
+          "ton.org",
+          "ipfs.io",
+          "pinata.cloud"
+        ]
+      }
+    },
+    {
+      "id": "kilocode.kilocode",
+      "name": "kilocode",
+      "description": "Code generation and optimization assistant",
+      "version": "1.0.0",
+      "activation": {
+        "prefixes": ["@kilocode:", "@kilo:"],
+        "fileTypes": ["*"],
+        "context": ["code-generation", "optimization", "refactoring"]
+      },
+      "capabilities": [
+        "code-generation",
+        "code-optimization",
+        "refactoring",
+        "pattern-recognition",
+        "performance-tuning",
+        "best-practices",
+        "error-correction",
+        "documentation-generation"
+      ],
+      "settings": {
+        "defaultMode": "code",
+        "contextWindowSize": 6400,
+        "enableTelemetry": false
+      }
+    }
+  ]
+}
