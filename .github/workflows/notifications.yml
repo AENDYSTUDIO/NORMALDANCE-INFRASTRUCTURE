@@ -6,27 +6,33 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Target environment (production, staging, development)'
+        description: "Target environment (production, staging, development)"
         required: true
         type: choice
         options:
-        - production
-        - staging
-        - development
+          - production
+          - staging
+          - development
       version:
-        description: 'Version number (e.g., 1.0.1)'
+        description: "Version number (e.g., 1.0.1)"
         required: true
         type: string
       message:
-        description: 'Custom notification message'
+        description: "Custom notification message"
         required: false
         type: string
-        default: ''
+        default: ""
 
 env:
-  NODE_VERSION: '20.x'
+  NODE_VERSION: "20.x"
 
 jobs:
+  emergency-disable:
+    if: false # EMERGENCY DISABLE - 982 workflows
+    runs-on: ubuntu-latest
+    steps:
+      - name: Emergency Disabled
+        run: echo "This workflow is temporarily disabled due to 982 active workflows"
   # 1. Collect Release Information
   collect-info:
     name: Collect Release Information
@@ -37,53 +43,53 @@ jobs:
       release-url: ${{ steps.version.outputs.release-url }}
       changelog: ${{ steps.changelog.outputs.changelog }}
       release-date: ${{ steps.version.outputs.release-date }}
-      
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        
-    - name: Get release information
-      id: version
-      run: |
-        if [ "${{ github.event_name }}" == "release" ]; then
-          VERSION="${{ github.event.release.tag_name }}"
-          TAG="${{ github.event.release.tag_name }}"
-          RELEASE_URL="${{ github.event.release.html_url }}"
-          RELEASE_DATE=$(date -d "${{ github.event.release.published_at }}" '+%Y-%m-%d')
-        else
-          VERSION="${{ github.event.inputs.version }}"
-          TAG="v${{ github.event.inputs.version }}"
-          RELEASE_URL=""
-          RELEASE_DATE=$(date '+%Y-%m-%d')
-        fi
-        
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "tag=$TAG" >> $GITHUB_OUTPUT
-        echo "release-url=$RELEASE_URL" >> $GITHUB_OUTPUT
-        echo "release-date=$RELEASE_DATE" >> $GITHUB_OUTPUT
-        
-    - name: Extract changelog
-      id: changelog
-      run: |
-        if [ -f "CHANGELOG.md" ]; then
-          # Extract changelog for current version
-          CURRENT_VERSION="${{ steps.version.outputs.version }}"
-          
-          # Use awk to extract changelog for current version
-          awk -v version="[$CURRENT_VERSION]" '
-          BEGIN { found = 0 }
-          $0 ~ "^## \[" version "\]" { found = 1; next }
-          found && $0 ~ "^## \[" { exit }
-          found { print }
-          ' CHANGELOG.md > /tmp/changelog.txt
-          
-          echo "changelog<<EOF" >> $GITHUB_OUTPUT
-          cat /tmp/changelog.txt >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-        fi
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get release information
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "release" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+            TAG="${{ github.event.release.tag_name }}"
+            RELEASE_URL="${{ github.event.release.html_url }}"
+            RELEASE_DATE=$(date -d "${{ github.event.release.published_at }}" '+%Y-%m-%d')
+          else
+            VERSION="${{ github.event.inputs.version }}"
+            TAG="v${{ github.event.inputs.version }}"
+            RELEASE_URL=""
+            RELEASE_DATE=$(date '+%Y-%m-%d')
+          fi
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "release-url=$RELEASE_URL" >> $GITHUB_OUTPUT
+          echo "release-date=$RELEASE_DATE" >> $GITHUB_OUTPUT
+
+      - name: Extract changelog
+        id: changelog
+        run: |
+          if [ -f "CHANGELOG.md" ]; then
+            # Extract changelog for current version
+            CURRENT_VERSION="${{ steps.version.outputs.version }}"
+            
+            # Use awk to extract changelog for current version
+            awk -v version="[$CURRENT_VERSION]" '
+            BEGIN { found = 0 }
+            $0 ~ "^## \[" version "\]" { found = 1; next }
+            found && $0 ~ "^## \[" { exit }
+            found { print }
+            ' CHANGELOG.md > /tmp/changelog.txt
+            
+            echo "changelog<<EOF" >> $GITHUB_OUTPUT
+            cat /tmp/changelog.txt >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
 
   # 2. Notify Slack
   notify-slack:
@@ -91,60 +97,60 @@ jobs:
     runs-on: ubuntu-latest
     needs: collect-info
     if: always()
-    
+
     steps:
-    - name: Send Slack notification
-      uses: 8398a7/action-slack@v3
-      with:
-        status: ${{ job.status }}
-        channel: '#releases'
-        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-        fields: repo,message,commit,author,action,eventName,ref,workflow
-        custom_payload: |
-          {
-            "attachments": [
-              {
-                "color": "${{ job.status == 'success' ? 'good' : job.status == 'failure' ? 'danger' : 'warning' }}",
-                "title": "🚀 NORMALDANCE Version Release - ${{ needs.collect-info.outputs.version }}",
-                "title_link": "${{ needs.collect-info.outputs.release-url || github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-                "text": "${{ github.event.inputs.message || 'New version of NORMALDANCE has been released!' }}",
-                "fields": [
-                  {
-                    "title": "Version",
-                    "value": "${{ needs.collect-info.outputs.version }}",
-                    "short": true
-                  },
-                  {
-                    "title": "Tag",
-                    "value": "${{ needs.collect-info.outputs.tag }}",
-                    "short": true
-                  },
-                  {
-                    "title": "Date",
-                    "value": "${{ needs.collect-info.outputs.release-date }}",
-                    "short": true
-                  },
-                  {
-                    "title": "Environment",
-                    "value": "${{ github.event.inputs.environment || 'Production' }}",
-                    "short": true
-                  },
-                  {
-                    "title": "Repository",
-                    "value": "${{ github.repository }}",
-                    "short": true
-                  },
-                  {
-                    "title": "Release URL",
-                    "value": "${{ needs.collect-info.outputs.release-url || 'N/A' }}",
-                    "short": false
-                  }
-                ],
-                "footer": "NORMALDANCE Release Bot",
-                "ts": ${{ github.event.created_at || '' }}
-              }
-            ]
-          }
+      - name: Send Slack notification
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: "#releases"
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+          custom_payload: |
+            {
+              "attachments": [
+                {
+                  "color": "${{ job.status == 'success' ? 'good' : job.status == 'failure' ? 'danger' : 'warning' }}",
+                  "title": "🚀 NORMALDANCE Version Release - ${{ needs.collect-info.outputs.version }}",
+                  "title_link": "${{ needs.collect-info.outputs.release-url || github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+                  "text": "${{ github.event.inputs.message || 'New version of NORMALDANCE has been released!' }}",
+                  "fields": [
+                    {
+                      "title": "Version",
+                      "value": "${{ needs.collect-info.outputs.version }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Tag",
+                      "value": "${{ needs.collect-info.outputs.tag }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Date",
+                      "value": "${{ needs.collect-info.outputs.release-date }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Environment",
+                      "value": "${{ github.event.inputs.environment || 'Production' }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Repository",
+                      "value": "${{ github.repository }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Release URL",
+                      "value": "${{ needs.collect-info.outputs.release-url || 'N/A' }}",
+                      "short": false
+                    }
+                  ],
+                  "footer": "NORMALDANCE Release Bot",
+                  "ts": ${{ github.event.created_at || '' }}
+                }
+              ]
+            }
 
   # 3. Notify Discord
   notify-discord:
@@ -152,30 +158,30 @@ jobs:
     runs-on: ubuntu-latest
     needs: collect-info
     if: always()
-    
+
     steps:
-    - name: Send Discord notification
-      uses: appleboy/telegram-action@master
-      if: success()
-      with:
-        to: ${{ secrets.DISCORD_WEBHOOK }}
-        message: |
-          🎉 **NORMALDANCE New Release v${{ needs.collect-info.outputs.version }}**
-          
-          **Version:** ${{ needs.collect-info.outputs.version }}
-          **Tag:** ${{ needs.collect-info.outputs.tag }}
-          **Date:** ${{ needs.collect-info.outputs.release-date }}
-          **Environment:** ${{ github.event.inputs.environment || 'Production' }}
-          
-          📋 **Release Notes:**
-          ${{ needs.collect-info.outputs.changelog }}
-          
-          🔗 **Links:**
-          • GitHub Release: ${{ needs.collect-info.outputs.release-url || 'N/A' }}
-          • Changelog: https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md
-          • Documentation: https://docs.normaldance.com
-          
-          🎵 **Thank you for using NORMALDANCE!**
+      - name: Send Discord notification
+        uses: appleboy/telegram-action@master
+        if: success()
+        with:
+          to: ${{ secrets.DISCORD_WEBHOOK }}
+          message: |
+            🎉 **NORMALDANCE New Release v${{ needs.collect-info.outputs.version }}**
+
+            **Version:** ${{ needs.collect-info.outputs.version }}
+            **Tag:** ${{ needs.collect-info.outputs.tag }}
+            **Date:** ${{ needs.collect-info.outputs.release-date }}
+            **Environment:** ${{ github.event.inputs.environment || 'Production' }}
+
+            📋 **Release Notes:**
+            ${{ needs.collect-info.outputs.changelog }}
+
+            🔗 **Links:**
+            • GitHub Release: ${{ needs.collect-info.outputs.release-url || 'N/A' }}
+            • Changelog: https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md
+            • Documentation: https://docs.normaldance.com
+
+            🎵 **Thank you for using NORMALDANCE!**
 
   # 4. Notify Email
   notify-email:
@@ -183,38 +189,38 @@ jobs:
     runs-on: ubuntu-latest
     needs: collect-info
     if: success()
-    
+
     steps:
-    - name: Send email notification
-      uses: dawidd6/action-send-mail@v3
-      with:
-        server_address: smtp.gmail.com
-        server_port: 587
-        username: ${{ secrets.EMAIL_USERNAME }}
-        password: ${{ secrets.EMAIL_PASSWORD }}
-        to: ${{ secrets.EMAIL_RECIPIENTS }}
-        from: normaldance@noreply.normaldance.com
-        subject: "🚀 NORMALDANCE v${{ needs.collect-info.outputs.version }} Released"
-        body: |
-          Hello NORMALDANCE Team,
-          
-          A new version has been released!
-          
-          **Version:** ${{ needs.collect-info.outputs.version }}
-          **Tag:** ${{ needs.collect-info.outputs.tag }}
-          **Date:** ${{ needs.collect-info.outputs.release-date }}
-          **Environment:** ${{ github.event.inputs.environment || 'Production' }}
-          
-          **Release Notes:**
-          ${{ needs.collect-info.outputs.changelog }}
-          
-          **GitHub Release:** ${{ needs.collect-info.outputs.release-url || 'N/A' }}
-          **Changelog:** https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md
-          
-          Please review the release and monitor for any issues.
-          
-          Best regards,
-          NORMALDANCE Release Bot
+      - name: Send email notification
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          to: ${{ secrets.EMAIL_RECIPIENTS }}
+          from: normaldance@noreply.normaldance.com
+          subject: "🚀 NORMALDANCE v${{ needs.collect-info.outputs.version }} Released"
+          body: |
+            Hello NORMALDANCE Team,
+
+            A new version has been released!
+
+            **Version:** ${{ needs.collect-info.outputs.version }}
+            **Tag:** ${{ needs.collect-info.outputs.tag }}
+            **Date:** ${{ needs.collect-info.outputs.release-date }}
+            **Environment:** ${{ github.event.inputs.environment || 'Production' }}
+
+            **Release Notes:**
+            ${{ needs.collect-info.outputs.changelog }}
+
+            **GitHub Release:** ${{ needs.collect-info.outputs.release-url || 'N/A' }}
+            **Changelog:** https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md
+
+            Please review the release and monitor for any issues.
+
+            Best regards,
+            NORMALDANCE Release Bot
 
   # 5. Notify Internal Systems
   notify-internal:
@@ -222,37 +228,37 @@ jobs:
     runs-on: ubuntu-latest
     needs: collect-info
     if: success()
-    
+
     steps:
-    - name: Update monitoring dashboard
-      run: |
-        curl -X POST \
-          -H "Authorization: Bearer ${{ secrets.MONITORING_API_TOKEN }}" \
-          -H "Content-Type: application/json" \
-          -d '{
-            "version": "${{ needs.collect-info.outputs.version }}",
-            "tag": "${{ needs.collect-info.outputs.tag }}",
-            "release_date": "${{ needs.collect-info.outputs.release-date }}",
-            "environment": "${{ github.event.inputs.environment || 'production' }}",
-            "repository": "${{ github.repository }}",
-            "release_url": "${{ needs.collect-info.outputs.release-url }}"
-          }' \
-          ${{ secrets.MONITORING_WEBHOOK_URL }}
-          
-    - name: Update analytics system
-      run: |
-        curl -X POST \
-          -H "Authorization: Bearer ${{ secrets.ANALYTICS_API_TOKEN }}" \
-          -H "Content-Type: application/json" \
-          -d '{
-            "event": "version_released",
-            "version": "${{ needs.collect-info.outputs.version }}",
-            "tag": "${{ needs.collect-info.outputs.tag }}",
-            "timestamp": "$(date -Iseconds)",
-            "environment": "${{ github.event.inputs.environment || 'production' }}",
-            "repository": "${{ github.repository }}"
-          }' \
-          ${{ secrets.ANALYTICS_WEBHOOK_URL }}
+      - name: Update monitoring dashboard
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.MONITORING_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "version": "${{ needs.collect-info.outputs.version }}",
+              "tag": "${{ needs.collect-info.outputs.tag }}",
+              "release_date": "${{ needs.collect-info.outputs.release-date }}",
+              "environment": "${{ github.event.inputs.environment || 'production' }}",
+              "repository": "${{ github.repository }}",
+              "release_url": "${{ needs.collect-info.outputs.release-url }}"
+            }' \
+            ${{ secrets.MONITORING_WEBHOOK_URL }}
+
+      - name: Update analytics system
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.ANALYTICS_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "event": "version_released",
+              "version": "${{ needs.collect-info.outputs.version }}",
+              "tag": "${{ needs.collect-info.outputs.tag }}",
+              "timestamp": "$(date -Iseconds)",
+              "environment": "${{ github.event.inputs.environment || 'production' }}",
+              "repository": "${{ github.repository }}"
+            }' \
+            ${{ secrets.ANALYTICS_WEBHOOK_URL }}
 
   # 6. Notify Mobile App Stores (if applicable)
   notify-stores:
@@ -260,44 +266,51 @@ jobs:
     runs-on: ubuntu-latest
     needs: collect-info
     if: github.event.inputs.environment == 'production'
-    
+
     steps:
-    - name: Notify Apple App Store
-      if: success()
-      run: |
-        echo "Notifying Apple App Store Connect..."
-        # Integration with App Store Connect API would go here
-        echo "Apple App Store notification sent"
-        
-    - name: Notify Google Play Store
-      if: success()
-      run: |
-        echo "Notifying Google Play Console..."
-        # Integration with Google Play Console API would go here
-        echo "Google Play Store notification sent"
+      - name: Notify Apple App Store
+        if: success()
+        run: |
+          echo "Notifying Apple App Store Connect..."
+          # Integration with App Store Connect API would go here
+          echo "Apple App Store notification sent"
+
+      - name: Notify Google Play Store
+        if: success()
+        run: |
+          echo "Notifying Google Play Console..."
+          # Integration with Google Play Console API would go here
+          echo "Google Play Store notification sent"
 
   # 7. Generate Release Summary
   generate-summary:
     name: Generate Release Summary
     runs-on: ubuntu-latest
-    needs: [collect-info, notify-slack, notify-discord, notify-email, notify-internal]
+    needs:
+      [
+        collect-info,
+        notify-slack,
+        notify-discord,
+        notify-email,
+        notify-internal,
+      ]
     if: always()
-    
+
     steps:
-    - name: Create release summary
-      run: |
-        echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Version:** ${{ needs.collect-info.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-        echo "**Tag:** ${{ needs.collect-info.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
-        echo "**Date:** ${{ needs.collect-info.outputs.release-date }}" >> $GITHUB_STEP_SUMMARY
-        echo "**Environment:** ${{ github.event.inputs.environment || 'Production' }}" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Notifications Status:**" >> $GITHUB_STEP_SUMMARY
-        echo "- Slack: ${{ job.statuses.notify-slack.result }}" >> $GITHUB_STEP_SUMMARY
-        echo "- Discord: ${{ job.statuses.notify-discord.result }}" >> $GITHUB_STEP_SUMMARY
-        echo "- Email: ${{ job.statuses.notify-email.result }}" >> $GITHUB_STEP_SUMMARY
-        echo "- Internal: ${{ job.statuses.notify-internal.result }}" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Release Notes:**" >> $GITHUB_STEP_SUMMARY
-        echo "$ needs.collect-info.outputs.changelog }}" >> $GITHUB_STEP_SUMMARY
+      - name: Create release summary
+        run: |
+          echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ needs.collect-info.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** ${{ needs.collect-info.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Date:** ${{ needs.collect-info.outputs.release-date }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ github.event.inputs.environment || 'Production' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Notifications Status:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Slack: ${{ job.statuses.notify-slack.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Discord: ${{ job.statuses.notify-discord.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Email: ${{ job.statuses.notify-email.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Internal: ${{ job.statuses.notify-internal.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Release Notes:**" >> $GITHUB_STEP_SUMMARY
+          echo "$ needs.collect-info.outputs.changelog }}" >> $GITHUB_STEP_SUMMARY

@@ -2,202 +2,250 @@ name: Deploy to Render
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Environment to deploy to'
+        description: "Environment to deploy to"
         required: true
-        default: 'production'
+        default: "production"
         type: choice
         options:
-        - production
-        - staging
-        - preview
+          - production
+          - staging
+          - preview
       service:
-        description: 'Service to deploy'
+        description: "Service to deploy"
         required: true
-        default: 'dnb1st-ru'
+        default: "dnb1st-ru"
         type: choice
         options:
-        - dnb1st-ru
-        - dnb1st-store
+          - dnb1st-ru
+          - dnb1st-store
 
 env:
-  NODE_VERSION: '20.x'
+  NODE_VERSION: "20.x"
   RENDER_API_TOKEN: ${{ secrets.RENDER_API_TOKEN }}
   RENDER_SERVICE_ID_DNB1ST_RU: ${{ secrets.RENDER_SERVICE_ID_DNB1ST_RU }}
   RENDER_SERVICE_ID_DNB1ST_STORE: ${{ secrets.RENDER_SERVICE_ID_DNB1ST_STORE }}
   SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
 jobs:
+  emergency-disable:
+    if: false # EMERGENCY DISABLE - 982 workflows
+    runs-on: ubuntu-latest
+    steps:
+      - name: Emergency Disabled
+        run: echo "This workflow is temporarily disabled due to 982 active workflows"
   test:
     name: Run Tests
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Run linting
-      run: npm run lint
-      
-    - name: Run tests
-      run: npm test
-      env:
-        NODE_OPTIONS: --experimental-vm-modules
-      
-    - name: Upload coverage reports
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./coverage/lcov.info
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: false
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run tests
+        run: npm test
+        env:
+          NODE_OPTIONS: --experimental-vm-modules
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
 
   build:
     name: Build Application
     runs-on: ubuntu-latest
     needs: test
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Build application
-      run: npm run build
-      
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: build-artifacts
-        path: |
-          .next/
-          out/
-        retention-days: 7
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: |
+            .next/
+            out/
+          retention-days: 7
 
   deploy-dnb1st-ru:
     name: Deploy dnb1st.ru
     runs-on: ubuntu-latest
     needs: [test, build]
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    
+
     environment:
       name: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
       url: https://dnb1st-ru.onrender.com
-      
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Build application
-      run: npm run build
-      
-    - name: Deploy to Render
-      run: |
-        # Определяем переменные окружения
-        if [[ "${{ github.ref_name }}" == "main" ]]; then
-          ENVIRONMENT="production"
-          SERVICE_ID="${{ env.RENDER_SERVICE_ID_DNB1ST_RU }}"
-        else
-          ENVIRONMENT="staging"
-          SERVICE_ID="${{ env.RENDER_SERVICE_ID_DNB1ST_RU }}"
-        fi
-        
-        echo "Deploying dnb1st.ru to $ENVIRONMENT environment..."
-        echo "Service ID: $SERVICE_ID"
-        
-        # Создаем деплой на Render
-        curl -X POST \
-          -H "Authorization: Bearer ${{ env.RENDER_API_TOKEN }}" \
-          -H "Content-Type: application/json" \
-          -d "{
-            \"service_id\": \"$SERVICE_ID\",
-            \"env\": \"$ENVIRONMENT\",
-            \"git\": {
-              \"branch\": \"${{ github.ref_name }}\",
-              \"commit_sha\": \"${{ github.sha }}\"
-            },
-            \"env_vars\": [
-              {
-                \"key\": \"COMMIT_SHA\",
-                \"value\": \"${{ github.sha }}\"
-              },
-              {
-                \"key\": \"BRANCH_NAME\",
-                \"value\": \"${{ github.ref_name }}\"
-              },
-              {
-                \"key\": \"DEPLOY_ENVIRONMENT\",
-                \"value\": \"$ENVIRONMENT\"
-              }
-            ]
-          }" \
-          "https://api.render.com/v1/services/$SERVICE_ID/deploys"
-        
-        echo "Deployment triggered successfully for dnb1st.ru"
-      
-    - name: Monitor deployment
-      run: |
-        SERVICE_ID="${{ env.RENDER_SERVICE_ID_DNB1ST_RU }}"
-        
-        # Ждем завершения деплоя
-        echo "Waiting for deployment to complete..."
-        for i in {1..30}; do
-          DEPLOY_STATUS=$(curl -s \
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Deploy to Render
+        run: |
+          # Определяем переменные окружения
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            ENVIRONMENT="production"
+            SERVICE_ID="${{ env.RENDER_SERVICE_ID_DNB1ST_RU }}"
+          else
+            ENVIRONMENT="staging"
+            SERVICE_ID="${{ env.RENDER_SERVICE_ID_DNB1ST_RU }}"
+          fi
+
+          echo "Deploying dnb1st.ru to $ENVIRONMENT environment..."
+          echo "Service ID: $SERVICE_ID"
+
+          # Создаем деплой на Render
+          curl -X POST \
             -H "Authorization: Bearer ${{ env.RENDER_API_TOKEN }}" \
-            "https://api.render.com/v1/services/$SERVICE_ID/deploys" | \
-            jq -r '.[0].status')
-          
-          echo "Deployment status: $DEPLOY_STATUS"
-          
-          if [[ "$DEPLOY_STATUS" == "succeeded" ]]; then
-            echo "✅ Deployment successful"
+            -H "Content-Type: application/json" \
+            -d "{
+              \"service_id\": \"$SERVICE_ID\",
+              \"env\": \"$ENVIRONMENT\",
+              \"git\": {
+                \"branch\": \"${{ github.ref_name }}\",
+                \"commit_sha\": \"${{ github.sha }}\"
+              },
+              \"env_vars\": [
+                {
+                  \"key\": \"COMMIT_SHA\",
+                  \"value\": \"${{ github.sha }}\"
+                },
+                {
+                  \"key\": \"BRANCH_NAME\",
+                  \"value\": \"${{ github.ref_name }}\"
+                },
+                {
+                  \"key\": \"DEPLOY_ENVIRONMENT\",
+                  \"value\": \"$ENVIRONMENT\"
+                }
+              ]
+            }" \
+            "https://api.render.com/v1/services/$SERVICE_ID/deploys"
+
+          echo "Deployment triggered successfully for dnb1st.ru"
+
+      - name: Monitor deployment
+        run: |
+          SERVICE_ID="${{ env.RENDER_SERVICE_ID_DNB1ST_RU }}"
+
+          # Ждем завершения деплоя
+          echo "Waiting for deployment to complete..."
+          for i in {1..30}; do
+            DEPLOY_STATUS=$(curl -s \
+              -H "Authorization: Bearer ${{ env.RENDER_API_TOKEN }}" \
+              "https://api.render.com/v1/services/$SERVICE_ID/deploys" | \
+              jq -r '.[0].status')
             
-            # Проверяем health endpoint
-            HEALTH_CHECK=$(curl -s -o /dev/null -w "%{http_code}" \
-              "https://dnb1st-ru.onrender.com/api/health")
+            echo "Deployment status: $DEPLOY_STATUS"
             
-            if [[ "$HEALTH_CHECK" == "200" ]]; then
-              echo "✅ Health check passed"
+            if [[ "$DEPLOY_STATUS" == "succeeded" ]]; then
+              echo "✅ Deployment successful"
               
-              # Отправляем уведомление в Slack
+              # Проверяем health endpoint
+              HEALTH_CHECK=$(curl -s -o /dev/null -w "%{http_code}" \
+                "https://dnb1st-ru.onrender.com/api/health")
+              
+              if [[ "$HEALTH_CHECK" == "200" ]]; then
+                echo "✅ Health check passed"
+                
+                # Отправляем уведомление в Slack
+                curl -X POST \
+                  -H "Content-type: application/json" \
+                  -d "{
+                    \"text\": \"🚀 Deployment successful for dnb1st.ru\",
+                    \"attachments\": [
+                      {
+                        \"color\": \"good\",
+                        \"fields\": [
+                          {
+                            \"title\": \"Service\",
+                            \"value\": \"dnb1st.ru\",
+                            \"short\": true
+                          },
+                          {
+                            \"title\": \"Environment\",
+                            \"value\": \"$ENVIRONMENT\",
+                            \"short\": true
+                          },
+                          {
+                            \"title\": \"Commit\",
+                            \"value\": \"${{ github.sha }}\",
+                            \"short\": true
+                          },
+                          {
+                            \"title\": \"URL\",
+                            \"value\": \"https://dnb1st-ru.onrender.com\",
+                            \"short\": false
+                          }
+                        ]
+                      }
+                    ]
+                  }" \
+                  "${{ env.SLACK_WEBHOOK_URL }}"
+              else
+                echo "❌ Health check failed"
+                exit 1
+              fi
+              break
+            elif [[ "$DEPLOY_STATUS" == "failed" ]]; then
+              echo "❌ Deployment failed"
+              
+              # Отправляем уведомление об ошибке в Slack
               curl -X POST \
                 -H "Content-type: application/json" \
                 -d "{
-                  \"text\": \"🚀 Deployment successful for dnb1st.ru\",
+                  \"text\": \"❌ Deployment failed for dnb1st.ru\",
                   \"attachments\": [
                     {
-                      \"color\": \"good\",
+                      \"color\": \"danger\",
                       \"fields\": [
                         {
                           \"title\": \"Service\",
@@ -210,13 +258,13 @@ jobs:
                           \"short\": true
                         },
                         {
-                          \"title\": \"Commit\",
-                          \"value\": \"${{ github.sha }}\",
+                          \"title\": \"Status\",
+                          \"value\": \"$DEPLOY_STATUS\",
                           \"short\": true
                         },
                         {
-                          \"title\": \"URL\",
-                          \"value\": \"https://dnb1st-ru.onrender.com\",
+                          \"title\": \"Commit\",
+                          \"value\": \"${{ github.sha }}\",
                           \"short\": false
                         }
                       ]
@@ -224,159 +272,159 @@ jobs:
                   ]
                 }" \
                 "${{ env.SLACK_WEBHOOK_URL }}"
-            else
-              echo "❌ Health check failed"
               exit 1
             fi
-            break
-          elif [[ "$DEPLOY_STATUS" == "failed" ]]; then
-            echo "❌ Deployment failed"
             
-            # Отправляем уведомление об ошибке в Slack
-            curl -X POST \
-              -H "Content-type: application/json" \
-              -d "{
-                \"text\": \"❌ Deployment failed for dnb1st.ru\",
-                \"attachments\": [
-                  {
-                    \"color\": \"danger\",
-                    \"fields\": [
-                      {
-                        \"title\": \"Service\",
-                        \"value\": \"dnb1st.ru\",
-                        \"short\": true
-                      },
-                      {
-                        \"title\": \"Environment\",
-                        \"value\": \"$ENVIRONMENT\",
-                        \"short\": true
-                      },
-                      {
-                        \"title\": \"Status\",
-                        \"value\": \"$DEPLOY_STATUS\",
-                        \"short\": true
-                      },
-                      {
-                        \"title\": \"Commit\",
-                        \"value\": \"${{ github.sha }}\",
-                        \"short\": false
-                      }
-                    ]
-                  }
-                ]
-              }" \
-              "${{ env.SLACK_WEBHOOK_URL }}"
-            exit 1
-          fi
-          
-          sleep 30
-        done
-        
-        echo "❌ Deployment timeout"
-        exit 1
+            sleep 30
+          done
+
+          echo "❌ Deployment timeout"
+          exit 1
 
   deploy-dnb1st-store:
     name: Deploy dnb1st.store
     runs-on: ubuntu-latest
     needs: [test, build]
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    
+
     environment:
       name: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
       url: https://dnb1st-store.onrender.com
-      
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Build application
-      run: npm run build
-      
-    - name: Deploy to Render
-      run: |
-        # Определяем переменные окружения
-        if [[ "${{ github.ref_name }}" == "main" ]]; then
-          ENVIRONMENT="production"
-          SERVICE_ID="${{ env.RENDER_SERVICE_ID_DNB1ST_STORE }}"
-        else
-          ENVIRONMENT="staging"
-          SERVICE_ID="${{ env.RENDER_SERVICE_ID_DNB1ST_STORE }}"
-        fi
-        
-        echo "Deploying dnb1st.store to $ENVIRONMENT environment..."
-        echo "Service ID: $SERVICE_ID"
-        
-        # Создаем деплой на Render
-        curl -X POST \
-          -H "Authorization: Bearer ${{ env.RENDER_API_TOKEN }}" \
-          -H "Content-Type: application/json" \
-          -d "{
-            \"service_id\": \"$SERVICE_ID\",
-            \"env\": \"$ENVIRONMENT\",
-            \"git\": {
-              \"branch\": \"${{ github.ref_name }}\",
-              \"commit_sha\": \"${{ github.sha }}\"
-            },
-            \"env_vars\": [
-              {
-                \"key\": \"COMMIT_SHA\",
-                \"value\": \"${{ github.sha }}\"
-              },
-              {
-                \"key\": \"BRANCH_NAME\",
-                \"value\": \"${{ github.ref_name }}\"
-              },
-              {
-                \"key\": \"DEPLOY_ENVIRONMENT\",
-                \"value\": \"$ENVIRONMENT\"
-              }
-            ]
-          }" \
-          "https://api.render.com/v1/services/$SERVICE_ID/deploys"
-        
-        echo "Deployment triggered successfully for dnb1st.store"
-      
-    - name: Monitor deployment
-      run: |
-        SERVICE_ID="${{ env.RENDER_SERVICE_ID_DNB1ST_STORE }}"
-        
-        # Ждем завершения деплоя
-        echo "Waiting for deployment to complete..."
-        for i in {1..30}; do
-          DEPLOY_STATUS=$(curl -s \
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Deploy to Render
+        run: |
+          # Определяем переменные окружения
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            ENVIRONMENT="production"
+            SERVICE_ID="${{ env.RENDER_SERVICE_ID_DNB1ST_STORE }}"
+          else
+            ENVIRONMENT="staging"
+            SERVICE_ID="${{ env.RENDER_SERVICE_ID_DNB1ST_STORE }}"
+          fi
+
+          echo "Deploying dnb1st.store to $ENVIRONMENT environment..."
+          echo "Service ID: $SERVICE_ID"
+
+          # Создаем деплой на Render
+          curl -X POST \
             -H "Authorization: Bearer ${{ env.RENDER_API_TOKEN }}" \
-            "https://api.render.com/v1/services/$SERVICE_ID/deploys" | \
-            jq -r '.[0].status')
-          
-          echo "Deployment status: $DEPLOY_STATUS"
-          
-          if [[ "$DEPLOY_STATUS" == "succeeded" ]]; then
-            echo "✅ Deployment successful"
+            -H "Content-Type: application/json" \
+            -d "{
+              \"service_id\": \"$SERVICE_ID\",
+              \"env\": \"$ENVIRONMENT\",
+              \"git\": {
+                \"branch\": \"${{ github.ref_name }}\",
+                \"commit_sha\": \"${{ github.sha }}\"
+              },
+              \"env_vars\": [
+                {
+                  \"key\": \"COMMIT_SHA\",
+                  \"value\": \"${{ github.sha }}\"
+                },
+                {
+                  \"key\": \"BRANCH_NAME\",
+                  \"value\": \"${{ github.ref_name }}\"
+                },
+                {
+                  \"key\": \"DEPLOY_ENVIRONMENT\",
+                  \"value\": \"$ENVIRONMENT\"
+                }
+              ]
+            }" \
+            "https://api.render.com/v1/services/$SERVICE_ID/deploys"
+
+          echo "Deployment triggered successfully for dnb1st.store"
+
+      - name: Monitor deployment
+        run: |
+          SERVICE_ID="${{ env.RENDER_SERVICE_ID_DNB1ST_STORE }}"
+
+          # Ждем завершения деплоя
+          echo "Waiting for deployment to complete..."
+          for i in {1..30}; do
+            DEPLOY_STATUS=$(curl -s \
+              -H "Authorization: Bearer ${{ env.RENDER_API_TOKEN }}" \
+              "https://api.render.com/v1/services/$SERVICE_ID/deploys" | \
+              jq -r '.[0].status')
             
-            # Проверяем health endpoint
-            HEALTH_CHECK=$(curl -s -o /dev/null -w "%{http_code}" \
-              "https://dnb1st-store.onrender.com/api/health")
+            echo "Deployment status: $DEPLOY_STATUS"
             
-            if [[ "$HEALTH_CHECK" == "200" ]]; then
-              echo "✅ Health check passed"
+            if [[ "$DEPLOY_STATUS" == "succeeded" ]]; then
+              echo "✅ Deployment successful"
               
-              # Отправляем уведомление в Slack
+              # Проверяем health endpoint
+              HEALTH_CHECK=$(curl -s -o /dev/null -w "%{http_code}" \
+                "https://dnb1st-store.onrender.com/api/health")
+              
+              if [[ "$HEALTH_CHECK" == "200" ]]; then
+                echo "✅ Health check passed"
+                
+                # Отправляем уведомление в Slack
+                curl -X POST \
+                  -H "Content-type: application/json" \
+                  -d "{
+                    \"text\": \"🚀 Deployment successful for dnb1st.store\",
+                    \"attachments\": [
+                      {
+                        \"color\": \"good\",
+                        \"fields\": [
+                          {
+                            \"title\": \"Service\",
+                            \"value\": \"dnb1st.store\",
+                            \"short\": true
+                          },
+                          {
+                            \"title\": \"Environment\",
+                            \"value\": \"$ENVIRONMENT\",
+                            \"short\": true
+                          },
+                          {
+                            \"title\": \"Commit\",
+                            \"value\": \"${{ github.sha }}\",
+                            \"short\": true
+                          },
+                          {
+                            \"title\": \"URL\",
+                            \"value\": \"https://dnb1st-store.onrender.com\",
+                            \"short\": false
+                          }
+                        ]
+                      }
+                    ]
+                  }" \
+                  "${{ env.SLACK_WEBHOOK_URL }}"
+              else
+                echo "❌ Health check failed"
+                exit 1
+              fi
+              break
+            elif [[ "$DEPLOY_STATUS" == "failed" ]]; then
+              echo "❌ Deployment failed"
+              
+              # Отправляем уведомление об ошибке в Slack
               curl -X POST \
                 -H "Content-type: application/json" \
                 -d "{
-                  \"text\": \"🚀 Deployment successful for dnb1st.store\",
+                  \"text\": \"❌ Deployment failed for dnb1st.store\",
                   \"attachments\": [
                     {
-                      \"color\": \"good\",
+                      \"color\": \"danger\",
                       \"fields\": [
                         {
                           \"title\": \"Service\",
@@ -389,13 +437,13 @@ jobs:
                           \"short\": true
                         },
                         {
-                          \"title\": \"Commit\",
-                          \"value\": \"${{ github.sha }}\",
+                          \"title\": \"Status\",
+                          \"value\": \"$DEPLOY_STATUS\",
                           \"short\": true
                         },
                         {
-                          \"title\": \"URL\",
-                          \"value\": \"https://dnb1st-store.onrender.com\",
+                          \"title\": \"Commit\",
+                          \"value\": \"${{ github.sha }}\",
                           \"short\": false
                         }
                       ]
@@ -403,161 +451,120 @@ jobs:
                   ]
                 }" \
                 "${{ env.SLACK_WEBHOOK_URL }}"
-            else
-              echo "❌ Health check failed"
               exit 1
             fi
-            break
-          elif [[ "$DEPLOY_STATUS" == "failed" ]]; then
-            echo "❌ Deployment failed"
             
-            # Отправляем уведомление об ошибке в Slack
-            curl -X POST \
-              -H "Content-type: application/json" \
-              -d "{
-                \"text\": \"❌ Deployment failed for dnb1st.store\",
-                \"attachments\": [
-                  {
-                    \"color\": \"danger\",
-                    \"fields\": [
-                      {
-                        \"title\": \"Service\",
-                        \"value\": \"dnb1st.store\",
-                        \"short\": true
-                      },
-                      {
-                        \"title\": \"Environment\",
-                        \"value\": \"$ENVIRONMENT\",
-                        \"short\": true
-                      },
-                      {
-                        \"title\": \"Status\",
-                        \"value\": \"$DEPLOY_STATUS\",
-                        \"short\": true
-                      },
-                      {
-                        \"title\": \"Commit\",
-                        \"value\": \"${{ github.sha }}\",
-                        \"short\": false
-                      }
-                    ]
-                  }
-                ]
-              }" \
-              "${{ env.SLACK_WEBHOOK_URL }}"
-            exit 1
-          fi
-          
-          sleep 30
-        done
-        
-        echo "❌ Deployment timeout"
-        exit 1
+            sleep 30
+          done
+
+          echo "❌ Deployment timeout"
+          exit 1
 
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Run security audit
-      run: npm audit --audit-level moderate
-      
-    - name: Run high/critical security audit
-      run: npm audit --audit-level high --audit-level critical
-      continue-on-error: true
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run security audit
+        run: npm audit --audit-level moderate
+
+      - name: Run high/critical security audit
+        run: npm audit --audit-level high --audit-level critical
+        continue-on-error: true
 
   performance-test:
     name: Performance Test
     runs-on: ubuntu-latest
     needs: [test, build]
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Build application
-      run: npm run build
-      
-    - name: Run performance tests
-      run: npm run test:performance
-      continue-on-error: true
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Run performance tests
+        run: npm run test:performance
+        continue-on-error: true
 
   notify:
     name: Notify
     runs-on: ubuntu-latest
-    needs: [deploy-dnb1st-ru, deploy-dnb1st-store, security-scan, performance-test]
+    needs:
+      [deploy-dnb1st-ru, deploy-dnb1st-store, security-scan, performance-test]
     if: always()
-    
+
     steps:
-    - name: Send notification
-      run: |
-        if [[ "${{ needs.deploy-dnb1st-ru.result }}" == "success" ]] && \
-           [[ "${{ needs.deploy-dnb1st-store.result }}" == "success" ]]; then
-          EMOJI="✅"
-          COLOR="good"
-          STATUS="Success"
-        else
-          EMOJI="❌"
-          COLOR="danger"
-          STATUS="Failed"
-        fi
-        
-        curl -X POST \
-          -H "Content-type: application/json" \
-          -d "{
-            \"text\": \"$EMOJI Pipeline $STATUS for DNB1ST\",
-            \"attachments\": [
-              {
-                \"color\": \"$COLOR\",
-                \"fields\": [
-                  {
-                    \"title\": \"Repository\",
-                    \"value\": \"${{ github.repository }}\",
-                    \"short\": true
-                  },
-                  {
-                    \"title\": \"Branch\",
-                    \"value\": \"${{ github.ref_name }}\",
-                    \"short\": true
-                  },
-                  {
-                    \"title\": \"Commit\",
-                    \"value\": \"${{ github.sha }}\",
-                    \"short\": true
-                  },
-                  {
-                    \"title\": \"Status\",
-                    \"value\": \"$STATUS\",
-                    \"short\": true
-                  },
-                  {
-                    \"title\": \"URL\",
-                    \"value\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\",
-                    \"short\": false
-                  }
-                ]
-              }
-            ]
-          }" \
-          "${{ env.SLACK_WEBHOOK_URL }}"
+      - name: Send notification
+        run: |
+          if [[ "${{ needs.deploy-dnb1st-ru.result }}" == "success" ]] && \
+             [[ "${{ needs.deploy-dnb1st-store.result }}" == "success" ]]; then
+            EMOJI="✅"
+            COLOR="good"
+            STATUS="Success"
+          else
+            EMOJI="❌"
+            COLOR="danger"
+            STATUS="Failed"
+          fi
+
+          curl -X POST \
+            -H "Content-type: application/json" \
+            -d "{
+              \"text\": \"$EMOJI Pipeline $STATUS for DNB1ST\",
+              \"attachments\": [
+                {
+                  \"color\": \"$COLOR\",
+                  \"fields\": [
+                    {
+                      \"title\": \"Repository\",
+                      \"value\": \"${{ github.repository }}\",
+                      \"short\": true
+                    },
+                    {
+                      \"title\": \"Branch\",
+                      \"value\": \"${{ github.ref_name }}\",
+                      \"short\": true
+                    },
+                    {
+                      \"title\": \"Commit\",
+                      \"value\": \"${{ github.sha }}\",
+                      \"short\": true
+                    },
+                    {
+                      \"title\": \"Status\",
+                      \"value\": \"$STATUS\",
+                      \"short\": true
+                    },
+                    {
+                      \"title\": \"URL\",
+                      \"value\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\",
+                      \"short\": false
+                    }
+                  ]
+                }
+              ]
+            }" \
+            "${{ env.SLACK_WEBHOOK_URL }}"

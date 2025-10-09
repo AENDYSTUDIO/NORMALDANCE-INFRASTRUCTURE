@@ -2,50 +2,56 @@ name: Test NormalDance
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 env:
-  NODE_VERSION: '20.x'
-  PLAYWRIGHT_BROWSER: 'chromium'
+  NODE_VERSION: "20.x"
+  PLAYWRIGHT_BROWSER: "chromium"
 
 jobs:
+  emergency-disable:
+    if: false # EMERGENCY DISABLE - 982 workflows
+    runs-on: ubuntu-latest
+    steps:
+      - name: Emergency Disabled
+        run: echo "This workflow is temporarily disabled due to 982 active workflows"
   # Unit Tests
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: '**/package-lock.json'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Run unit tests
-      run: npm test -- --testPathPattern="tests/unit" --coverage
-      
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./coverage/lcov.info
-        flags: unit
-        name: unit-coverage
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test -- --testPathPattern="tests/unit" --coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+          flags: unit
+          name: unit-coverage
 
   # Integration Tests
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
-    
+
     services:
       postgres:
         image: postgres:15
@@ -59,7 +65,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-          
+
       redis:
         image: redis:7
         ports:
@@ -69,329 +75,339 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: '**/package-lock.json'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Wait for services
-      run: |
-        until pg_isready -h localhost -p 5432; do
-          echo "Waiting for PostgreSQL..."
-          sleep 2
-        done
-        until redis-cli ping; do
-          echo "Waiting for Redis..."
-          sleep 2
-        done
-        
-    - name: Run integration tests
-      run: npm run test:integration
-      
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./coverage/lcov.info
-        flags: integration
-        name: integration-coverage
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Wait for services
+        run: |
+          until pg_isready -h localhost -p 5432; do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+          until redis-cli ping; do
+            echo "Waiting for Redis..."
+            sleep 2
+          done
+
+      - name: Run integration tests
+        run: npm run test:integration
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+          flags: integration
+          name: integration-coverage
 
   # E2E Tests
   e2e-tests:
     name: End-to-End Tests
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: '**/package-lock.json'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Install Playwright browsers
-      uses: microsoft/playwright-github-action@v1
-      with:
-        browsers: ${{ env.PLAYWRIGHT_BROWSER }}
-        
-    - name: Run E2E tests
-      run: npm run test:e2e
-      
-    - name: Upload test results
-      uses: actions/upload-artifact@v3
-      if: always()
-      with:
-        name: playwright-results
-        path: test-results/
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        uses: microsoft/playwright-github-action@v1
+        with:
+          browsers: ${{ env.PLAYWRIGHT_BROWSER }}
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: playwright-results
+          path: test-results/
 
   # Mobile App Tests
   mobile-tests:
     name: Mobile App Tests
     runs-on: macos-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: '**/package-lock.json'
-        
-    - name: Install dependencies
-      run: |
-        cd mobile-app
-        npm ci
-        
-    - name: Run mobile tests
-      run: |
-        cd mobile-app
-        npm test
-        
-    - name: Upload test results
-      uses: actions/upload-artifact@v3
-      if: always()
-      with:
-        name: mobile-test-results
-        path: mobile-app/test-results/
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json"
+
+      - name: Install dependencies
+        run: |
+          cd mobile-app
+          npm ci
+
+      - name: Run mobile tests
+        run: |
+          cd mobile-app
+          npm test
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: mobile-test-results
+          path: mobile-app/test-results/
 
   # Performance Tests
   performance-tests:
     name: Performance Tests
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: '**/package-lock.json'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Install k6
-      run: |
-        curl -sf https://github.com/grafana/k6/releases/download/v0.47.0/k6-v0.47.0-linux-amd64.tar.gz | tar xvz --strip-components 1
-        
-    - name: Run performance tests
-      run: |
-        ./k6 run --out json=performance-results.json tests/performance/load-test.js
-        
-    - name: Upload performance results
-      uses: actions/upload-artifact@v3
-      with:
-        name: performance-results
-        path: performance-results.json
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install k6
+        run: |
+          curl -sf https://github.com/grafana/k6/releases/download/v0.47.0/k6-v0.47.0-linux-amd64.tar.gz | tar xvz --strip-components 1
+
+      - name: Run performance tests
+        run: |
+          ./k6 run --out json=performance-results.json tests/performance/load-test.js
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-results
+          path: performance-results.json
 
   # Security Tests
   security-tests:
     name: Security Tests
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: '**/package-lock.json'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Run security audit
-      run: npm audit --audit-level moderate
-      
-    - name: Run Snyk security scan
-      uses: snyk/actions/node@master
-      env:
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      with:
-        args: --severity-threshold=high
-        command: test
-        
-    - name: Run OWASP Dependency Check
-      uses: dependency-check-action/dependency-check-action@v3
-      with:
-        project: 'normaldance'
-        path: './'
-        format: 'ALL'
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run security audit
+        run: npm audit --audit-level moderate
+
+      - name: Run Snyk security scan
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+          command: test
+
+      - name: Run OWASP Dependency Check
+        uses: dependency-check-action/dependency-check-action@v3
+        with:
+          project: "normaldance"
+          path: "./"
+          format: "ALL"
 
   # Accessibility Tests
   accessibility-tests:
     name: Accessibility Tests
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: '**/package-lock.json'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Install accessibility tools
-      run: |
-        npm install -g axe-cli
-        npm install -g pa11y
-        
-    - name: Run accessibility tests
-      run: |
-        # Test main pages
-        pa11y https://localhost:3000 --standard WCAG2AA --reporter json --output accessibility-results.json
-        pa11y https://localhost:3000/profile --standard WCAG2AA --reporter json --output accessibility-profile.json
-        pa11y https://localhost:3000/upload --standard WCAG2AA --reporter json --output accessibility-upload.json
-        
-    - name: Upload accessibility results
-      uses: actions/upload-artifact@v3
-      if: always()
-      with:
-        name: accessibility-results
-        path: accessibility-results.json
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install accessibility tools
+        run: |
+          npm install -g axe-cli
+          npm install -g pa11y
+
+      - name: Run accessibility tests
+        run: |
+          # Test main pages
+          pa11y https://localhost:3000 --standard WCAG2AA --reporter json --output accessibility-results.json
+          pa11y https://localhost:3000/profile --standard WCAG2AA --reporter json --output accessibility-profile.json
+          pa11y https://localhost:3000/upload --standard WCAG2AA --reporter json --output accessibility-upload.json
+
+      - name: Upload accessibility results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: accessibility-results
+          path: accessibility-results.json
 
   # Browser Compatibility Tests
   browser-tests:
     name: Browser Compatibility Tests
     runs-on: ubuntu-latest
-    
+
     strategy:
       matrix:
         browser: [chrome, firefox, safari]
-        
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: '**/package-lock.json'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Install Playwright browsers
-      uses: microsoft/playwright-github-action@v1
-      with:
-        browsers: ${{ matrix.browser }}
-        
-    - name: Run browser tests
-      run: npm run test:browser -- --browser=${{ matrix.browser }}
-      
-    - name: Upload browser test results
-      uses: actions/upload-artifact@v3
-      if: always()
-      with:
-        name: browser-${{ matrix.browser }}-results
-        path: test-results/
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        uses: microsoft/playwright-github-action@v1
+        with:
+          browsers: ${{ matrix.browser }}
+
+      - name: Run browser tests
+        run: npm run test:browser -- --browser=${{ matrix.browser }}
+
+      - name: Upload browser test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: browser-${{ matrix.browser }}-results
+          path: test-results/
 
   # Test Report
   test-report:
     name: Generate Test Report
     runs-on: ubuntu-latest
-    needs: [unit-tests, integration-tests, e2e-tests, mobile-tests, performance-tests, security-tests, accessibility-tests, browser-tests]
-    
+    needs:
+      [
+        unit-tests,
+        integration-tests,
+        e2e-tests,
+        mobile-tests,
+        performance-tests,
+        security-tests,
+        accessibility-tests,
+        browser-tests,
+      ]
+
     steps:
-    - name: Download all test artifacts
-      uses: actions/download-artifact@v3
-      with:
-        path: test-results/
-        
-    - name: Generate test report
-      run: |
-        mkdir -p test-report
-        echo "# Test Report" > test-report/README.md
-        echo "Generated on: $(date)" >> test-report/README.md
-        echo "" >> test-report/README.md
-        echo "## Test Results" >> test-report/README.md
-        echo "" >> test-report/README.md
-        
-        # Add unit test results
-        if [ -f "coverage/lcov.info" ]; then
-          echo "### Unit Tests" >> test-report/README.md
-          echo "Coverage: $(grep -o 'SF:.*' coverage/lcov.info | wc -l) files covered" >> test-report/README.md
+      - name: Download all test artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: test-results/
+
+      - name: Generate test report
+        run: |
+          mkdir -p test-report
+          echo "# Test Report" > test-report/README.md
+          echo "Generated on: $(date)" >> test-report/README.md
           echo "" >> test-report/README.md
-        fi
-        
-        # Add E2E test results
-        if [ -d "test-results" ]; then
-          echo "### End-to-End Tests" >> test-report/README.md
-          echo "Test results available in test-results/ directory" >> test-report/README.md
+          echo "## Test Results" >> test-report/README.md
           echo "" >> test-report/README.md
-        fi
-        
-        # Add performance results
-        if [ -f "performance-results.json" ]; then
-          echo "### Performance Tests" >> test-report/README.md
-          echo "Performance test results available" >> test-report/README.md
+
+          # Add unit test results
+          if [ -f "coverage/lcov.info" ]; then
+            echo "### Unit Tests" >> test-report/README.md
+            echo "Coverage: $(grep -o 'SF:.*' coverage/lcov.info | wc -l) files covered" >> test-report/README.md
+            echo "" >> test-report/README.md
+          fi
+
+          # Add E2E test results
+          if [ -d "test-results" ]; then
+            echo "### End-to-End Tests" >> test-report/README.md
+            echo "Test results available in test-results/ directory" >> test-report/README.md
+            echo "" >> test-report/README.md
+          fi
+
+          # Add performance results
+          if [ -f "performance-results.json" ]; then
+            echo "### Performance Tests" >> test-report/README.md
+            echo "Performance test results available" >> test-report/README.md
+            echo "" >> test-report/README.md
+          fi
+
+          # Add security results
+          echo "### Security Tests" >> test-report/README.md
+          echo "Security audit completed" >> test-report/README.md
           echo "" >> test-report/README.md
-        fi
-        
-        # Add security results
-        echo "### Security Tests" >> test-report/README.md
-        echo "Security audit completed" >> test-report/README.md
-        echo "" >> test-report/README.md
-        
-        # Add accessibility results
-        if [ -f "accessibility-results.json" ]; then
-          echo "### Accessibility Tests" >> test-report/README.md
-          echo "Accessibility test results available" >> test-report/README.md
-          echo "" >> test-report/README.md
-        fi
-        
-    - name: Upload test report
-      uses: actions/upload-artifact@v3
-      with:
-        name: test-report
-        path: test-report/
-        
-    - name: Comment PR with test results
-      uses: actions/github-script@v7
-      if: github.event_name == 'pull_request'
-      with:
-        script: |
-          const fs = require('fs');
-          const path = 'test-report/README.md';
-          
-          if (fs.existsSync(path)) {
-            const report = fs.readFileSync(path, 'utf8');
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `## Test Results\n\n${report}`
-            });
-          }
+
+          # Add accessibility results
+          if [ -f "accessibility-results.json" ]; then
+            echo "### Accessibility Tests" >> test-report/README.md
+            echo "Accessibility test results available" >> test-report/README.md
+            echo "" >> test-report/README.md
+          fi
+
+      - name: Upload test report
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-report
+          path: test-report/
+
+      - name: Comment PR with test results
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'test-report/README.md';
+
+            if (fs.existsSync(path)) {
+              const report = fs.readFileSync(path, 'utf8');
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `## Test Results\n\n${report}`
+              });
+            }
