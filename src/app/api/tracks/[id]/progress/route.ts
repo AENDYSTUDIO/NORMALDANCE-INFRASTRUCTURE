@@ -6,14 +6,15 @@ import { authOptions } from '@/lib/auth'
 // GET /api/tracks/[id]/progress - Get secret progress data
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     
     // Find the track
     const track = await db.track.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: {
         id: true,
         title: true,
@@ -43,7 +44,7 @@ export async function GET(
 
     // Get recent contributors (last 10)
     const recentContributors = await db.progressContribution.findMany({
-      where: { trackId: params.id },
+      where: { trackId: id },
       orderBy: { createdAt: 'desc' },
       take: 10,
       select: {
@@ -124,9 +125,10 @@ export async function GET(
 // POST /api/tracks/[id]/progress/contribute - Contribute to progress
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
@@ -148,7 +150,7 @@ export async function POST(
 
     // Find the track
     const track = await db.track.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: {
         id: true,
         title: true,
@@ -188,7 +190,7 @@ export async function POST(
 
     // Update track progress
     const updatedTrack = await db.track.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         progressCurrent: { increment: amount },
         progressContributors: { increment: 1 },
@@ -199,7 +201,7 @@ export async function POST(
     // Record contribution
     await db.progressContribution.create({
       data: {
-        trackId: params.id,
+        trackId: id,
         userId: session.user.id,
         amount: amount
       }
@@ -230,7 +232,7 @@ export async function POST(
     // Check if progress is complete
     if (updatedTrack.isProgressComplete) {
       // Trigger completion rewards and notifications
-      await triggerProgressCompletion(params.id, session.user.id)
+      await triggerProgressCompletion(id, session.user.id)
     }
 
     return NextResponse.json({

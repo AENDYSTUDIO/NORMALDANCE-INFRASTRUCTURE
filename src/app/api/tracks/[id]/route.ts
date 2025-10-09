@@ -5,11 +5,12 @@ import { isAdmin } from '@/lib/rbac'
 // GET /api/tracks/[id] - Get a specific track
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const track = await db.track.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         artist: {
           select: {
@@ -48,12 +49,13 @@ export async function GET(
 // PUT /api/tracks/[id] - Update a track
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     if (!(await isAdmin())) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const { id } = await params
     const body = await request.json()
     
     // Only allow updating certain fields
@@ -69,7 +71,7 @@ export async function PUT(
     }
 
     const track = await db.track.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
       include: {
         artist: {
@@ -96,14 +98,15 @@ export async function PUT(
 // DELETE /api/tracks/[id] - Delete a track
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     if (!(await isAdmin())) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const { id } = await params
     await db.track.delete({
-      where: { id: params.id }
+      where: { id }
     })
 
     return NextResponse.json({ message: 'Track deleted successfully' })
@@ -119,15 +122,16 @@ export async function DELETE(
 // POST /api/tracks/[id]/play - Record a play
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body = await request.json()
     const { userId, duration, completed } = body
 
     // Increment play count
     await db.track.update({
-      where: { id: params.id },
+      where: { id },
       data: { playCount: { increment: 1 } }
     })
 
@@ -136,24 +140,23 @@ export async function POST(
       await db.playHistory.create({
         data: {
           userId,
-          trackId: params.id,
+          trackId: id,
           duration: duration || 0,
           completed: completed || false,
         }
       })
 
       // Award listening reward
-      if (completed && duration > 30) { // Only reward if listened for more than 30 seconds
+      if (completed && duration > 30) {
         await db.reward.create({
           data: {
             userId,
             type: 'LISTENING',
-            amount: 1, // 1 $NDT token per completed listen
-            reason: `Listening reward for track ${params.id}`
+            amount: 1,
+            reason: `Listening reward for track ${id}`
           }
         })
 
-        // Update user balance
         await db.user.update({
           where: { id: userId },
           data: { balance: { increment: 1 } }
