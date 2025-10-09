@@ -6,10 +6,10 @@
 
 ```bash
 # Установка основного агента
-code --install-extension roocode.roocode      # Roo code
+code --install-extension roocode.roo-code      # Roo code
 
 # Установка ассистента кода
-code --install-extension kilocode.kilocode    # kilocode
+code --install-extension kilocode.kilo-code    # kilocode
 ```
 
 ## Конфигурация агентов
