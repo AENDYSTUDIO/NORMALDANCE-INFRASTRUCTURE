@@ -6,9 +6,10 @@ import { authOptions } from '@/lib/auth'
 // POST /api/clubs/[id]/join - Join a club
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
@@ -20,7 +21,7 @@ export async function POST(
 
     // Find the club
     const club = await db.club.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         members: true,
         _count: {
@@ -53,7 +54,7 @@ export async function POST(
     // Check if user is already a member
     const existingMembership = await db.clubMember.findFirst({
       where: {
-        clubId: params.id,
+        clubId: id,
         userId: session.user.id,
         isActive: true
       }
@@ -90,7 +91,7 @@ export async function POST(
       // Create club membership
       const membership = await tx.clubMember.create({
         data: {
-          clubId: params.id,
+          clubId: id,
           userId: session.user.id,
           nftBalance: 1,
           joinedAt: new Date(),
@@ -100,13 +101,13 @@ export async function POST(
 
       // Update club member count
       await tx.club.update({
-        where: { id: params.id },
+        where: { id },
         data: { memberCount: { increment: 1 } }
       })
 
       // Add club price to club's prize pool
       await tx.club.update({
-        where: { id: params.id },
+        where: { id },
         data: { 
           totalPrizePool: { increment: club.price },
           monthlyPrizePool: { increment: club.price }
@@ -136,7 +137,7 @@ export async function POST(
           type: 'CLUB_JOIN',
           title: 'Добро пожаловать в клуб!',
           message: `Вы успешно присоединились к ${club.name}`,
-          data: { clubId: params.id, clubName: club.name }
+          data: { clubId: id, clubName: club.name }
         }
       })
 

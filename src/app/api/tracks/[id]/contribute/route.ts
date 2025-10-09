@@ -6,9 +6,10 @@ import { authOptions } from '@/lib/auth'
 // POST /api/tracks/[id]/contribute - Contribute to track progress
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
@@ -30,7 +31,7 @@ export async function POST(
 
     // Find the track
     const track = await db.track.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: {
         id: true,
         title: true,
@@ -81,7 +82,7 @@ export async function POST(
     const result = await db.$transaction(async (tx) => {
       // Update track progress
       const updatedTrack = await tx.track.update({
-        where: { id: params.id },
+        where: { id },
         data: {
           progressCurrent: { increment: amount },
           progressContributors: { increment: 1 },
@@ -92,7 +93,7 @@ export async function POST(
       // Record contribution
       await tx.progressContribution.create({
         data: {
-          trackId: params.id,
+          trackId: id,
           userId: session.user.id,
           amount: amount
         }
@@ -127,11 +128,11 @@ export async function POST(
     // Check if progress is complete
     if (result.isProgressComplete) {
       // Trigger completion rewards and notifications
-      await triggerProgressCompletion(params.id, session.user.id)
+      await triggerProgressCompletion(id, session.user.id)
     }
 
     // Get updated progress data
-    const progressData = await getProgressData(params.id)
+    const progressData = await getProgressData(id)
 
     return NextResponse.json({
       success: true,

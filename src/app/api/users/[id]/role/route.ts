@@ -5,9 +5,10 @@ import { db } from '@/lib/db'
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     
     // Только администраторы могут изменять роли
@@ -25,7 +26,7 @@ export async function PATCH(
 
     // Обновляем роль пользователя
     const updatedUser = await db.user.update({
-      where: { id: params.id },
+      where: { id },
       data: { level: role }
     })
 
@@ -49,9 +50,10 @@ export async function PATCH(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     
     // Только администраторы могут просматривать роли
@@ -60,7 +62,7 @@ export async function GET(
     }
 
     const user = await db.user.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: {
         id: true,
         username: true,
@@ -83,4 +85,4 @@ export async function GET(
       { status: 500 }
     )
   }
-}
+}
