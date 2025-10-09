@@ -1,9 +1,10 @@
 ---
 name: Bug report
 about: Создать отчет об ошибке
-title: '[BUG] '
+title: "[BUG] "
 labels: bug
 assignees: ''
+
 ---
 
 ## Описание ошибки

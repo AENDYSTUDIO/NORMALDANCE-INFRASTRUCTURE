@@ -1,0 +1,170 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: normaldance-app-network-policy
+  namespace: normaldance
+spec:
+  podSelector:
+    matchLabels:
+      app: normaldance
+      component: app
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx # разрешаем трафик от ingress контроллера
+      ports:
+        - protocol: TCP
+          port: 3000
+    - from:
+        - podSelector:
+            matchLabels:
+              app: normaldance
+              component: worker
+      ports:
+        - protocol: TCP
+          port: 3000
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+      ports:
+        - protocol: TCP
+          port: 53 # DNS
+    - to:
+        - podSelector:
+            matchLabels:
+              app: normaldance
+              component: db
+      ports:
+        - protocol: TCP
+          port: 5432 # PostgreSQL
+    - to:
+        - podSelector:
+            matchLabels:
+              app: normaldance
+              component: redis
+      ports:
+        - protocol: TCP
+          port: 6379 # Redis
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: normaldance-worker-network-policy
+  namespace: normaldance
+spec:
+  podSelector:
+    matchLabels:
+      app: normaldance
+      component: worker
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: normaldance
+              component: app
+      ports:
+        - protocol: TCP
+          port: 3001 # websocket
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+      ports:
+        - protocol: TCP
+          port: 53 # DNS
+    - to:
+        - podSelector:
+            matchLabels:
+              app: normaldance
+              component: db
+      ports:
+        - protocol: TCP
+          port: 5432 # PostgreSQL
+    - to:
+        - podSelector:
+            matchLabels:
+              app: normaldance
+              component: redis
+      ports:
+        - protocol: TCP
+          port: 6379 # Redis
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: normaldance-db-network-policy
+  namespace: normaldance
+spec:
+  podSelector:
+    matchLabels:
+      app: normaldance
+      component: db
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: normaldance
+              component: app
+        - podSelector:
+            matchLabels:
+              app: normaldance
+              component: worker
+      ports:
+        - protocol: TCP
+          port: 5432
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+      ports:
+        - protocol: TCP
+          port: 53 # DNS
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: normaldance-redis-network-policy
+  namespace: normaldance
+spec:
+  podSelector:
+    matchLabels:
+      app: normaldance
+      component: redis
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: normaldance
+              component: app
+        - podSelector:
+            matchLabels:
+              app: normaldance
+              component: worker
+      ports:
+        - protocol: TCP
+          port: 6379
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+      ports:
+        - protocol: TCP
+          port: 53 # DNS

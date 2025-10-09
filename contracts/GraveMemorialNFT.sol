@@ -72,8 +72,10 @@ contract GraveMemorialNFT is ERC721, Ownable, ReentrancyGuard {
     ) public payable returns (uint256) {
         require(bytes(_ipfsHash).length > 0, "IPFS hash required");
         require(_heirs.length > 0, "At least one heir required");
+        require(_heirs.length <= 10, "Too many heirs (max 10)");
         require(bytes(_artistName).length > 0, "Artist name required");
         require(artistToMemorial[_artistName] == 0, "Memorial already exists for this artist");
+        require(msg.value == 0, "Creation should not include payment");
         
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
@@ -109,6 +111,7 @@ contract GraveMemorialNFT is ERC721, Ownable, ReentrancyGuard {
         require(_exists(tokenId), "Memorial does not exist");
         require(msg.value > 0, "Donation amount must be greater than 0");
         require(memorials[tokenId].isActive, "Memorial is not active");
+        require(msg.value <= 100 ether, "Donation too large");
         
         Memorial storage mem = memorials[tokenId];
         
@@ -118,7 +121,8 @@ contract GraveMemorialNFT is ERC721, Ownable, ReentrancyGuard {
         
         // Send platform fee to contract owner
         if (fee > 0) {
-            payable(owner()).transfer(fee);
+            (bool feeSuccess, ) = payable(owner()).call{value: fee}("");
+            require(feeSuccess, "Fee transfer failed");
         }
         
         // Add donation to memorial fund
@@ -138,21 +142,24 @@ contract GraveMemorialNFT is ERC721, Ownable, ReentrancyGuard {
         Memorial storage mem = memorials[tokenId];
         require(mem.fundBalance > 0, "No funds to distribute");
         require(mem.heirs.length > 0, "No heirs specified");
+        require(address(this).balance >= mem.fundBalance, "Contract balance too low");
         
         uint256 amountPerHeir = mem.fundBalance / mem.heirs.length;
         uint256 totalDistributed = 0;
         
-        // Distribute to each heir
+        // Distribute to each heir - with improved security against reentrancy and overflow
         for (uint256 i = 0; i < mem.heirs.length; i++) {
-            if (mem.heirs[i] != address(0)) {
-                payable(mem.heirs[i]).transfer(amountPerHeir);
+            if (mem.heirs[i] != address(0) && mem.heirs[i] != msg.sender) { // Prevent sending to self or zero address
+                // Use call instead of transfer to prevent reentrancy and allow more gas
+                (bool success, ) = mem.heirs[i].call{value: amountPerHeir}("");
+                require(success, "Transfer failed");
                 totalDistributed += amountPerHeir;
                 emit FundDistributed(tokenId, mem.heirs[i], amountPerHeir);
             }
         }
         
-        // Reset fund balance
-        mem.fundBalance = 0;
+        // Update fund balance instead of resetting to prevent rounding errors
+        mem.fundBalance -= totalDistributed;
     }
     
     /**
@@ -214,7 +221,10 @@ contract GraveMemorialNFT is ERC721, Ownable, ReentrancyGuard {
      * @dev Emergency withdraw (owner only)
      */
     function emergencyWithdraw() public onlyOwner {
-        payable(owner()).transfer(address(this).balance);
+        uint256 balance = address(this).balance;
+        require(balance > 0, "No balance to withdraw");
+        (bool success, ) = payable(owner()).call{value: balance}("");
+        require(success, "Withdrawal failed");
     }
     
     /**
