@@ -1,18 +1,111 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { validateTelegramInitData } from '@/lib/security/telegram-validator'
+import { sanitizeHTML } from '@/lib/security/input-sanitizer'
+
+// 🔐 SECURITY: Rate limiting map (in-memory for now)
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+function checkRateLimit(identifier: string, maxRequests: number = 5): boolean {
+  const now = Date.now();
+  const oneMinute = 60 * 1000;
+  
+  const record = rateLimitMap.get(identifier);
+  
+  if (!record || now > record.resetTime) {
+    rateLimitMap.set(identifier, { count: 1, resetTime: now + oneMinute });
+    return true;
+  }
+  
+  if (record.count >= maxRequests) {
+    return false; // Rate limit exceeded
+  }
+  
+  record.count++;
+  return true;
+}
 
 // POST /api/grave/donations - Сделать пожертвование в мемориал
 export async function POST(request: NextRequest) {
   try {
+    // 🔐 SECURITY 1: Telegram authentication
+    const initData = request.headers.get('x-telegram-init-data');
+    
+    if (!initData) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized: Missing Telegram authentication' },
+        { status: 401 }
+      );
+    }
+    
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    if (!botToken) {
+      console.error('[Security] TELEGRAM_BOT_TOKEN not configured!');
+      return NextResponse.json(
+        { success: false, error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+    
+    const validation = validateTelegramInitData(initData, botToken, 3600);
+    
+    if (!validation.valid) {
+      console.warn('[Security] Invalid Telegram initData:', validation.error);
+      return NextResponse.json(
+        { success: false, error: `Authentication failed: ${validation.error}` },
+        { status: 401 }
+      );
+    }
+    
+    const userId = validation.userId || 'anonymous';
+    
+    // 🔐 SECURITY 2: Rate limiting (5 donations per minute per user)
+    if (!checkRateLimit(`donation:${userId}`, 5)) {
+      const response = NextResponse.json(
+        { success: false, error: 'Too many requests. Please wait before donating again.' },
+        { status: 429 }
+      );
+      response.headers.set('Retry-After', '60');
+      return response;
+    }
+    
     const body = await request.json()
     const { memorialId, amount, message } = body
 
-    // Валидация
-    if (!memorialId || !amount || amount <= 0) {
+    // 🔐 SECURITY 3: Input validation
+    if (!memorialId || typeof memorialId !== 'string') {
       return NextResponse.json(
-        { success: false, error: 'Invalid donation data' },
+        { success: false, error: 'Invalid memorial ID' },
         { status: 400 }
       )
     }
+    
+    if (!amount || typeof amount !== 'number' || amount <= 0) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid donation amount' },
+        { status: 400 }
+      )
+    }
+    
+    // 🔐 SECURITY 4: Amount limits (prevent abuse)
+    const MIN_DONATION = 0.01; // SOL
+    const MAX_DONATION = 1000; // SOL
+    
+    if (amount < MIN_DONATION) {
+      return NextResponse.json(
+        { success: false, error: `Minimum donation is ${MIN_DONATION} SOL` },
+        { status: 400 }
+      )
+    }
+    
+    if (amount > MAX_DONATION) {
+      return NextResponse.json(
+        { success: false, error: `Maximum donation is ${MAX_DONATION} SOL` },
+        { status: 400 }
+      )
+    }
+    
+    // 🔐 SECURITY 5: Sanitize message (prevent XSS)
+    const sanitizedMessage = message ? sanitizeHTML(message.substring(0, 500)) : '';
 
     // В реальном приложении здесь будет:
     // 1. Проверка существования мемориала
@@ -24,22 +117,27 @@ export async function POST(request: NextRequest) {
       id: Date.now().toString(),
       memorialId,
       amount,
-      message: message || '',
-      donor: '0x' + Math.random().toString(16).substr(2, 40), // Мок-адрес
+      message: sanitizedMessage,
+      donor: userId, // Use authenticated Telegram user ID
       timestamp: new Date().toISOString(),
-      transactionHash: '0x' + Math.random().toString(16).substr(2, 64), // Мок-хеш
+      transactionHash: '0x' + Math.random().toString(16).substr(2, 64), // Мок-хеш (TODO: real transaction)
       status: 'PENDING'
     }
 
-    // Сохраняем пожертвование
-    console.log('Пожертвование:', donation)
+    // 🔐 SECURITY 6: Log security event
+    console.log('[Security] Donation processed:', {
+      userId,
+      memorialId,
+      amount,
+      timestamp: donation.timestamp
+    })
 
     // В реальном приложении здесь будет вызов smart-contract
     // await contract.donate(memorialId, message, { value: ethers.utils.parseEther(amount.toString()) })
 
     return NextResponse.json({
       success: true,
-      data: donation,
+      data: { donation },
       message: 'Donation processed successfully'
     })
 

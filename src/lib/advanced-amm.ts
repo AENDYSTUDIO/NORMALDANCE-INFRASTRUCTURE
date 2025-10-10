@@ -92,7 +92,7 @@ export class AdvancedAMM {
     }
     
     // 4. Проверка лимитов
-    this.validateSwap(params, outputAmount, priceImpact)
+    this.validateSwap(params, outputAmount, priceImpact, pool)
     
     // 5. Расчет комиссии
     const fee = this.calculateFee(params.amount, algorithm, volatility)
@@ -114,7 +114,8 @@ export class AdvancedAMM {
    */
   private calculateVolatility(pool: LiquidityPool): number {
     const history = pool.priceHistory
-    if (history.length < 2) return 0
+    // Если истории нет, используем значение из пула
+    if (history.length < 2) return pool.volatility || 0
 
     const recent = history.slice(-10) // Последние 10 точек
     const prices = recent.map(p => p.price)
@@ -256,14 +257,15 @@ export class AdvancedAMM {
   /**
    * ✅ Валидация свопа
    */
-  private validateSwap(params: SwapParams, outputAmount: number, priceImpact: number): void {
-    // Проверка slippage
-    const expectedOutput = params.amount * this.getCurrentRate(params.from, params.to)
+  private validateSwap(params: SwapParams, outputAmount: number, priceImpact: number, pool: LiquidityPool): void {
+    // Проверка slippage на основе реального курса из пула
+    const currentRate = this.getCurrentRate(params.from, params.to, pool)
+    const expectedOutput = params.amount * currentRate
     const slippageAmount = expectedOutput * (params.slippage / 100)
     const minOutput = expectedOutput - slippageAmount
     
     if (outputAmount < minOutput) {
-      throw new Error(`Slippage tolerance exceeded. Expected: ${expectedOutput}, Got: ${outputAmount}`)
+      throw new Error(`Slippage tolerance exceeded. Expected: ${expectedOutput.toFixed(2)}, Got: ${outputAmount.toFixed(2)}`)
     }
     
     // Проверка максимального ценового воздействия
@@ -273,12 +275,15 @@ export class AdvancedAMM {
   }
 
   /**
-   * 📊 Получение текущего курса
+   * 📊 Получение текущего курса из пула
    */
-  private getCurrentRate(from: 'TON' | 'NDT', to: 'TON' | 'NDT'): number {
-    // Здесь должна быть логика получения актуального курса
-    // Пока возвращаем мок-значение
-    return from === 'TON' && to === 'NDT' ? 42.7 : 0.0234
+  private getCurrentRate(from: 'TON' | 'NDT', to: 'TON' | 'NDT', pool: LiquidityPool): number {
+    if (from === 'TON' && to === 'NDT') {
+      return pool.ndtReserve / pool.tonReserve
+    } else if (from === 'NDT' && to === 'TON') {
+      return pool.tonReserve / pool.ndtReserve
+    }
+    return 1
   }
 
   /**
@@ -351,6 +356,10 @@ export class AdvancedAMM {
     return (volatilityScore + liquidityScore) / 2
   }
 }
+
+// Экспорт классов и интерфейсов
+export { AdvancedAMM }
+export type { AMMConfig, SwapParams, SwapResult, LiquidityPool, PricePoint }
 
 // Экспорт синглтона
 export const advancedAMM = new AdvancedAMM()

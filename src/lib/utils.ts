@@ -42,10 +42,15 @@ export function formatDate(date: string | Date): string {
 }
 
 export function isMobile(): boolean {
-  if (typeof window !== 'undefined') {
-    return window.innerWidth <= 768;
+  // Только клиентская проверка для избежания SSR проблем
+  if (typeof window === 'undefined') {
+    return false; // На сервере всегда false
   }
-  // Server-side detection based on user agent
-  const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+  
+  // Клиентская проверка
+  const userAgent = navigator.userAgent;
+  const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+  const isMobileWidth = window.innerWidth <= 768;
+  
+  return isMobileUA || isMobileWidth;
 }

@@ -10,36 +10,28 @@ export default [
       sourceType: "module",
     },
     rules: {
-      // TypeScript правила
-      "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/no-unused-vars": "off",
-      "@typescript-eslint/no-non-null-assertion": "off",
-      "@typescript-eslint/ban-ts-comment": "off",
-      "@typescript-eslint/prefer-as-const": "off",
+      // TypeScript правила - включены для качества кода
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-unused-vars": "error",
+      "@typescript-eslint/no-non-null-assertion": "warn",
+      "@typescript-eslint/ban-ts-comment": "warn",
 
-      // JavaScript правила
-      "prefer-const": "off",
-      "no-unused-vars": "off",
-      "no-console": "off",
-      "no-debugger": "off",
-      "no-empty": "off",
-      "no-irregular-whitespace": "off",
-      "no-case-declarations": "off",
-      "no-fallthrough": "off",
-      "no-mixed-spaces-and-tabs": "off",
-      "no-redeclare": "off",
-      "no-undef": "off",
-      "no-unreachable": "off",
-      "no-useless-escape": "off",
+      // JavaScript правила - включены критические
+      "prefer-const": "error",
+      "no-unused-vars": "error",
+      "no-console": "warn",
+      "no-debugger": "error",
+      "no-undef": "error",
+      "no-unreachable": "error",
     },
   },
   {
     files: ["**/*.ts", "**/*.tsx"],
     rules: {
-      "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/no-unused-vars": "off",
-      "@typescript-eslint/no-non-null-assertion": "off",
-      "@typescript-eslint/ban-ts-comment": "off",
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-unused-vars": "error",
+      "@typescript-eslint/no-non-null-assertion": "warn",
+      "@typescript-eslint/ban-ts-comment": "warn",
     },
   },
 ];
