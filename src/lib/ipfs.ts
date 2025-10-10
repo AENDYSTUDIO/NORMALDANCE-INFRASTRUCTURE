@@ -101,10 +101,10 @@ export async function pinFile(pinataApiKey: string, pinataSecretApiKey: string, 
   try {
     console.log(`Pinning file in Pinata: ${cid}`);
     
-    const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+    const response = await fetch('/api/ipfs/pin', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_PINATA_JWT}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         hashToPin: cid,
@@ -128,10 +128,10 @@ export async function unpinFile(PINATA_JWT: string, cid: string): Promise<boolea
   try {
     console.log(`Unpinning file from Pinata: ${cid}`);
     
-    const response = await fetch(`https://api.pinata.cloud/pinning/unpin/${cid}`, {
+    const response = await fetch(`/api/ipfs/unpin/${cid}`, {
       method: 'DELETE',
       headers: {
-        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_PINATA_JWT}`,
+        'Content-Type': 'application/json',
       },
     });
 
