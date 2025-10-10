@@ -4,80 +4,81 @@ global:
 
 rule_files:
   - "alert_rules.yml"
+  - "performance_alerts.yml"
 
 alerting:
   alertmanagers:
     - static_configs:
         - targets:
-          - alertmanager:9093
+            - alertmanager:9093
 
 scrape_configs:
   # Main application metrics
-  - job_name: 'normaldance-app'
+  - job_name: "normaldance-app"
     static_configs:
-      - targets: ['app:3000']
-    metrics_path: '/metrics'
+      - targets: ["app:3000"]
+    metrics_path: "/metrics"
     scrape_interval: 15s
     scrape_timeout: 10s
 
   # API service metrics
-  - job_name: 'normaldance-api'
+  - job_name: "normaldance-api"
     static_configs:
-      - targets: ['api:8080']
-    metrics_path: '/metrics'
+      - targets: ["api:8080"]
+    metrics_path: "/metrics"
     scrape_interval: 15s
     scrape_timeout: 10s
 
   # WebSocket service metrics
-  - job_name: 'normaldance-websocket'
+  - job_name: "normaldance-websocket"
     static_configs:
-      - targets: ['websocket:3001']
-    metrics_path: '/metrics'
+      - targets: ["websocket:3001"]
+    metrics_path: "/metrics"
     scrape_interval: 15s
     scrape_timeout: 10s
 
   # Database metrics
-  - job_name: 'postgres'
+  - job_name: "postgres"
     static_configs:
-      - targets: ['postgres:5432']
-    metrics_path: '/metrics'
+      - targets: ["postgres:5432"]
+    metrics_path: "/metrics"
     scrape_interval: 30s
     scrape_timeout: 10s
 
   # Redis metrics
-  - job_name: 'redis'
+  - job_name: "redis"
     static_configs:
-      - targets: ['redis:6379']
-    metrics_path: '/metrics'
+      - targets: ["redis:6379"]
+    metrics_path: "/metrics"
     scrape_interval: 30s
     scrape_timeout: 10s
 
   # Nginx metrics
-  - job_name: 'nginx'
+  - job_name: "nginx"
     static_configs:
-      - targets: ['nginx:80']
-    metrics_path: '/metrics'
+      - targets: ["nginx:80"]
+    metrics_path: "/metrics"
     scrape_interval: 30s
     scrape_timeout: 10s
 
   # Node.js application metrics
-  - job_name: 'nodejs'
+  - job_name: "nodejs"
     static_configs:
-      - targets: ['app:3000']
-    metrics_path: '/metrics'
+      - targets: ["app:3000"]
+    metrics_path: "/metrics"
     scrape_interval: 15s
     scrape_timeout: 10s
 
   # Docker metrics
-  - job_name: 'docker'
+  - job_name: "docker"
     static_configs:
-      - targets: ['cadvisor:8080']
-    metrics_path: '/metrics'
+      - targets: ["cadvisor:8080"]
+    metrics_path: "/metrics"
     scrape_interval: 30s
     scrape_timeout: 10s
 
   # Kubernetes metrics
-  - job_name: 'kubernetes-pods'
+  - job_name: "kubernetes-pods"
     kubernetes_sd_configs:
       - role: pod
     relabel_configs:
@@ -88,7 +89,8 @@ scrape_configs:
         action: replace
         target_label: __metrics_path__
         regex: (.+)
-      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+      - source_labels:
+          [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
         action: replace
         regex: ([^:]+)(?::\d+)?;(\d+)
         replacement: $1:$2

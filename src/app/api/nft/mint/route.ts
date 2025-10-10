@@ -1,19 +1,109 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { z } from 'zod'
+import { validateTelegramInitData } from '@/lib/security/telegram-validator'
+import { isValidSolanaAddress } from '@/lib/security/input-sanitizer'
 
-// Validation schema for minting NFT
+// 🔐 SECURITY: Rate limiting for NFT minting (very strict)
+const mintRateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+function checkMintRateLimit(identifier: string, maxRequests: number = 3): boolean {
+  const now = Date.now();
+  const oneMinute = 60 * 1000;
+  
+  const record = mintRateLimitMap.get(identifier);
+  
+  if (!record || now > record.resetTime) {
+    mintRateLimitMap.set(identifier, { count: 1, resetTime: now + oneMinute });
+    return true;
+  }
+  
+  if (record.count >= maxRequests) {
+    return false;
+  }
+  
+  record.count++;
+  return true;
+}
+
+// 🔐 SECURITY: Enhanced validation schema for minting NFT
 const mintSchema = z.object({
-  nftId: z.string().min(1),
-  recipientAddress: z.string().min(1),
-  quantity: z.number().min(1).default(1),
+  nftId: z.string().uuid('Invalid NFT ID format'),
+  recipientAddress: z.string().min(32).max(44, 'Invalid Solana address length'),
+  quantity: z.number().int().min(1).max(10, 'Max 10 NFTs per mint'),
 })
 
 // POST /api/nft/mint - Mint NFT to a specific address
 export async function POST(request: NextRequest) {
   try {
+    // 🔐 SECURITY 1: Telegram authentication (CRITICAL for minting)
+    const initData = request.headers.get('x-telegram-init-data');
+    
+    if (!initData) {
+      console.warn('[Security] NFT mint attempt without Telegram auth');
+      return NextResponse.json(
+        { error: 'Unauthorized: Telegram authentication required' },
+        { status: 401 }
+      );
+    }
+    
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    if (!botToken) {
+      console.error('[Security] TELEGRAM_BOT_TOKEN not configured!');
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+    
+    const validation = validateTelegramInitData(initData, botToken, 3600);
+    
+    if (!validation.valid) {
+      console.warn('[Security] Invalid Telegram initData for NFT mint:', validation.error);
+      return NextResponse.json(
+        { error: `Authentication failed: ${validation.error}` },
+        { status: 401 }
+      );
+    }
+    
+    const userId = validation.userId || 'anonymous';
+    
+    // 🔐 SECURITY 2: Very strict rate limiting (3 mints per minute)
+    if (!checkMintRateLimit(`nft-mint:${userId}`, 3)) {
+      console.warn('[Security] Rate limit exceeded for NFT minting:', userId);
+      return NextResponse.json(
+        { error: 'Too many mint requests. Please wait before minting again.' },
+        { status: 429, headers: { 'Retry-After': '60' } }
+      );
+    }
+    
     const body = await request.json()
-    const { nftId, recipientAddress, quantity } = mintSchema.parse(body)
+    
+    // 🔐 SECURITY 3: Input validation
+    const parseResult = mintSchema.safeParse(body);
+    if (!parseResult.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: parseResult.error.errors },
+        { status: 400 }
+      );
+    }
+    
+    const { nftId, recipientAddress, quantity } = parseResult.data;
+    
+    // 🔐 SECURITY 4: Validate Solana address format
+    if (!isValidSolanaAddress(recipientAddress)) {
+      console.warn('[Security] Invalid Solana address for NFT mint:', recipientAddress);
+      return NextResponse.json(
+        { error: 'Invalid Solana wallet address' },
+        { status: 400 }
+      );
+    }
+    
+    // 🔐 SECURITY 5: Suspicious activity detection
+    if (quantity > 5) {
+      console.warn('[Security] Suspicious NFT mint quantity:', { userId, quantity, nftId });
+      // Log for manual review but don't block yet
+    }
 
     // Find the NFT
     const nft = await db.nft.findUnique({
@@ -104,6 +194,16 @@ export async function POST(request: NextRequest) {
         data: { balance: { increment: royaltyAfterDeflation } }
       })
     }
+
+    // 🔐 SECURITY 6: Log successful mint event
+    console.log('[Security] NFT minted successfully:', {
+      userId,
+      nftId,
+      recipientAddress,
+      quantity,
+      transactionSignature: mintTransaction.signature,
+      timestamp: new Date().toISOString()
+    });
 
     return NextResponse.json({
       message: 'NFT minted successfully',

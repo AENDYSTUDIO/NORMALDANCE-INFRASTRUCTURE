@@ -1,7 +1,6 @@
 import { ClientInit } from "@/components/ClientInit";
-import MobileNav from "@/components/layout/mobile-nav";
+import { MobileNavWrapper } from "@/components/layout/mobile-nav-wrapper";
 import { Toaster } from "@/components/ui/toaster";
-import { isMobile } from "@/lib/utils";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
@@ -53,7 +52,7 @@ export default function RootLayout({
          <Toaster />
          <Analytics />
          <SpeedInsights />
-         {isMobile() && <MobileNav />}
+         <MobileNavWrapper />
        </body>
      </html>
    );

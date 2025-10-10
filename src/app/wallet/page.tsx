@@ -1,29 +1,72 @@
-'use client'
+"use client";
 
-import React, { useState } from 'react'
-import { WalletProviderWrapper } from '@/components/wallet/wallet-provider'
-import { WalletConnect } from '@/components/wallet/wallet-connect'
-import { NDTManager } from '@/components/wallet/ndt-manager'
-import { DeflationStats } from '@/components/wallet/deflation-stats'
-import { StakingManager } from '@/components/wallet/staking-manager'
-import { MusicNFTManager } from '@/components/wallet/music-nft-manager'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Tabs, TabsContent, TabsList, TabsTrigger, Badge, Button } from '@/components/ui'
 import {
-  Wallet,
-  Coins,
-  TrendingUp,
-  Shield,
-  Music,
-  Zap,
   BarChart3,
+  Coins,
+  Music,
   Settings,
-  Lock,
-  Crown,
-  TrendingDown
-} from '@/components/icons'
+  TrendingUp,
+  Wallet,
+  Zap,
+} from "@/components/icons";
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui";
+import { WalletConnect } from "@/components/wallet/wallet-connect";
+import { WalletProviderWrapper } from "@/components/wallet/wallet-provider";
+import dynamic from "next/dynamic";
+import { useState } from "react";
+
+// Ленивая загрузка тяжелых компонентов
+const NDTManager = dynamic(() => import("@/components/wallet/ndt-manager"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-64 w-full bg-gray-200 animate-pulse rounded" />
+  ),
+});
+
+const StakingManager = dynamic(
+  () => import("@/components/wallet/staking-manager"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-64 w-full bg-gray-200 animate-pulse rounded" />
+    ),
+  }
+);
+
+const MusicNFTManager = dynamic(
+  () => import("@/components/wallet/music-nft-manager"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-64 w-full bg-gray-200 animate-pulse rounded" />
+    ),
+  }
+);
+
+const DeflationStats = dynamic(
+  () => import("@/components/wallet/deflation-stats"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-32 w-full bg-gray-200 animate-pulse rounded" />
+    ),
+  }
+);
 
 export default function WalletPage() {
-  const [activeTab, setActiveTab] = useState('overview')
+  const [activeTab, setActiveTab] = useState("overview");
 
   return (
     <WalletProviderWrapper>
@@ -35,7 +78,11 @@ export default function WalletPage() {
           </p>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="space-y-6"
+        >
           <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">Обзор</TabsTrigger>
             <TabsTrigger value="deflation">Дефляция</TabsTrigger>
@@ -76,9 +123,7 @@ export default function WalletPage() {
                     <div className="text-sm text-muted-foreground">NDT</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-lg font-medium">
-                      0.0500
-                    </div>
+                    <div className="text-lg font-medium">0.0500</div>
                     <div className="text-sm text-muted-foreground">SOL</div>
                   </div>
                   <Badge variant="secondary" className="w-full justify-center">
@@ -97,22 +142,24 @@ export default function WalletPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">
-                      15%
+                    <div className="text-2xl font-bold text-blue-600">15%</div>
+                    <div className="text-sm text-muted-foreground">
+                      Текущий APY
                     </div>
-                    <div className="text-sm text-muted-foreground">Текущий APY</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-lg font-medium">
-                      500.00
+                    <div className="text-lg font-medium">500.00</div>
+                    <div className="text-sm text-muted-foreground">
+                      Застейкено NDT
                     </div>
-                    <div className="text-sm text-muted-foreground">Застейкено NDT</div>
                   </div>
                   <div className="text-center">
                     <div className="text-sm font-medium text-green-600">
                       +25.00 NDT
                     </div>
-                    <div className="text-xs text-muted-foreground">Накоплено rewards</div>
+                    <div className="text-xs text-muted-foreground">
+                      Накоплено rewards
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -161,6 +208,10 @@ export default function WalletPage() {
             <MusicNFTManager />
           </TabsContent>
 
+          <TabsContent value="deflation" className="space-y-6">
+            <DeflationStats />
+          </TabsContent>
+
           <TabsContent value="settings" className="space-y-6">
             <Card>
               <CardHeader>
@@ -185,7 +236,7 @@ export default function WalletPage() {
                       Включить
                     </Button>
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
                     <div>
                       <h4 className="font-medium">Уведомления</h4>
@@ -197,7 +248,7 @@ export default function WalletPage() {
                       Настроить
                     </Button>
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
                     <div>
                       <h4 className="font-medium">Безопасность</h4>
@@ -216,5 +267,5 @@ export default function WalletPage() {
         </Tabs>
       </div>
     </WalletProviderWrapper>
-  )
+  );
 }

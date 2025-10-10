@@ -1,465 +1,496 @@
-'use client'
+"use client";
 
-import { useState, useEffect, useCallback } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, Button, Badge, Avatar, AvatarFallback, AvatarImage, Slider, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Tabs, TabsContent, TabsList, TabsTrigger, Progress } from '@/components/ui'
-import {
-  Play,
-  Pause,
-  Heart,
-  Plus,
-  Share,
-  MoreHorizontal,
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { 
   Sparkles,
-  Brain,
   TrendingUp,
   Clock,
-  Music,
-  Headphones,
-  Zap,
-  Target,
-  Star,
+  Users,
+  Brain,
   RefreshCw,
-  Settings,
-  Filter,
-  Search,
-  X,
-  CheckCircle,
-  AlertCircle,
-  Info
-} from '@/components/icons'
-import { cn } from '@/lib/utils'
-import { aiRecommendationSystem, Recommendation, RecommendationContext, UserProfile } from '@/lib/ai-recommendation-system'
-import { useAudioStore } from '@/store/use-audio-store'
+  Music
+  Heart
+  Share2
+  } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { getAIRecommendationEngine } from "@/lib/ai-recommendations";
+import { useTelegram } from "@/contexts/telegram-context";
 
-interface AIRecommendationsProps {
-  userId: string
-  className?: string
+interface RecommendationDisplay {
+  id: string;
+  title: string;
+  artist: string;
+  genre: string;
+  duration: number;
+  score: number;
+  confidence: number;
+  type: 'personal' | 'trending' | 'discovery' | 'social';
+  explanations: string[];
+  audioFeatures: {
+    hasVocals: boolean;
+    isLive: boolean;
+    isAcoustic: boolean;
+  };
+  socialFeatures: {
+    likeCount: number;
+    sharingCount: number;
+    trendingScore: number;
+  };
 }
 
-export function AIRecommendations({ userId, className }: AIRecommendationsProps) {
-  const { play, currentTrack } = useAudioStore()
-  const [recommendations, setRecommendations] = useState<Recommendation[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
-  const [context, setContext] = useState<RecommendationContext>({
-    timeOfDay: 'afternoon',
-    dayOfWeek: 'weekday'
-  })
-  const [selectedTab, setSelectedTab] = useState<'discover' | 'mood' | 'activity' | 'similar'>('discover')
+interface AIRecommendationsProps {
+  userId: string;
+  compact?: boolean;
+  showFilters?: boolean;
+  onTrackSelect?: (trackId: string) => void;
+  onTrackPlay?: (trackId: string) => void;
+  onTrackLike?: (trackId: string) => void;
+  onTrackSkip?: (trackId: string) => void;
+}
+
+export function AIRecommendations({
+  userId,
+  compact = false,
+  showFilters = false,
+  onTrackSelect,
+  onTrackPlay,
+  onTrackLike,
+  onTrackSkip,
+}: AIRecommendationsProps) {
+  const [recommendations, setRecommendations] = useState<RecommendationDisplay[]>([]);
+  const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({
-    minScore: 0.5,
-    maxResults: 20,
-    genres: [] as string[],
-    energyLevel: [0, 1] as [number, number],
-    danceability: [0, 1] as [number, number],
-    valence: [0, 1] as [number, number]
-  })
+    type: 'all',
+    count: 10,
+    genre: 'all',
+    artist: 'all'
+  });
+  
+  const { isTMA, hapticFeedback, showToast } = useTelegram();
+  const { toast } = useToast();
+  
+  const engine = getAIRecommendationEngine();
+  const refreshRef = useRef<(() => {})(null);
 
-  // Загрузка профиля пользователя
-  useEffect(() => {
-    const loadUserProfile = async () => {
-      try {
-        const profile = await aiRecommendationSystem.getUserProfile(userId)
-        setUserProfile(profile)
-      } catch (error) {
-        console.error('Failed to load user profile:', error)
-      }
-    }
-    
-    loadUserProfile()
-  }, [userId])
-
-  // Загрузка рекомендаций
+  // Load recommendations
   const loadRecommendations = useCallback(async () => {
-    if (!userProfile) return
+    if (!userId) return;
     
-    setLoading(true)
-    setError(null)
-    
+    setLoading(true);
     try {
-      const recs = await aiRecommendationSystem.generateRecommendations(
-        userId,
-        context,
-        filters.maxResults
-      )
-      
-      // Применяем фильтры
-      const filteredRecs = recs.filter(rec => {
-        if (rec.score < filters.minScore) return false
-        if (filters.genres.length > 0 && !filters.genres.includes(rec.track.genre)) return false
-        if (rec.features.energy < filters.energyLevel[0] || rec.features.energy > filters.energyLevel[1]) return false
-        if (rec.features.danceability < filters.danceability[0] || rec.features.danceability > filters.danceability[1]) return false
-        if (rec.features.valence < filters.valence[0] || rec.features.valence > filters.valence[1]) return false
-        return true
-      })
-      
-      setRecommendations(filteredRecs)
+      const results = await engine.getRecommendations(userId, {
+        count: filters.count,
+        type: filters.type as any,
+        filters: {
+          genre: filters.genre !== 'all' ? [filters.genre] : undefined,
+          artist: filters.artist !== 'all' ? [filters.artist] : undefined,
+          minRating: 4.0,
+          minDuration: 120,
+          maxDuration: 600,
+        }
+      });
+
+      // Format results for display
+      const formattedRecommendations: RecommendationDisplay[] = results.map(rec => ({
+        id: rec.track.id,
+        title: rec.track.title,
+        artist: rec.track.artist,
+        genre: rec.track.genre,
+        duration: rec.track.duration,
+        score: rec.score,
+        confidence: rec.confidence,
+        type: rec.type,
+        explanations: rec.explanations,
+        audioFeatures: rec.track.audioFeatures,
+        socialFeatures: rec.track.socialFeatures,
+      }));
+
+      setRecommendations(formattedRecommendations);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to load recommendations')
+      console.error('Failed to load recommendations:', error);
+      toast({
+        title: "Failed to load recommendations",
+        description: "Please try again",
+        variant: "destructive",
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [userId, userProfile, context, filters])
+  }, [userId, filters, engine]);
 
-  // Загрузка рекомендаций при изменении контекста или фильтров
+  // Auto-refresh recommendations
   useEffect(() => {
-    loadRecommendations()
-  }, [loadRecommendations])
+    loadRecommendations();
+    
+    const interval = refreshRef.current = setTimeout(() => {
+      loadRecommendations();
+      refreshRef.current = null;
+    }, 30000); // Refresh every 30 seconds
+    
+    return () => {
+      if (interval) clearTimeout(interval);
+    };
+  }, [userId, filters]);
 
-  // Обновление контекста
-  const updateContext = useCallback((newContext: Partial<RecommendationContext>) => {
-    setContext(prev => ({ ...prev, ...newContext }))
-  }, [])
+  const handleRefresh = async () => {
+    await loadRecommendations();
+    hapticFeedback("impact");
+    
+    toast({
+      title: "Recommendations refreshed",
+      description: "Updated with latest AI suggestions",
+    });
+  };
 
-  // Обновление фильтров
-  const updateFilters = useCallback((newFilters: Partial<typeof filters>) => {
-    setFilters(prev => ({ ...prev, ...newFilters }))
-  }, [])
+  const handleFilterChange = (newFilters: typeof filters) => {
+    setFilters(filters);
+  };
 
-  // Воспроизведение трека
-  const handlePlayTrack = useCallback((track: any) => {
-    play(track)
-  }, [play])
+  const handleTrackAction = async (
+    action: 'play' | 'like' | 'skip',
+    trackId: string
+  ) => {
+    hapticFeedback("selection");
 
-  // Форматирование времени
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = Math.floor(seconds % 60)
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
-  }
+    switch (action) {
+      case 'play':
+        onTrackPlay?.(trackId);
+        break;
+      case 'like':
+        onTrackLike?.(trackId);
+        // Add to liked tracks
+        break;
+      case 'skip':
+        onTrackSkip?.(trackId);
+        // Add to skipped tracks
+        break;
+    }
+  };
 
-  // Форматирование процентов
-  const formatPercentage = (value: number) => {
-    return `${Math.round(value * 100)}%`
-  }
+  const getTypeColor = (type: string): string => {
+    switch (type) {
+      case 'personal':
+        return 'bg-blue-500 text-white';
+      case 'trending':
+        return 'bg-green-500 text-white';
+      case 'discovery':
+        return 'bg-purple-500 text-white';
+      case 'social':
+        return 'bg-orange-500 text-white';
+      default:
+        return 'bg-gray-500 text-white';
+    }
+  };
 
-  // Получение цвета для оценки
-  const getScoreColor = (score: number) => {
-    if (score >= 0.8) return 'text-green-500'
-    if (score >= 0.6) return 'text-yellow-500'
-    if (score >= 0.4) return 'text-orange-500'
-    return 'text-red-500'
-  }
+  const getTypeLabel = (type: string): string => {
+    switch (type) {
+      case 'personal':
+        return 'For You';
+      case 'trending':
+        return 'Trending';
+      case 'discovery':
+        return 'Discover';
+      case 'social':
+        return 'Popular';
+      default:
+        return 'Recommended';
+    }
+  };
 
-  // Получение иконки для уверенности
-  const getConfidenceIcon = (confidence: number) => {
-    if (confidence >= 0.8) return <CheckCircle className="h-4 w-4 text-green-500" />
-    if (confidence >= 0.6) return <Info className="h-4 w-4 text-yellow-500" />
-    return <AlertCircle className="h-4 w-4 text-red-500" />
-  }
+  const getTypeIcon = (type: string): string => {
+    switch (type) {
+      case 'personal':
+        return '🎯';
+      case 'trending':
+        return '📈';
+      case 'discovery':
+        return '🔍';
+      case 'social':
+        return '👥';
+      default:
+        return '🎵';
+    }
+  };
 
-  if (loading && recommendations.length === 0) {
+  // Get type badge styling
+  const getTypeBadge = (type: string) => {
+    const colors = getTypeColor(type);
+    return <Badge className={colors}>
+      {getTypeIcon(type)} {getTypeLabel(type)}
+    </Badge>;
+  };
+
+  if (!userId) {
     return (
-      <Card className={cn('w-full', className)}>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-center space-x-2">
-            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            <span>Загрузка рекомендаций...</span>
-          </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Brain className="h-5 w-5" />
+            AI Recommendations
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-center text-muted-foreground py-8">
+            Please log in to get personalized music recommendations powered by AI
+          </p>
         </CardContent>
       </Card>
-    )
+    );
   }
 
-  if (error) {
-    return (
-      <Card className={cn('w-full', className)}>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-center space-x-2 text-red-500">
-            <AlertCircle className="h-5 w-5" />
-            <span>{error}</span>
-            <Button size="sm" variant="outline" onClick={loadRecommendations}>
+  return (
+    <div className="space-y-6">
+      {!compact && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Brain className="h-5 w-5" />
+              AI Recommendations
+            </CardTitle>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleRefresh}
+                disabled={loading}
+              >
+                <RefreshCw className="h-4 w-4 mr-1" />
+                {loading ? 'Loading...' : 'Refresh'}
+              </Button>
+            </div>
+          </CardHeader>
+          
+          {showFilters && (
+            <CardContent>
+              <div className="flex flex-wrap gap-2 mb-4">
+              <select
+                value={filters.type}
+                onChange={(e) => handleFilterChange({ ...filters, type: e.target.value as any })}
+                className="px-3 py-2 border rounded-md"
+              >
+                <option value="all">All Types</option>
+                <option value="personal">For You</option>
+                <option value="trending">Trending</option>
+                <option value="discovery">Discover</option>
+                <option value="social">Popular</option>
+              </select>
+              
+              <select
+                value={filters.genre}
+                onChange={(e) => handleFilterChange({ ...filters, genre: e.target.value as any })}
+                className="px-3 py-2 border rounded-md"
+              >
+                <option value="all">All Genres</option>
+                <option value="EDM">EDM</option>
+                <option value="House">House</option>
+                <option value="Techno">Techno</option>
+                <option value="Blues">Blues</option>
+                <option value="Jazz">Jazz</option>
+                <option value="Rock">Rock</option>
+              </select>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recommendation Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {recommendations.map((rec, index) => (
+          <Card
+            key={rec.id}
+            className="group-hover:scale-105 transition-all duration-200"
+          >
+            <CardContent className="p-4 space-y-3">
+              {/* Header with type badge */}
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg line-clamp-1">
+                    {rec.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {rec.artist} • {rec.genre}
+                  </p>
+                </div>
+                {getTypeBadge(rec.type)}
+              </div>
+
+              {/* Score and confidence */}
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-1">
+                  <Sparkles className="h-4 w-4 text-yellow-500" />
+                  <span className="text-sm font-medium">
+                    {Math.round(rec.score * 100)}% match
+                  </span>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {Math.round(rec.confidence * 100)}% confidence
+                </div>
+              </div>
+
+              {/* Audio features */}
+              <div className="flex flex-wrap gap-2 text-xs">
+                {rec.audioFeatures.hasVocals && (
+                  <Badge variant="secondary">With Vocals</Badge>
+                )}
+                {rec.audioFeatures.isAcoustic && <Badge variant="outline">Acoustic</Badge>}
+                {rec.audioFeatures.isLive && (
+                  <Badge variant="destructive">Live</Badge>
+                )}
+              </div>
+
+              {/* Duration */}
+              <div className="text-sm text-muted-foreground mb-3">
+                {formatDuration(rec.duration)}
+              </div>
+
+              {/* Explanations */}
+              {rec.explanations.length > 0 && (
+                <div className="space-y-1">
+                  {rec.explanations.slice(0, 2).map((explanation, i) => (
+                    <p
+                      key={i}
+                      className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1"
+                    >
+                      💡 {explanation}
+                    </p>
+                  ))}
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => handleTrackAction('play', rec.id)}
+                  className="flex-1"
+                >
+                  <Music className="h-4 w-4 mr-1" />
+                  Play
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleTrackAction('like', rec.id)}
+                  className="flex-1"
+                >
+                  <Heart className="h-4 w-4 mr-1" />
+                  Like
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleTrackAction('skip', rec.id)}
+                  className="flex-1"
+                >
+                  Skip
+                </Button>
+              </div>
+
+              {/* Social proof */}
+              <div className="flex items-center justify-between pt-2 border-t">
+                <div className="flex gap-2 text-xs text-muted-foreground">
+                  <Users className="h-3 w-3" />
+                  <span>{rec.socialFeatures.likeCount}</span>
+                  <span className="text-xs text-muted-foreground">
+                    Likes
+                  </span>
+                </div>
+                <div className="flex gap-2 text-xs text-muted-foreground">
+                  <Share2 className="h-3 w-3" />
+                  <span>{rec.socialFeatures.sharingCount}</span>
+                  <span className="text-xs text-muted-foreground">
+                    Shares
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Summary card */}
+      {recommendations.length > 0 && (
+        <Card>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+              <div>
+                <p className="text-muted-foreground">Personal Score</p>
+                <div className="text-2xl font-bold">
+                  {Math.round(
+                    recommendations
+                      .reduce((sum, rec) => sum + rec.score, 0) / recommendations.length * 100
+                  )}%
+                </div>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Social Proofs</p>
+                <div className="text-2xl font-bold">
+                  {recommendations
+                    .reduce((sum, rec) => sum + rec.socialFeatures.likeCount, 0)}
+                </div>
+              </div>
+              <div>
+                <p className="text-muted-foreground">New Discoveries</p>
+                <div className="text-2xl font-bold">
+                  {recommendations
+                    .filter(rec => rec.type === 'discovery').length}
+                </div>
+              </div>
+              <div>
+                <p className="text-coverage text-muted-foreground">
+                  avg: {Math.round(
+                    recommendations
+                      .reduce((sum, rec) => sum + rec.confidence, 0) / recommendations.length * 100
+                  )}% confidence
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Quick actions */}
+      <Card className="text-center">
+        <CardContent>
+          <div className="flex flex-wrap gap-2 justify-center">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => hapticFeedback('notification')}
+            >
+              <Brain className="h-4 w-4 mr-1" />
+              Train AI
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={loading}
+            >
               <RefreshCw className="h-4 w-4 mr-1" />
-              Повторить
+              Refresh
             </Button>
           </div>
         </CardContent>
       </Card>
-    )
-  }
-
-  return (
-    <div className={cn('w-full space-y-6', className)}>
-      {/* Заголовок и настройки */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Brain className="h-6 w-6 text-primary" />
-              <CardTitle>AI Рекомендации</CardTitle>
-              <Badge variant="secondary" className="ml-2">
-                <Sparkles className="h-3 w-3 mr-1" />
-                ИИ
-              </Badge>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button size="sm" variant="outline" onClick={loadRecommendations}>
-                <RefreshCw className="h-4 w-4 mr-1" />
-                Обновить
-              </Button>
-              <Button size="sm" variant="outline">
-                <Settings className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Tabs value={selectedTab} onValueChange={(value: any) => setSelectedTab(value)}>
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="discover">Открытия</TabsTrigger>
-              <TabsTrigger value="mood">Настроение</TabsTrigger>
-              <TabsTrigger value="activity">Активность</TabsTrigger>
-              <TabsTrigger value="similar">Похожие</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="discover" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Время дня</label>
-                  <Select value={context.timeOfDay} onValueChange={(value: any) => updateContext({ timeOfDay: value })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="morning">Утро</SelectItem>
-                      <SelectItem value="afternoon">День</SelectItem>
-                      <SelectItem value="evening">Вечер</SelectItem>
-                      <SelectItem value="night">Ночь</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">День недели</label>
-                  <Select value={context.dayOfWeek} onValueChange={(value: any) => updateContext({ dayOfWeek: value })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="weekday">Будни</SelectItem>
-                      <SelectItem value="weekend">Выходные</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="mood" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Энергия: {formatPercentage(filters.energyLevel[1])}</label>
-                  <Slider
-                    value={filters.energyLevel}
-                    onValueChange={(value) => updateFilters({ energyLevel: value as [number, number] })}
-                    max={1}
-                    step={0.1}
-                    className="w-full"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Танцевальность: {formatPercentage(filters.danceability[1])}</label>
-                  <Slider
-                    value={filters.danceability}
-                    onValueChange={(value) => updateFilters({ danceability: value as [number, number] })}
-                    max={1}
-                    step={0.1}
-                    className="w-full"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Позитивность: {formatPercentage(filters.valence[1])}</label>
-                  <Slider
-                    value={filters.valence}
-                    onValueChange={(value) => updateFilters({ valence: value as [number, number] })}
-                    max={1}
-                    step={0.1}
-                    className="w-full"
-                  />
-                </div>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="activity" className="space-y-4">
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                {[
-                  { id: 'workout', label: 'Тренировка', icon: <Zap className="h-4 w-4" /> },
-                  { id: 'study', label: 'Учеба', icon: <Target className="h-4 w-4" /> },
-                  { id: 'relax', label: 'Отдых', icon: <Music className="h-4 w-4" /> },
-                  { id: 'party', label: 'Вечеринка', icon: <Headphones className="h-4 w-4" /> },
-                  { id: 'commute', label: 'Дорога', icon: <Clock className="h-4 w-4" /> }
-                ].map((activity) => (
-                  <Button
-                    key={activity.id}
-                    variant={context.activity === activity.id ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => updateContext({ activity: activity.id as any })}
-                    className="flex flex-col items-center space-y-1 h-auto py-3"
-                  >
-                    {activity.icon}
-                    <span className="text-xs">{activity.label}</span>
-                  </Button>
-                ))}
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="similar" className="space-y-4">
-              <div className="text-center text-muted-foreground">
-                <Music className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>Рекомендации на основе текущего трека</p>
-                {currentTrack && (
-                  <div className="mt-4 p-3 bg-muted rounded-lg">
-                    <p className="text-sm font-medium">{currentTrack.title}</p>
-                    <p className="text-xs text-muted-foreground">{currentTrack.artistName}</p>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-
-      {/* Список рекомендаций */}
-      <div className="space-y-4">
-        {recommendations.length === 0 ? (
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-center text-muted-foreground">
-                <Music className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>Нет рекомендаций для отображения</p>
-                <p className="text-sm">Попробуйте изменить фильтры или контекст</p>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          recommendations.map((rec, index) => (
-            <Card key={rec.track.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-4">
-                  {/* Обложка */}
-                  <Avatar className="h-16 w-16">
-                    <AvatarImage src={rec.track.coverImage} />
-                    <AvatarFallback>{rec.track.title.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  
-                  {/* Информация о треке */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <h4 className="text-lg font-medium truncate">{rec.track.title}</h4>
-                      {rec.track.isPremium && (
-                        <Badge variant="secondary" className="text-xs">
-                          <Star className="h-3 w-3 mr-1" />
-                          Премиум
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground truncate mb-2">
-                      {rec.track.artistName} • {rec.track.genre}
-                    </p>
-                    <div className="flex items-center space-x-4 text-xs text-muted-foreground">
-                      <span className="flex items-center space-x-1">
-                        <Clock className="h-3 w-3" />
-                        <span>{formatTime(rec.track.duration)}</span>
-                      </span>
-                      <span className="flex items-center space-x-1">
-                        <TrendingUp className="h-3 w-3" />
-                        <span>{rec.track.playCount.toLocaleString()}</span>
-                      </span>
-                    </div>
-                  </div>
-                  
-                  {/* Оценка и уверенность */}
-                  <div className="flex flex-col items-center space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <span className={cn('text-2xl font-bold', getScoreColor(rec.score))}>
-                        {Math.round(rec.score * 100)}
-                      </span>
-                      <div className="flex flex-col items-center">
-                        {getConfidenceIcon(rec.confidence)}
-                        <span className="text-xs text-muted-foreground">
-                          {Math.round(rec.confidence * 100)}%
-                        </span>
-                      </div>
-                    </div>
-                    <div className="text-xs text-muted-foreground text-center">
-                      Оценка ИИ
-                    </div>
-                  </div>
-                  
-                  {/* Действия */}
-                  <div className="flex items-center space-x-2">
-                    <Button size="sm" onClick={() => handlePlayTrack(rec.track)}>
-                      <Play className="h-4 w-4 mr-1" />
-                      Играть
-                    </Button>
-                    <Button size="sm" variant="outline">
-                      <Heart className="h-4 w-4" />
-                    </Button>
-                    <Button size="sm" variant="outline">
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                    <Button size="sm" variant="outline">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                
-                {/* Причины рекомендации */}
-                <div className="mt-4 pt-4 border-t">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <Brain className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium">Почему рекомендовано:</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {rec.reasons.map((reason, reasonIndex) => (
-                      <Badge key={reasonIndex} variant="outline" className="text-xs">
-                        {reason}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                
-                {/* Характеристики трека */}
-                <div className="mt-4 pt-4 border-t">
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-xs">
-                    <div>
-                      <span className="text-muted-foreground">Энергия:</span>
-                      <div className="flex items-center space-x-2">
-                        <Progress value={rec.features.energy * 100} className="flex-1 h-2" />
-                        <span className="font-medium">{formatPercentage(rec.features.energy)}</span>
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Танцевальность:</span>
-                      <div className="flex items-center space-x-2">
-                        <Progress value={rec.features.danceability * 100} className="flex-1 h-2" />
-                        <span className="font-medium">{formatPercentage(rec.features.danceability)}</span>
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Позитивность:</span>
-                      <div className="flex items-center space-x-2">
-                        <Progress value={rec.features.valence * 100} className="flex-1 h-2" />
-                        <span className="font-medium">{formatPercentage(rec.features.valence)}</span>
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Акустичность:</span>
-                      <div className="flex items-center space-x-2">
-                        <Progress value={rec.features.acousticness * 100} className="flex-1 h-2" />
-                        <span className="font-medium">{formatPercentage(rec.features.acousticness)}</span>
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Темп:</span>
-                      <span className="font-medium ml-1">{Math.round(rec.features.tempo)} BPM</span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
     </div>
-  )
+  );
 }
+
+// Helper function to format duration
+function formatDuration(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  
+  if (minutes > 0) {
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  }
+  
+  return `0:${remainingSeconds.toString().padStart(2, '0')}`;
+}
+
+export default AIRecommendations;

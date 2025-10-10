@@ -1,5 +1,6 @@
-import { SolanaPayConfig, SolanaPayService } from "@/lib/solana-pay";
-import React, { useEffect, useState } from "react";
+import { enhancedSolanaPayService } from "@/lib/solana-pay-enhanced";
+import { useTelegram } from "@/contexts/telegram-context";
+import React, { useEffect, useState, useCallback } from "react";
 
 interface SolanaPayButtonProps {
   amount: number;
@@ -7,44 +8,280 @@ interface SolanaPayButtonProps {
   label?: string;
   message?: string;
   memo?: string;
-  onSuccess?: () => void;
+  onSuccess?: (result: any) => void;
   onError?: (error: Error) => void;
+  enableTelegramEnhancement?: boolean;
+  pollingInterval?: number;
+}
+
+interface PaymentState {
+  status: 'idle' | 'generating' | 'waiting' | 'verifying' | 'confirmed' | 'failed';
+  reference?: string;
+  qrCode?: string;
+  url?: string;
+  error?: string;
+  signature?: string;
+  expiresAt?: Date;
 }
 
 const SolanaPayButton: React.FC<SolanaPayButtonProps> = ({
   amount,
   recipient,
-  label = "Payment",
+  label = "NormalDance",
   message = `Payment of ${amount} SOL`,
   memo,
   onSuccess,
   onError,
+  enableTelegramEnhancement = true,
+  pollingInterval = 3000,
 }) => {
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentState, setPaymentState] = useState<PaymentState>({
+    status: 'idle',
+  });
   const [showQR, setShowQR] = useState(false);
-  const [qrData, setQrData] = useState<string | null>(null);
-  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
-  const [isWaitingForPayment, setIsWaitingForPayment] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState<
-    "pending" | "confirmed" | "failed"
-  >("pending");
-  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(
-    null
-  );
   const [useMainButton, setUseMainButton] = useState(false);
 
+  // Enhanced solana pay service
+  const solanaPayService = enhancedSolanaPayService;
+
   // Check if we're in Telegram Mini App
-  const isTMA = typeof window !== "undefined" && window.Telegram?.WebApp;
+  const { isTMA } = useTelegram();
 
-  // Get platform wallet from environment
-  const platformWallet = process.env.NEXT_PUBLIC_PLATFORM_WALLET || recipient;
+  // Enhanced payment handler
+  const handlePayment = useCallback(async () => {
+    if (paymentState.status !== 'idle') return;
 
-  // Initialize Solana Pay service
-  const solanaPayService = new SolanaPayService(
-    process.env.NEXT_PUBLIC_SOLANA_RPC_URL ||
-      "https://api.mainnet-beta.solana.com",
-    platformWallet || ""
-  );
+    setPaymentState(prev => ({ ...prev, status: 'generating', error: undefined }));
+
+    try {
+    // Check if we're in Telegram Mini App and enable enhancement
+    if (isTMA && enableTelegramEnhancement) {
+      const payment = await solanaPayService.createTelegramPayment({
+        recipient: recipient || process.env.NEXT_PUBLIC_PLATFORM_WALLET || '',
+        amount,
+        label,
+        message,
+        memo,
+        enableTelegramVerification: true
+      });
+
+      setPaymentState(prev => ({
+        ...prev,
+        status: 'waiting',
+        reference: payment.reference,
+        qrCode: payment.qrCode,
+        url: payment.url,
+        expiresAt: payment.expiresAt
+      }));
+
+      setShowQR(true);
+      setUseMainButton(false);
+
+      // Start monitoring payment
+      solanaPayService.monitorPayment(payment.reference, {
+        recipient: payment.reference,
+        expectedAmount: amount,
+        pollingInterval,
+        onStatusChange: (result) => {
+          setPaymentState(prev => ({
+            ...prev,
+            status: result.success ? 'confirmed' : 'failed',
+            error: result.error,
+            signature: result.signature
+          }));
+          
+          if (result.success && onSuccess) {
+            onSuccess(result);
+          } else if (result.error && onError) {
+            onError(new Error(result.error));
+          }
+        }
+      }).catch((error) => {
+        setPaymentState(prev => ({
+          ...prev,
+          status: 'failed',
+          error: error.message
+        }));
+      }));
+    } else {
+      // Standard web payment flow
+      const payment = await solanaPayService.createEnhancedPaymentRequest({
+        recipient: recipient || process.env.NEXT_PUBLIC_PLATFORM_WALLET || '',
+        amount,
+        label,
+        message,
+        memo,
+        webhook: process.env.SOLANA_PAY_WEBHOOK_URL
+      });
+
+      setPaymentState(prev => ({
+        ...prev,
+        status: 'waiting',
+        reference: payment.reference,
+        qrCode: payment.qrCode,
+        url: payment.url,
+        expiresAt: payment.expiresAt
+      }));
+
+      // Show QR code for scanning
+      setShowQR(true);
+
+      // In web mode, we'd show a "payment completed" button
+      // The user manually confirms after payment
+    }
+  }, [amount, recipient, label, message, memo, isTMA, enableTelegramEnhancement, onError, onSuccess]);
+
+  // Auto-cleanup when component unmounts
+  useEffect(() => {
+    return () => {
+      if (paymentState.pollingInterval) {
+        clearInterval(paymentState.pollingInterval as any);
+      }
+    };
+  }, [paymentState.pollingInterval]);
+
+  const handlePaymentConfirmed = useCallback(() => {
+    if (!paymentState.reference) return;
+
+    setPaymentState(prev => ({
+      ...prev,
+      status: 'verifying'
+    }));
+
+    solanaPayService.verifyPayment(
+      paymentState.reference,
+      recipient || process.env.NEXT_PUBLIC_PLATFORM_WALLET || '',
+      amount
+    ).then((result) => {
+      if (result.success) {
+        setPaymentState(prev => ({
+          ...prev,
+          status: 'confirmed',
+          signature: result.signature
+        }));
+        onSuccess?.(result);
+      } else {
+        setPaymentState(prev => ({
+          ...prev,
+          status: 'failed',
+          error: result.error
+        }));
+        onError?.(new Error(result.error || 'Payment verification failed'));
+      }
+    }).catch((error) => {
+      setPaymentState(prev => ({
+        ...prev,
+        status: 'failed',
+        error: error.message
+      }));
+      onError?.(error);
+    });
+  }, [amount, recipient, paymentState.reference, onSuccess, onError]);
+
+  const handleCancel = useCallback(() => {
+    setPaymentState({ status: 'idle' });
+    setShowQR(false);
+    setUseMainButton(true);
+    if (paymentState.pollingInterval) {
+      clearInterval(paymentState.pollingInterval as any);
+    }
+  }, [paymentState.pollingInterval]);
+
+  const handleClose = useCallback(() => {
+    handleCancel();
+    setShowQR(false);
+  }, [handleCancel]);
+
+  // Format remaining time
+  const getRemainingTime = useCallback(() => {
+    if (!paymentState.expiresAt || paymentState.status === 'confirmed') {
+      return '';
+    }
+    
+    const remaining = paymentState.expiresAt.getTime() - Date.now();
+    if (remaining <= 0) return 'Expired';
+    
+    const minutes = Math.floor(remaining / 60000);
+    const seconds = Math.floor((remaining % 60000) / 1000);
+    
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }, [paymentState.expiresAt, paymentState.status]);
+
+  // Setup Telegram integration
+  useEffect(() => {
+    if (isTMA && window.Telegram?.WebApp) {
+      const tg = window.Telegram.WebApp;
+
+      // Expand app
+      tg.expand();
+
+      // Handle back button
+      if (showQR || paymentState.status !== 'idle') {
+        tg.BackButton.show();
+        tg.BackButton.onClick(handleClose);
+      } else {
+        tg.BackButton.hide();
+      }
+
+      // Setup main button
+      if (useMainButton && paymentState.status === 'idle') {
+        tg.MainButton.setText(`Pay ${amount} SOL`);
+        tg.MainButton.color = '#purple';
+        tg.MainButton.show();
+        tg.MainButton.onClick(handlePayment);
+      } else {
+        tg.MainButton.hide();
+      }
+
+      // Clean up
+      return () => {
+        tg.MainButton.offClick(handlePayment);
+        tg.BackButton.offClick(handleClose);
+      };
+    }
+  }, [isTMA, amount, showQR, paymentState.status, useMainButton, handlePayment, handleClose]);
+
+  const handleClose = useCallback(() => {
+    if (isTMA && window.Telegram?.WebApp) {
+      window.Telegram.WebApp.close();
+    }
+    handleClose();
+  }, [isTMA, handleClose]);
+
+  // Generate payment request data
+  useEffect(() => {
+    const platformWallet = process.env.NEXT_PUBLIC_PLATFORM_WALLET || recipient;
+    
+    if (platformWallet && amount > 0 && paymentState.status === 'idle') {
+      (async () => {
+        try {
+          const payment = await solanaPayService.createEnhancedPaymentRequest({
+            recipient: platformWallet,
+            amount,
+            label,
+            message,
+            memo,
+            webhook: process.env.SOLANA_PAY_WEBHOOK_URL
+          });
+
+          setPaymentState(prev => ({
+            ...prev,
+            reference: payment.reference,
+            qrCode: payment.qrCode,
+            url: payment.url,
+            expiresAt: payment.expiresAt
+          }));
+        } catch (error) {
+          console.error('Error generating payment request:', error);
+          setPaymentState(prev => ({
+            ...prev,
+            status: 'failed',
+            error: error.message
+          }));
+        }
+      })();
+    }
+  }, [amount, recipient, label, message, memo]);
 
   // Generate payment URL and QR code
   useEffect(() => {
