@@ -118,12 +118,14 @@ export function WalletConnect({ className }: WalletConnectProps) {
   const initWalletConnectForTMA = async () => {
     try {
       // В TMA используем WalletConnect Universal или deeplink
-      // Для этого потребуется настроить WalletConnect
       console.log("Initializing WalletConnect for Telegram Mini App");
 
-      // В реальном приложении здесь будет инициализация WalletConnect
-      // с использованием @walletconnect/modal-react-native или @walletconnect/sign-client
-      // В зависимости от окружения (TMA или веб)
+      // Проверяем, что мы в браузере
+      if (typeof window === "undefined") {
+        throw new Error(
+          "WalletConnect can only be initialized in browser environment"
+        );
+      }
 
       // Для TMA используем QR-код или deeplink
       if (showQR) {
@@ -143,15 +145,13 @@ export function WalletConnect({ className }: WalletConnectProps) {
         // window.open(universalLink, '_blank');
       }
 
-      // В реальном приложении здесь будет ожидание установки соединения
-      // и обработка событий от WalletConnect
-      // await waitForWalletConnectConnection();
-
       // Пока просто вызываем стандартное подключение
       await connectWallet();
     } catch (err) {
       console.error("WalletConnect initialization error:", err);
-      throw err;
+      throw new Error(
+        "Failed to initialize WalletConnect. Please try again or use another wallet."
+      );
     }
   };
 

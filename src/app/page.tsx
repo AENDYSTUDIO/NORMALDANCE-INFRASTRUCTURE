@@ -15,6 +15,7 @@ import {
 } from '@/components/icons'
 import { MainLayout } from '@/components/layout/main-layout'
 import { Avatar, AvatarFallback, AvatarImage, Badge, Button, Card, CardContent, CardHeader, CardTitle, Input } from '@/components/ui'
+import { CommunityStats } from '@/components/stats/community-stats'
 
 // Mock data for demonstration
 const mockTracks = [
@@ -224,30 +225,7 @@ export default function Home() {
               </CardContent>
             </Card>
 
-            {/* Community stats */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Статистика сообщества</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Активных слушателей</span>
-                  <span className="font-bold">0</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Треков сегодня</span>
-                  <span className="font-bold">0</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Новых артистов</span>
-                  <span className="font-bold">0</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Воспроизведений</span>
-                  <span className="font-bold">0</span>
-                </div>
-              </CardContent>
-            </Card>
+            <CommunityStats />
           </div>
         </div>
       </div>
