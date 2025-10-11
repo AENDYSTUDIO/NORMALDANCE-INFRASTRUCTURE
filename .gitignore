@@ -119,3 +119,73 @@ reports/security-audit.json
  
 # legal signed docs
 legal/IP-Assignment-SIGNED.pdf
+
+# ========  SECRETS & LOCAL KEYS  =========
+# Environment files with secrets
+.env
+.env.local
+.env.production
+.env.staging
+.env.development
+!.env.example
+!.env.example.secure
+
+# Security files
+security-report.json
+audit-results.json
+vulnerability-scan.json
+
+# Backup files that might contain secrets
+*.backup
+*.bak
+*.old
+*.orig
+
+# Solana / Ethereum
+*.json        # не коммитим кошельки
+keypair.json
+id.json
+wallet.json
+*.keystore
+*.seed
+
+# Telegram Bot
+bot.token
+tg-bot.token
+telegram.key
+
+# Cloud / RPC
+alchemy.key
+infura.key
+rpc.url
+rpc-mainnet.url
+
+# CI / CD
+.github/workflows/*.env
+docker-compose.override.yml
+kubernetes/secrets/*.yml
+kubernetes/secrets/*.yaml
+
+# Mobile
+google-services.json
+GoogleService-Info.plist
+*.mobileprovision
+*.p8
+*.p12
+
+# OS generated
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ========  LOCAL DEVELOPMENT  =========
+*.log
+logs/
+pnpm-debug.log*
+lerna-debug.log*
+.vercel
+.next
+out
+build
+dist
+*.tsbuildinfo

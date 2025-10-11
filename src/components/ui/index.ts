@@ -16,4 +16,7 @@ export * from './separator'
 export * from './slider'
 export * from './switch'
 export * from './toast'
+export * from './alert'
+export * from './label'
+export * from './textarea'
 
