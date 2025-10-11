@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { smartLimitOrderSystem } from '@/lib/smart-limit-orders'
 

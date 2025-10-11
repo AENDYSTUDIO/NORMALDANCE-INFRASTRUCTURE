@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 import { telegramIntegration2025 } from '@/lib/telegram-integration-2025'
 
 // POST /api/telegram/webhook - Telegram webhook handler

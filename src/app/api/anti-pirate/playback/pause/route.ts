@@ -1,14 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getServerSession } from 'next-auth/next'
+import { authOptions, getSessionUser } from '@/lib/auth'
 
 // POST /api/anti-pirate/playback/pause - Pause playback session
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
+    const sessionUser = getSessionUser(session)
     
-    if (!session?.user?.id) {
+    if (!sessionUser) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -38,7 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user owns this session
-    if (playbackSession.userId !== session.user.id) {
+    if (playbackSession.userId !== sessionUser.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 403 }
@@ -53,10 +55,10 @@ export async function POST(request: NextRequest) {
         endTime: new Date(pausedTime),
         isActive: false,
         metadata: {
-          ...playbackSession.metadata,
+          previous: playbackSession.metadata as any,
           pauseReason: reason || 'user_pause',
           pausedAt: new Date(pausedTime).toISOString()
-        }
+        } as any
       }
     })
 
@@ -75,7 +77,7 @@ export async function POST(request: NextRequest) {
       // Award listening reward
       await db.reward.create({
         data: {
-          userId: session.user.id,
+          userId: sessionUser.id,
           type: 'LISTENING',
           amount: 1,
           reason: `Completed listen (${durationMinutes} minutes)`

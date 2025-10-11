@@ -1,5 +1,17 @@
-import type { getServerSession as getServerSessionNext } from 'next-auth/next';
+import type { DefaultSession } from 'next-auth';
 
 declare module 'next-auth' {
-  export const getServerSession: typeof getServerSessionNext;
+  interface Session extends DefaultSession {
+    user: DefaultSession['user'] & {
+      id: string;
+      wallet?: string;
+      username?: string;
+      isArtist?: boolean;
+      level?: string;
+      spotifyId?: string;
+      spotifyProfile?: unknown;
+      appleId?: string;
+      appleProfile?: unknown;
+    };
+  }
 }

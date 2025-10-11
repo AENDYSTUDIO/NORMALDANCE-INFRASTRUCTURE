@@ -8,7 +8,7 @@ import { smartLimitOrderSystem } from '@/lib/smart-limit-orders'
 // GET /api/analytics/dashboard - Get comprehensive dashboard data
 export async function GET() {
   try {
-    const session = (await getServerSession(authOptions as any)) as any
+    const session = (await getServerSession(authOptions)) as any
     
     if (!session?.user?.id) {
       return NextResponse.json(

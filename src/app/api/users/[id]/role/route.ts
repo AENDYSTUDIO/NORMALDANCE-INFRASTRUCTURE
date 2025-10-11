@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth/next'
+import { authOptions, getSessionUser } from '@/lib/auth'
 import { db } from '@/lib/db'
 
 export async function PATCH(
@@ -10,9 +11,10 @@ export async function PATCH(
   try {
     const { id } = await params
     const session = await getServerSession(authOptions)
-    
+    const sessionUser = getSessionUser(session)
+
     // Только администраторы могут изменять роли
-    if ((session?.user as any)?.level !== 'ADMIN') {
+    if (sessionUser?.level !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -55,13 +57,14 @@ export async function GET(
   try {
     const { id } = await params
     const session = await getServerSession(authOptions)
-    
+    const sessionUser = getSessionUser(session)
+
     // Только администраторы могут просматривать роли
-    if ((session?.user as any)?.level !== 'ADMIN') {
+    if (sessionUser?.level !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const user = await db.user.findUnique({
+    const targetUser = await db.user.findUnique({
       where: { id },
       select: {
         id: true,
@@ -72,11 +75,11 @@ export async function GET(
       }
     })
 
-    if (!user) {
+    if (!targetUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ user })
+    return NextResponse.json({ user: targetUser })
 
   } catch (error) {
     console.error('Role fetch error:', error)

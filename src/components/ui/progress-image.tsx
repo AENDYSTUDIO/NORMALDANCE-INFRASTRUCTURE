@@ -173,7 +173,6 @@ const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
         {hasError && (
           <div
           className="absolute inset-0 flex items-center justify-center bg-destructive/50 backdrop-blur-sm"
-            image-node-layer"
           >
             <div className="text-destructive text-sm p-4 text-center">
               <div className="h-6 w-6 text-red-500 mb-2">⚠️</div>

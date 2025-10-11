@@ -1,14 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getServerSession } from 'next-auth/next'
+import { authOptions, getSessionUser } from '@/lib/auth'
 
 // GET /api/anti-pirate/passes - Get user's NFT passes
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions)
+    const sessionUser = getSessionUser(session)
     
-    if (!session?.user?.id) {
+    if (!sessionUser) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -18,9 +20,9 @@ export async function GET(request: NextRequest) {
     const now = new Date()
 
     // Get all passes for the user
-    const passes = await db.nftPass.findMany({
+    const passes = await db.nFTPass.findMany({
       where: {
-        userId: session.user.id
+        userId: sessionUser.id
       },
       orderBy: {
         createdAt: 'desc'
@@ -65,11 +67,12 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/anti-pirate/passes - Create new NFT pass
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
+    const sessionUser = getSessionUser(session)
     
-    if (!session?.user?.id) {
+    if (!sessionUser) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -96,9 +99,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Create NFT pass
-    const pass = await db.nftPass.create({
+    const pass = await db.nFTPass.create({
       data: {
-        userId: session.user.id,
+        userId: sessionUser.id,
         type,
         name,
         price,

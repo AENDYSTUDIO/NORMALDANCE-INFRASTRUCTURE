@@ -1,4 +1,5 @@
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
+import type { NextAuthOptions, Session } from "next-auth";
 import AppleProvider from "next-auth/providers/apple";
 import CredentialsProvider from "next-auth/providers/credentials";
 import SpotifyProvider from "next-auth/providers/spotify";
@@ -15,7 +16,7 @@ if (!authConfig) {
   );
 }
 
-export const authOptions = {
+export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db),
   providers: [
     // Web3 аутентификация через Solana кошелек
@@ -157,6 +158,27 @@ export const authOptions = {
   // Настройка безопасности
   secret: authConfig?.secret || process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === "development",
+};
+
+export interface AppSessionUser {
+  id: string;
+  wallet?: string;
+  username?: string;
+  isArtist?: boolean;
+  level?: string;
+  spotifyId?: string;
+  spotifyProfile?: unknown;
+  appleId?: string;
+  appleProfile?: unknown;
+}
+
+export const getSessionUser = (session: unknown): AppSessionUser | null => {
+  const s = session as Session | null | undefined;
+  const user = s?.user as AppSessionUser | undefined;
+  if (!user?.id) {
+    return null;
+  }
+  return user;
 };
 
 // Хелперы для работы с аутентификацией
