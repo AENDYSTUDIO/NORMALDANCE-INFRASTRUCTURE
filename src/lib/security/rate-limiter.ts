@@ -3,7 +3,7 @@
  * Prevents abuse and DDoS attacks
  */
 
-import { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
 
 interface RateLimitConfig {
   windowMs: number; // Time window in milliseconds

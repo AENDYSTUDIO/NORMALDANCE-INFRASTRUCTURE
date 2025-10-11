@@ -4,7 +4,7 @@
  */
 
 import { POST } from '../../app/api/grave/donations/route';
-import { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
 import crypto from 'crypto';
 
 // Mock environment

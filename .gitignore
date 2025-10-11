@@ -44,6 +44,9 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+
+# Additional env patterns for clarity
+.env*.local
 next-env.d.ts
 local-*
 .claude

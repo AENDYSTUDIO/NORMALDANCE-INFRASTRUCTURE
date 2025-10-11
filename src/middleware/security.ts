@@ -3,7 +3,8 @@
  * Applies security headers and protections
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { apiRateLimiter } from '@/lib/security/rate-limiter';
 
 export function securityMiddleware(request: NextRequest) {

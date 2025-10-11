@@ -1,0 +1,156 @@
+# 🚀 Vercel Production Environment Variables - Optimized
+# Адаптировано для Vercel deployment на normaldance.online
+# Скопируйте в Vercel Dashboard → Project Settings → Environment Variables
+
+# ==============================
+# CORE CONFIGURATION
+# ==============================
+NEXT_PUBLIC_APP_URL=https://normaldance.online
+NODE_ENV=production
+DEBUG=false
+NEXT_TELEMETRY_DISABLED=1
+
+# ==============================
+# DATABASE
+# ==============================
+# Вариант 1: PostgreSQL (рекомендуется для production)
+DATABASE_URL=postgresql://username:password@your-db-host:5432/normaldance_prod?schema=public
+
+# Вариант 2: SQLite для быстрого начала (можно заменить позже)
+# DATABASE_URL=file:./db/production.db
+
+# ==============================
+# AUTHENTICATION
+# ==============================
+# Production секрет (рекомендуется сгенерировать новый)
+NEXTAUTH_SECRET=normaldance_prod_secure_key_2024_8k9j2h3g4f5d6e7f8g9h0i1j2k3l4m5
+NEXTAUTH_URL=https://normaldance.online
+
+# ==============================
+# SOLANA BLOCKCHAIN
+# ==============================
+NEXT_PUBLIC_SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
+SOLANA_RPC_TIMEOUT=8000
+
+# Solana Program IDs - ИЗМЕНЯТЬ НА ВАШИ MAINNET ID!
+NEXT_PUBLIC_NDT_PROGRAM_ID=NDTmainnet123456
+NEXT_PUBLIC_NDT_MINT_ADDRESS=NDTmintmain789
+NEXT_PUBLIC_TRACKNFT_PROGRAM_ID=TRACKmainnet012
+NEXT_PUBLIC_STAKING_PROGRAM_ID=STAKEmainnet345
+
+# ==============================
+# IPFS/PINATA STORAGE
+# ==============================
+NEXT_PUBLIC_IPFS_GATEWAY=https://ipfs.io
+PINATA_API_KEY=789c738f136b9c0e1114
+PINATA_SECRET_KEY=91d1a4bf06059241718f0373e60b464ebe17f9d62ea7c5b339e8c720f263e6ff
+PINATA_JWT=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI4YzFlMDhhNy1kMTc4LTQ0YzQtOWE4Ny03Yzk0OGMzY2QzMzciLCJlbWFpbCI6ImFlbmR5c3R1ZGlvQGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJwaW5fcG9saWN5Ijp7InJlZ2lvbnMiOlt7ImRlc2lyZWRSZXBsaWNhdGlvbkNvdW50IjoxLCJpZCI6IkZSQTEifSx7ImRlc2lyZWRSZXBsaWNhdGlvbkNvdW50IjoxLCJpZCI6Ik5ZQzEifV0sInZlcnNpb24iOjF9LCJtZmFfZW5hYmxlZCI6ZmFsc2UsInN0YXR1cyI6IkFDVElWRSJ9LCJhdXRoZW50aWNhdGlvblR5cGUiOiJzY29wZWRLZXkiLCJzY29wZWRLZXlLZXkiOiI3ODljNzM4ZjEzNmI5YzBlMTExNCIsInNjb3BlZEtleVNlY3JldCI6IjkxZDFhNGJmMDYwNTkyNDE3MThmMDM3M2U2MGI0NjRlYmUxN2Y5ZDYyZWE3YzViMzM5ZThjNzIwZjI2M2U2ZmYiLCJleHAiOjE3ODk4ODE1MTh9.Uda4nlL0K8zlZQYrTC3KU8X0gfozQZw8raO96L5mUUA
+
+# ==============================
+# CDN CONFIGURATION
+# ==============================
+CDN_PROVIDER=ipfs
+
+# ==============================
+# SECURITY CONFIGURATION
+# ==============================
+JWT_SECRET=normaldance_jwt_prod_2024_a9b8c7d6e5f4g3h2i1j0k1l2m3n4o5p6q7r8s9t0u1v2w
+RATE_LIMIT_ENABLED=true
+SECURITY_MONITORING_ENABLED=true
+MAX_TRANSACTION_VALUE_SOL=1000
+
+# ==============================
+# CACHE/REDIS
+# ==============================
+# Redis если у вас есть, иначе можно закомментировать
+REDIS_URL=redis://localhost:6379
+
+# Альтернатива: Upstash Redis (рекомендуется для Vercel)
+UPSTASH_REDIS_REST_URL=https://your-upstash-redis.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your-upstash-token
+
+# ==============================
+# MONITORING (настроить позже)
+# ==============================
+# Sentry для мониторинга ошибок
+SENTRY_DSN=
+
+# Mixpanel для аналитики
+MIXPANEL_TOKEN=
+
+# ==============================
+# OAUTH PROVIDERS (настроить по необходимости)
+# ==============================
+SPOTIFY_CLIENT_ID=
+SPOTIFY_CLIENT_SECRET=
+APPLE_CLIENT_ID=
+APPLE_CLIENT_SECRET=
+
+# ==============================
+# TON BLOCKCHAIN
+# ==============================
+NEXT_PUBLIC_TON_RPC_URL=https://toncenter.com/api/v2/jsonRPC
+
+# ==============================
+# TELEGRAM BOT (СОЗДАТЬ НОВЫЙ)
+# ==============================
+# 1. Откройте @BotFather в Telegram
+# 2. Отправьте /newbot
+# 3. Скопируйте токен сюда:
+NEXT_PUBLIC_TELEGRAM_BOT_TOKEN=
+TELEGRAM_BOT_TOKEN=
+
+# ==============================
+# API CONFIGURATION
+# ==============================
+# Для внешних API интеграций
+API_BASE_URL=https://api.normaldance.online
+
+# WebSocket configuration
+WEBSOCKET_URL=wss://normaldance.online
+
+# ==============================
+# BUSINESS CONFIGURATION
+# ==============================
+# Бизнес настройки (опционально)
+BUSINESS_EMAIL=support@normaldance.com
+SUPPORT_EMAIL=support@normaldance.com
+
+# Биллинг (пока выключено)
+STRIPE_PUBLIC_KEY=
+STRIPE_SECRET_KEY=
+
+# ==============================
+# INTEGRATIONS
+# ==============================
+# AI/ML сервисы
+AI_SERVICE_URL=https://api.normaldance.online/ai
+MONITORING_SERVICE_URL=https://api.normaldance.online/monitoring
+
+# Внешние сервисы
+EXTERNAL_API_TIMEOUT=30000
+MAX_CONCURRENT_REQUESTS=100
+
+# ==============================
+# PERFORMANCE
+# ==============================
+# Кэширование на стороне сервера
+ENABLE_SERVER_CACHE=true
+CACHE_DURATION=3600
+
+# Пределения для стабильности
+MAX_MEMORY_USAGE=512
+MAX_CPU_USAGE=80
+
+# ==============================
+# FEATURE FLAGS
+# ==============================
+# Функции которые можно включать/выключать
+ENABLE_FEATURE_MUSIC_STREAMING=true
+ENABLE_FEATURE_SOCIAL_TRADING=true
+ENABLE_FEATURE_ADVANCED_ANALYTICS=true
+ENABLE_FEATURE_TELEGRAM_MINI_APP=true
+
+# Development-only features (выключить в production)
+ENABLE_DEBUG_MODE=false
+ENABLE_PERFORMANCE_MONITORING=true

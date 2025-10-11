@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 import { updateUserLevel } from '@/lib/auth'
@@ -17,7 +17,7 @@ const signupSchema = z.object({
   wallet: z.string().min(32).max(44), // Solana address validation
 })
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     const body = await request.json()
     const validatedData = signupSchema.parse(body)
@@ -83,8 +83,6 @@ export async function POST(request: NextRequest) {
         isArtist: true,
         level: true,
         bio: true,
-        artistName: true,
-        genre: true,
         createdAt: true,
       }
     })

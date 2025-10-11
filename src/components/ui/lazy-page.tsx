@@ -93,7 +93,7 @@ const AsyncLazyPage: React.FC<LazyPageProps> = ({
     <div className="min-h-screen">
       <React.Suspense fallback={loading || fallback}>
         <AsyncComponent />
-      </React.Suspense
+      </React.Suspense>
         <div className="hidden">
           {error && (
             <div className="fixed inset-0 flex items-center justify-center bg-background/85 min-h-screen z-50">

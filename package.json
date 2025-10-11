@@ -55,7 +55,9 @@
     "version:report": "node scripts/version-manager.js report",
     "version:tags": "node scripts/version-manager.js tags",
     "version:changelog": "node scripts/version-manager.js changelog",
-    "version:release": "node scripts/version-manager.js release"
+    "version:release": "node scripts/version-manager.js release",
+    "deploy:check": "node scripts/check-deployment-readiness.js",
+    "deploy:guide": "echo 'Откройте DEPLOYMENT_STEP_BY_STEP_COMPLETE.md для полной инструкции по развертыванию'"
   },
   "dependencies": {
     "@helia/unixfs": "^3.0.0",
@@ -125,15 +127,19 @@
     "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.6.0",
     "ethers": "^6.15.0",
+    "express-rate-limit": "^7.4.1",
     "gif.js": "^0.2.0",
     "helia": "^4.2.2",
+    "helmet": "^8.0.0",
     "input-otp": "^1.4.2",
     "ioredis": "^5.3.2",
+    "isomorphic-dompurify": "^2.16.0",
     "jsonwebtoken": "^9.0.0",
     "logform": "^2.7.0",
     "lucide-react": "^0.544.0",
     "mixpanel-browser": "^2.48.0",
     "multiformats": "^13.1.0",
+    "n8n-nodes-dewiar-collection": "^1.1.4",
     "next": "^15.0.0",
     "next-auth": "^4.24.11",
     "next-themes": "^0.4.6",
@@ -157,10 +163,7 @@
     "vaul": "^1.1.2",
     "web-vitals": "^5.1.0",
     "winston": "^3.17.0",
-    "zustand": "^5.0.8",
-    "isomorphic-dompurify": "^2.16.0",
-    "helmet": "^8.0.0",
-    "express-rate-limit": "^7.4.1"
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@babel/core": "^7.28.4",

@@ -1,14 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getServerSession } from 'next-auth/next'
+import { authOptions, getSessionUser } from '@/lib/auth'
 
 // POST /api/chat/report - Report spam or inappropriate content
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
+    const sessionUser = getSessionUser(session)
     
-    if (!session?.user?.id) {
+    if (!sessionUser) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -27,7 +29,7 @@ export async function POST(request: NextRequest) {
 
     // Check if user has enough balance for report
     const user = await db.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: sessionUser.id },
       select: { balance: true }
     })
 
@@ -44,7 +46,7 @@ export async function POST(request: NextRequest) {
     const existingReport = await db.chatReport.findFirst({
       where: {
         messageId,
-        reporterId: session.user.id
+        reporterId: sessionUser.id
       }
     })
 
@@ -59,7 +61,7 @@ export async function POST(request: NextRequest) {
     const result = await db.$transaction(async (tx) => {
       // Deduct report cost from user balance
       await tx.user.update({
-        where: { id: session.user.id },
+        where: { id: sessionUser.id },
         data: { balance: { decrement: reportCost } }
       })
 
@@ -67,7 +69,7 @@ export async function POST(request: NextRequest) {
       const report = await tx.chatReport.create({
         data: {
           messageId,
-          reporterId: session.user.id,
+          reporterId: sessionUser.id,
           reason,
           status: 'PENDING'
         }

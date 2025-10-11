@@ -1,14 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import type { Prisma } from '@prisma/client'
+import { getServerSession } from 'next-auth/next'
+import { authOptions, getSessionUser } from '@/lib/auth'
 
 // POST /api/anti-pirate/passes/purchase - Purchase NFT pass
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
+    const sessionUser = getSessionUser(session)
     
-    if (!session?.user?.id) {
+    if (!sessionUser) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -26,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get pass template
-    const passTemplate = await db.nftPassTemplate.findUnique({
+    const passTemplate = await db.nFTPassTemplate.findUnique({
       where: { id: passId }
     })
 
@@ -39,7 +42,7 @@ export async function POST(request: NextRequest) {
 
     // Check if user has enough balance
     const user = await db.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: sessionUser.id },
       select: { tonBalance: true, balance: true }
     })
 
@@ -62,20 +65,20 @@ export async function POST(request: NextRequest) {
     const result = await db.$transaction(async (tx) => {
       // Deduct TON from user balance
       await tx.user.update({
-        where: { id: session.user.id },
+        where: { id: sessionUser.id },
         data: { tonBalance: { decrement: passTemplate.price } }
       })
 
       // Create NFT pass
-      const pass = await tx.nftPass.create({
+      const pass = await tx.nFTPass.create({
         data: {
-          userId: session.user.id,
+          userId: sessionUser.id,
           type: passTemplate.type,
           name: passTemplate.name,
           price: passTemplate.price,
           duration: passTemplate.duration,
           description: passTemplate.description,
-          benefits: passTemplate.benefits,
+          benefits: passTemplate.benefits as unknown as Prisma.InputJsonValue,
           icon: passTemplate.icon,
           color: passTemplate.color,
           isActive: true,
@@ -87,14 +90,14 @@ export async function POST(request: NextRequest) {
             clubId: clubId || null,
             genreId: genreId || null,
             purchasedAt: new Date().toISOString()
-          }
+          } as Prisma.InputJsonValue
         }
       })
 
       // Create purchase transaction record
       await tx.passPurchase.create({
         data: {
-          userId: session.user.id,
+          userId: sessionUser.id,
           passId: pass.id,
           templateId: passTemplate.id,
           price: passTemplate.price,
@@ -108,19 +111,19 @@ export async function POST(request: NextRequest) {
       if (trackId) {
         const track = await tx.track.findUnique({
           where: { id: trackId },
-          select: { userId: true }
+          select: { artistId: true }
         })
 
         if (track) {
           const artistReward = passTemplate.price * 0.9
           await tx.user.update({
-            where: { id: track.userId },
+            where: { id: track.artistId },
             data: { tonBalance: { increment: artistReward } }
           })
 
           await tx.reward.create({
             data: {
-              userId: track.userId,
+              userId: track.artistId,
               type: 'PASS_PURCHASE',
               amount: artistReward,
               reason: `NFT pass purchase reward (90% of ${passTemplate.price} TON)`

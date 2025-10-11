@@ -1,8 +1,8 @@
 export async function requireRole(role: 'ADMIN' | 'CURATOR' | 'ARTIST'): Promise<boolean> {
   try {
-    const { getServerSession } = await import('next-auth')
+    const { getServerSession } = await import('next-auth/next')
     const { authOptions } = await import('@/lib/auth')
-    const session = await getServerSession(authOptions as any)
+    const session = await getServerSession(authOptions)
     const level = (session?.user as any)?.level
     if (!session || !level) return false
     if (role === 'ADMIN') return level === 'ADMIN'

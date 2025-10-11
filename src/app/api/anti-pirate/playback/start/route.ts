@@ -1,14 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getServerSession } from 'next-auth/next'
+import { authOptions, getSessionUser } from '@/lib/auth'
 
 // POST /api/anti-pirate/playback/start - Start playback session
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
+    const sessionUser = getSessionUser(session)
     
-    if (!session?.user?.id) {
+    if (!sessionUser) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -27,9 +29,9 @@ export async function POST(request: NextRequest) {
 
     // Check if user has active passes
     const now = new Date()
-    const activePasses = await db.nftPass.findMany({
+    const activePasses = await db.nFTPass.findMany({
       where: {
-        userId: session.user.id,
+        userId: sessionUser.id,
         isActive: true,
         expiresAt: {
           gt: now
@@ -72,7 +74,7 @@ export async function POST(request: NextRequest) {
     // Create playback session
     const playbackSession = await db.playbackSession.create({
       data: {
-        userId: session.user.id,
+        userId: sessionUser.id,
         trackId,
         deviceId,
         walletAddress,
@@ -102,7 +104,7 @@ export async function POST(request: NextRequest) {
       // Award listening reward
       await db.reward.create({
         data: {
-          userId: session.user.id,
+          userId: sessionUser.id,
           type: 'LISTENING',
           amount: 1,
           reason: 'Free track listening reward'
