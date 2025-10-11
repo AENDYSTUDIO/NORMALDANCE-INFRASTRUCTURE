@@ -242,6 +242,3 @@ export const logDebug = (
 
 // Экспортируем логгер по умолчанию
 export default logger;
-
-// Экспортируем именованные экспорты
-export { logger, LogLevel };

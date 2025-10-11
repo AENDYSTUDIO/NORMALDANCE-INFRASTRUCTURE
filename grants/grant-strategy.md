@@ -10,10 +10,13 @@ As a 35-year-old solo developer, I'm seeking to secure $200,000+ in grant fundin
 ## 1. Grant Portfolio Strategy
 
 ### Primary Targets (High Priority)
-1. **TON Foundation Grants** - $75,000
-   - Perfect fit for blockchain music platform
-   - High success rate for innovative projects
-   - Strong ecosystem support
+1. **TON Foundation Grants** - $15,000 (Phase 1) + $50,000 (Phase 2)
+   - **NEW STRATEGY**: Staged funding approach
+   - Phase 1: Prove concept with $15K in 3 months
+   - Phase 2: Scale with $50K after hitting milestones
+   - Perfect fit for G.rave 2.0 memorial system
+   - Lower risk = faster approval
+   - High success rate for innovative projects with working MVP
 
 2. **Telegram Stars Revenue Share** - $25,000
    - Mini App integration opportunity
@@ -86,10 +89,14 @@ As a 35-year-old solo developer, I'm seeking to secure $200,000+ in grant fundin
 - **Low Priority**: 8-12% success rate
 - **Overall Expected**: 2-3 successful applications
 
-### Fallback Plan
-- **Minimum Viable Funding**: $50,000 (1 grant)
-- **Target Funding**: $150,000 (2-3 grants)
-- **Maximum Funding**: $300,000+ (4+ grants)
+### Fallback Plan (Updated)
+- **Minimum Viable Funding**: $15,000 (TON Phase 1 only)
+  - Enough to deploy and prove concept
+  - Can bootstrap from donations after that
+- **Target Funding**: $65,000 (TON Phase 1 + Phase 2)
+  - Ideal for full G.rave 2.0 launch
+- **Stretch Funding**: $115,000 (TON + Telegram Stars + Music Tech)
+  - Full ecosystem with marketing budget
 
 ---
 

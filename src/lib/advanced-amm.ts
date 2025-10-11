@@ -357,8 +357,6 @@ export class AdvancedAMM {
   }
 }
 
-// Экспорт классов и интерфейсов
-export { AdvancedAMM }
 export type { AMMConfig, SwapParams, SwapResult, LiquidityPool, PricePoint }
 
 // Экспорт синглтона
