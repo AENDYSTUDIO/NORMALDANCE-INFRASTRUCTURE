@@ -76,10 +76,11 @@ export class CodeRefactorAgent {
           );
       }
     } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
       return {
         success: false,
-        message: `Ошибка при выполнении рефакторинга: ${error.message}`,
-        errors: [error.message],
+        message: `Ошибка при выполнении рефакторинга: ${err.message}`,
+        errors: [err.message],
       };
     }
   }

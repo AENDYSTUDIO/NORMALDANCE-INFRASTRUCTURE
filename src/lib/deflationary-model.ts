@@ -1,6 +1,6 @@
-import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js'
-import { Token, Mint, TOKEN_PROGRAM_ID } from '@solana/spl-token'
-import { NDT_PROGRAM_ID, NDT_MINT_ADDRESS } from '@/components/wallet/wallet-adapter'
+import { Connection, PublicKey, Transaction } from '@solana/web3.js'
+import { Mint } from '@solana/spl-token'
+import { NDT_MINT_ADDRESS } from '@/constants/solana'
 import { useState, useEffect } from 'react'
 
 export interface DeflationaryConfig {

@@ -1,14 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getServerSession } from 'next-auth/next'
+import { authOptions, getSessionUser } from '@/lib/auth'
 
 // GET /api/unified/stats - Get unified system statistics
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
+    const user = getSessionUser(session)
     
-    if (!session?.user?.id) {
+    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -61,7 +63,7 @@ export async function GET(request: NextRequest) {
           }
         }
       }),
-      db.nftPass.count({
+      db.nFTPass.count({
         where: {
           isActive: true,
           expiresAt: { gt: new Date() }

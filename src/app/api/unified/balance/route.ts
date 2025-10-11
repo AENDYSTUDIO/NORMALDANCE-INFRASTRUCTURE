@@ -1,14 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getServerSession } from 'next-auth/next'
+import { authOptions, getSessionUser } from '@/lib/auth'
 
 // POST /api/unified/balance - Update user balance
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
+    const sessionUser = getSessionUser(session)
     
-    if (!session?.user?.id) {
+    if (!sessionUser) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -33,7 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     const user = await db.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: sessionUser.id },
       select: { 
         balance: true, 
         tonBalance: true 
@@ -79,14 +81,14 @@ export async function POST(request: NextRequest) {
       : { tonBalance: newBalance }
 
     const updatedUser = await db.user.update({
-      where: { id: session.user.id },
+      where: { id: sessionUser.id },
       data: updateData
     })
 
     // Create balance change record
     await db.balanceChange.create({
       data: {
-        userId: session.user.id,
+        userId: sessionUser.id,
         currency,
         amount: newBalance - currentBalance,
         operation,
@@ -119,8 +121,9 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
+    const sessionUser = getSessionUser(session)
     
-    if (!session?.user?.id) {
+    if (!sessionUser) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -128,7 +131,7 @@ export async function GET(request: NextRequest) {
     }
 
     const user = await db.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: sessionUser.id },
       select: { 
         balance: true, 
         tonBalance: true 

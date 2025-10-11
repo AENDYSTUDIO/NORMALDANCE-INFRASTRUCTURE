@@ -718,11 +718,3 @@ export function getAIRecommendationEngine(): AIRecommendationEngine {
   return recommendationEngine;
 }
 
-// Export classes and types
-export {
-  AIRecommendationEngine,
-  RecommendationFactors,
-  RecommendationResult,
-  TrackFeatures,
-  UserProfile,
-};

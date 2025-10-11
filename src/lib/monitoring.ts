@@ -2,10 +2,8 @@
  * Monitoring and Alerting System for NormalDance
  */
 
-import { createLogger } from './logger';
+import logger from './logger';
 import { performance } from 'perf_hooks';
-
-const logger = createLogger('monitoring');
 
 // Performance metrics interface
 interface PerformanceMetrics {

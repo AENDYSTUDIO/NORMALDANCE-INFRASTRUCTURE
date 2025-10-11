@@ -1,14 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getServerSession } from 'next-auth/next'
+import { authOptions, getSessionUser } from '@/lib/auth'
 
 // GET /api/anti-pirate/free-tracks - Check free tracks usage
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions)
-    
-    if (!session?.user?.id) {
+    const user = getSessionUser(session)
+
+    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -43,9 +44,9 @@ export async function GET(request: NextRequest) {
     })
 
     // Check if user has any active passes that would allow unlimited playback
-    const activePasses = await db.nftPass.findMany({
+    const activePasses = await db.nFTPass.findMany({
       where: {
-        userId: session.user.id,
+        userId: user.id,
         isActive: true,
         expiresAt: {
           gt: now
@@ -74,11 +75,12 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/anti-pirate/free-tracks - Record free track usage
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
-    
-    if (!session?.user?.id) {
+    const user = getSessionUser(session)
+
+    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -120,7 +122,7 @@ export async function POST(request: NextRequest) {
     // Create playback session record
     const sessionRecord = await db.playbackSession.create({
       data: {
-        userId: session.user.id,
+        userId: user.id,
         trackId,
         deviceId,
         walletAddress,

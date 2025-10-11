@@ -4,6 +4,7 @@ import type { NextConfig } from "next";
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true'
 });
+const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 
 const nextConfig: NextConfig = {
   // Оптимизация производительности
@@ -200,7 +201,7 @@ const nextConfig: NextConfig = {
         minimizer: [
           ...config.optimization.minimizer,
           // Добавление оптимизатора для CSS
-          require('css-minimizer-webpack-plugin'),
+          new CssMinimizerPlugin(),
         ],
       };
     }
@@ -232,6 +233,11 @@ const nextConfig: NextConfig = {
         tls: false,
       };
     }
+
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@opentelemetry/instrumentation': false,
+    };
     
     return config;
  },

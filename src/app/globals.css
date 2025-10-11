@@ -126,7 +126,7 @@
   }
 
   .mobile-modal {
-    @apply fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50;
+    @apply fixed inset-0 bg-black/50 flex items-end justify-center z-50;
   }
 
   .mobile-modal-header {

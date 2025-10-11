@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 import { redundancyService } from '@/lib/redundancy-service'
 
 export async function GET(request: NextRequest) {
