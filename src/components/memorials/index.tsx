@@ -1,2 +1,2 @@
-export { NFTMemorials } from "./ft-memorials";
+export { NFTMemorials, type NFTMemorial, NFT_MEMORIALS } from "./ft-memorials";
 export { default } from "./ft-memorials";

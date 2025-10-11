@@ -1,14 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { advancedAnalyticsSystem } from '@/lib/advanced-analytics'
 import { volatilityProtectionSystem } from '@/lib/volatility-protection'
 import { smartLimitOrderSystem } from '@/lib/smart-limit-orders'
 
 // GET /api/analytics/dashboard - Get comprehensive dashboard data
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const session = await getServerSession(authOptions)
+    const session = (await getServerSession(authOptions)) as any
     
     if (!session?.user?.id) {
       return NextResponse.json(

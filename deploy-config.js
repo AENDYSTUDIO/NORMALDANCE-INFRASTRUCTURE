@@ -8,10 +8,10 @@ export const deployConfig = {
       { src: 'package.json', use: '@vercel/next' }
     ],
     env: {
-      DATABASE_URL: '@database_url',
-      NEXTAUTH_SECRET: '@nextauth_secret',
-      SUPABASE_URL: '@supabase_url',
-      SUPABASE_ANON_KEY: '@supabase_anon_key'
+      DATABASE_URL: process.env.DATABASE_URL,
+      NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+      SUPABASE_URL: process.env.SUPABASE_URL,
+      SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY
     }
   },
   

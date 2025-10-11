@@ -1,10 +1,13 @@
 import { QdrantClient } from "@qdrant/js-client-rest";
 
+if (!process.env.QDRANT_URL || !process.env.QDRANT_API_KEY) {
+  throw new Error('QDRANT_URL and QDRANT_API_KEY environment variables are required');
+}
+
 const qdrantClient = new QdrantClient({
-  url: "https://75a936be-5354-4fe9-863d-fc61eed57daa.europe-west3-0.gcp.cloud.qdrant.io",
-  port: 6333,
-  apiKey:
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.cdp7oLdFxWAKRbclaqCCZQMzixNWXqOuWi324JgwdF4",
+  url: process.env.QDRANT_URL,
+  port: parseInt(process.env.QDRANT_PORT || '6333'),
+  apiKey: process.env.QDRANT_API_KEY,
 });
 
 export default qdrantClient;

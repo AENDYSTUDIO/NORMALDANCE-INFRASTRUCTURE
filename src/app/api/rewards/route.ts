@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
 // GET /api/rewards - Get rewards for a user
@@ -72,9 +73,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Server-side RBAC: Only admins can create rewards
-    const { getServerSession } = await import('next-auth')
+    const { getServerSession } = await import('next-auth/next')
     const { authOptions } = await import('@/lib/auth')
-    const session = await getServerSession(authOptions as any)
+    const session = await getServerSession(authOptions)
     if (!session || (session.user as any)?.level !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

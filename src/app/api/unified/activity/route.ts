@@ -1,14 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getServerSession } from 'next-auth/next'
+import { authOptions, getSessionUser } from '@/lib/auth'
 
 // GET /api/unified/activity - Get unified user activity
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
+    const sessionUser = getSessionUser(session)
     
-    if (!session?.user?.id) {
+    if (!sessionUser) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

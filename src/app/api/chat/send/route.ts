@@ -1,14 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getServerSession } from 'next-auth/next'
+import { authOptions, getSessionUser } from '@/lib/auth'
 
 // POST /api/chat/send - Send message to chat
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
+    const sessionUser = getSessionUser(session)
     
-    if (!session?.user?.id) {
+    if (!sessionUser) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
 
     // Check if user has enough balance
     const user = await db.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: sessionUser.id },
       select: { balance: true, name: true, avatar: true }
     })
 
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
     
     const dailySpending = await db.chatMessage.aggregate({
       where: {
-        userId: session.user.id,
+        userId: sessionUser.id,
         createdAt: { gte: today }
       },
       _sum: { cost: true }
@@ -129,7 +130,7 @@ export async function POST(request: NextRequest) {
       // Check if user is country moderator (top 10 by T1 donations)
       const countryDonations = await db.chatMessage.aggregate({
         where: {
-          userId: session.user.id,
+        userId: sessionUser.id,
           chatType: 'country',
           type: 'fund'
         },
@@ -153,7 +154,7 @@ export async function POST(request: NextRequest) {
       // Create chat message
       const message = await tx.chatMessage.create({
         data: {
-          userId: session.user.id,
+        userId: sessionUser.id,
           chatType,
           content,
           type: messageType,
@@ -167,7 +168,7 @@ export async function POST(request: NextRequest) {
       // Create reward for message (refund if no complaints)
       await tx.reward.create({
         data: {
-          userId: session.user.id,
+        userId: sessionUser.id,
           type: 'CHAT_MESSAGE',
           amount: messageCost,
           reason: `Chat message refund (pending review)`

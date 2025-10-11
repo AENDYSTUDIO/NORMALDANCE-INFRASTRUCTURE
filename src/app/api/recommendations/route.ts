@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getAIRecommendationEngine } from '@/lib/ai-recommendations';
 
 export async function POST(req: NextRequest) {

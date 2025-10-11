@@ -11,6 +11,12 @@ import {
   PublicKey,
   Transaction,
 } from "@solana/web3.js";
+import {
+  NDT_PROGRAM_ID,
+  NDT_MINT_ADDRESS,
+  TRACKNFT_PROGRAM_ID,
+  STAKING_PROGRAM_ID,
+} from "@/constants/solana";
 
 // Конфигурация сети
 const NETWORK = WalletAdapterNetwork.Devnet;
@@ -165,23 +171,7 @@ export function useSolanaWallet() {
   };
 }
 
-// Функции для работы с токенами NDT
-export const NDT_PROGRAM_ID = new PublicKey(
-  "NDT111111111111111111111111111111111111111"
-);
-export const NDT_MINT_ADDRESS = new PublicKey(
-  "11111111111111111111111111111111"
-); // Заменить на реальный адрес
-
-// Функции для работы с TrackNFT
-export const TRACKNFT_PROGRAM_ID = new PublicKey(
-  "TRACKNFT111111111111111111111111111111111111111"
-);
-
-// Функции для работы со стейкингом
-export const STAKING_PROGRAM_ID = new PublicKey(
-  "STAKING111111111111111111111111111111111111111"
-);
+export { NDT_PROGRAM_ID, NDT_MINT_ADDRESS, TRACKNFT_PROGRAM_ID, STAKING_PROGRAM_ID };
 
 // Хелпер для создания транзакции
 export async function createTransaction(

@@ -1,14 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getServerSession } from 'next-auth/next'
+import { authOptions, getSessionUser } from '@/lib/auth'
 
 // GET /api/unified/profile - Get unified user profile
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
+    const sessionUser = getSessionUser(session)
     
-    if (!session?.user?.id) {
+    if (!sessionUser) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -17,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     // Get comprehensive user profile
     const user = await db.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: sessionUser.id },
       include: {
         clubMemberships: {
           where: { isActive: true },
@@ -55,7 +57,7 @@ export async function GET(request: NextRequest) {
     const recentActivity = await db.$transaction([
       // Recent tracks
       db.track.findMany({
-        where: { userId: session.user.id },
+        where: { userId: sessionUser.id },
         orderBy: { createdAt: 'desc' },
         take: 5,
         select: {
@@ -69,7 +71,7 @@ export async function GET(request: NextRequest) {
         where: {
           club: {
             members: {
-              some: { userId: session.user.id }
+              some: { userId: sessionUser.id }
             }
           }
         },
@@ -83,7 +85,7 @@ export async function GET(request: NextRequest) {
       }),
       // Recent chat messages
       db.chatMessage.findMany({
-        where: { userId: session.user.id },
+        where: { userId: sessionUser.id },
         orderBy: { createdAt: 'desc' },
         take: 5,
         select: {
@@ -102,7 +104,7 @@ export async function GET(request: NextRequest) {
       db.club.count(),
       db.chatMessage.count(),
       db.swapTransaction.count(),
-      db.nftPass.count()
+      db.nFTPass.count()
     ])
 
     const profile = {
@@ -153,8 +155,9 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
+    const sessionUser = getSessionUser(session)
     
-    if (!session?.user?.id) {
+    if (!sessionUser) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -165,7 +168,7 @@ export async function PUT(request: NextRequest) {
     const { name, avatar, bio } = body
 
     const updatedUser = await db.user.update({
-      where: { id: session.user.id },
+      where: { id: sessionUser.id },
       data: {
         name: name || undefined,
         avatar: avatar || undefined,

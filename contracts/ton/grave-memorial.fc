@@ -1,0 +1,159 @@
+;; G.rave Memorial Contract - TON Blockchain
+;; "Свеча 27" - Interactive Donations System
+
+#include "imports/stdlib.fc";
+
+;; Storage structure
+;; storage#_ memorial_id:uint256 artist_name:^Cell candles_lit:uint32 
+;;           total_donations:Coins beneficiary:MsgAddress platform:MsgAddress 
+;;           is_active:uint1 = Storage;
+
+(int, cell, int, int, slice, slice, int) load_data() inline {
+  slice ds = get_data().begin_parse();
+  return (
+    ds~load_uint(256),  ;; memorial_id
+    ds~load_ref(),       ;; artist_name
+    ds~load_uint(32),    ;; candles_lit
+    ds~load_coins(),     ;; total_donations
+    ds~load_msg_addr(),  ;; beneficiary
+    ds~load_msg_addr(),  ;; platform
+    ds~load_uint(1)      ;; is_active
+  );
+}
+
+() save_data(int memorial_id, cell artist_name, int candles_lit, int total_donations, 
+             slice beneficiary, slice platform, int is_active) impure inline {
+  set_data(
+    begin_cell()
+      .store_uint(memorial_id, 256)
+      .store_ref(artist_name)
+      .store_uint(candles_lit, 32)
+      .store_coins(total_donations)
+      .store_slice(beneficiary)
+      .store_slice(platform)
+      .store_uint(is_active, 1)
+    .end_cell()
+  );
+}
+
+;; Light Candle - Main donation function
+;; 2% platform fee, 98% to beneficiary
+() light_candle(slice sender_address, int msg_value) impure {
+  (int memorial_id, cell artist_name, int candles_lit, int total_donations, 
+   slice beneficiary, slice platform, int is_active) = load_data();
+  
+  ;; Check if memorial is active
+  throw_unless(401, is_active == 1);
+  
+  ;; Minimum donation: 0.1 TON
+  throw_unless(402, msg_value >= 100000000);
+  
+  ;; Maximum donation per tx: 100 TON
+  throw_unless(403, msg_value <= 100000000000);
+  
+  ;; Calculate fees
+  int platform_fee = msg_value * 2 / 100;  ;; 2%
+  int to_beneficiary = msg_value - platform_fee;
+  
+  ;; Send to beneficiary (98%)
+  var beneficiary_msg = begin_cell()
+    .store_uint(0x10, 6)
+    .store_slice(beneficiary)
+    .store_coins(to_beneficiary)
+    .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1)
+    .store_uint(0, 32)
+    .store_slice("Donation from G.rave Memorial")
+  .end_cell();
+  send_raw_message(beneficiary_msg, 1);
+  
+  ;; Send to platform (2%)
+  var platform_msg = begin_cell()
+    .store_uint(0x10, 6)
+    .store_slice(platform)
+    .store_coins(platform_fee)
+    .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1)
+    .store_uint(0, 32)
+    .store_slice("Platform fee")
+  .end_cell();
+  send_raw_message(platform_msg, 1);
+  
+  ;; Update storage
+  candles_lit += 1;
+  total_donations += msg_value;
+  
+  save_data(memorial_id, artist_name, candles_lit, total_donations, 
+            beneficiary, platform, is_active);
+  
+  ;; Emit log event
+  emit_log_simple(0x4c494748, begin_cell()  ;; "LIGH" opcode
+    .store_uint(memorial_id, 256)
+    .store_slice(sender_address)
+    .store_coins(msg_value)
+    .store_uint(candles_lit, 32)
+  .end_cell(), 0);
+}
+
+;; Initialize memorial
+() init_memorial(int memorial_id, cell artist_name, slice beneficiary, slice platform) impure {
+  save_data(memorial_id, artist_name, 0, 0, beneficiary, platform, 1);
+}
+
+;; Deactivate memorial (only by beneficiary or platform)
+() deactivate_memorial(slice sender_address) impure {
+  (int memorial_id, cell artist_name, int candles_lit, int total_donations, 
+   slice beneficiary, slice platform, int is_active) = load_data();
+  
+  ;; Check authorization
+  throw_unless(411, equal_slices(sender_address, beneficiary) | equal_slices(sender_address, platform));
+  
+  save_data(memorial_id, artist_name, candles_lit, total_donations, 
+            beneficiary, platform, 0);
+}
+
+;; Get methods
+(int, cell, int, int, slice, slice, int) get_memorial_info() method_id {
+  return load_data();
+}
+
+int get_candles_lit() method_id {
+  (_, _, int candles_lit, _, _, _, _) = load_data();
+  return candles_lit;
+}
+
+int get_total_donations() method_id {
+  (_, _, _, int total_donations, _, _, _) = load_data();
+  return total_donations;
+}
+
+;; Main receiver
+() recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
+  if (in_msg_body.slice_empty?()) {
+    ;; Simple transfer - treat as donation
+    slice cs = in_msg_full.begin_parse();
+    int flags = cs~load_uint(4);
+    slice sender_address = cs~load_msg_addr();
+    
+    light_candle(sender_address, msg_value);
+    return ();
+  }
+  
+  int op = in_msg_body~load_uint(32);
+  
+  ;; op::light_candle = 0x4c494748 ("LIGH")
+  if (op == 0x4c494748) {
+    slice sender_address = in_msg_body~load_msg_addr();
+    light_candle(sender_address, msg_value);
+    return ();
+  }
+  
+  ;; op::deactivate = 0x44454143 ("DEAC")
+  if (op == 0x44454143) {
+    slice cs = in_msg_full.begin_parse();
+    int flags = cs~load_uint(4);
+    slice sender_address = cs~load_msg_addr();
+    deactivate_memorial(sender_address);
+    return ();
+  }
+  
+  throw(0xffff);
+}

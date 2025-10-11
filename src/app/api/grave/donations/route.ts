@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 import { validateTelegramInitData } from '@/lib/security/telegram-validator'
 import { sanitizeHTML } from '@/lib/security/input-sanitizer'
 

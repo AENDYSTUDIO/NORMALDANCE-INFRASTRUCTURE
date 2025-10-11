@@ -1,47 +1,7 @@
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { z } from 'zod'
-
-// Define types for Next.js request and response
-interface NextRequest {
-  json(): Promise<any>
-  url: string
-}
-
-interface NextResponse {
-  json(data: any): Response
-  status(status: number): Response
-}
-
-// Mock NextResponse class
-class MockNextResponse {
-  constructor(private statusCode: number = 200) {}
-
-  json(data: any): Response {
-    return new Response(JSON.stringify(data), {
-      status: this.statusCode,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-  }
-
-  status(statusCode: number): MockNextResponse {
-    return new MockNextResponse(statusCode)
-  }
-}
-
-// Mock NextRequest class
-class MockNextRequest implements NextRequest {
-  constructor(private body?: any) {}
-
-  async json(): Promise<any> {
-    return this.body || {}
-  }
-
-  get url(): string {
-    return 'http://localhost:3000/api/nft/burn'
-  }
-}
 
 // Validation schema for burning NFT
 const burnSchema = z.object({
@@ -66,16 +26,12 @@ export async function POST(request: NextRequest) {
     })
 
     if (!nft) {
-      return new MockNextResponse(404).json(
-        { error: 'NFT not found' }
-      )
+      return NextResponse.json({ error: 'NFT not found' }, { status: 404 })
     }
 
     // Check if owner has the NFT
     if (nft.ownerId !== ownerAddress) {
-      return new MockNextResponse(400).json(
-        { error: 'You do not own this NFT' }
-      )
+      return NextResponse.json({ error: 'You do not own this NFT' }, { status: 400 })
     }
 
     // Simulate blockchain burn process
@@ -112,7 +68,7 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    return new MockNextResponse(200).json({
+    return NextResponse.json({
       message: 'NFT burned successfully',
       transaction: burnTransaction,
       nft: {
@@ -124,14 +80,13 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return new MockNextResponse(400).json(
-        { error: 'Validation failed', details: error.errors }
+      return NextResponse.json(
+        { error: 'Validation failed', details: error.errors },
+        { status: 400 }
       )
     }
 
     console.error('Error burning NFT:', error)
-    return new MockNextResponse(500).json(
-      { error: 'Failed to burn NFT' }
-    )
+    return NextResponse.json({ error: 'Failed to burn NFT' }, { status: 500 })
   }
 }
