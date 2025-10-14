@@ -8,10 +8,7 @@
   "editor.tabSize": 2,
   "editor.insertSpaces": true,
   "editor.detectIndentation": false,
-  "editor.rulers": [
-    80,
-    120
-  ],
+  "editor.rulers": [80, 120],
   "editor.wordWrap": "on",
   "editor.minimap.enabled": false,
   "editor.bracketPairColorization.enabled": true,
@@ -118,18 +115,10 @@
     "typescriptreact": "html"
   },
   "tailwindCSS.experimental.classRegex": [
-    [
-      "cva\\(([^)]*)\\)",
-      "[\"'`]([^\"'`]*).*?[\"'`]"
-    ],
-    [
-      "cx\\(([^)]*)\\)",
-      "(?:'|\"|`)([^']*)(?:'|\"|`)"
-    ]
+    ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
+    ["cx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
   ],
-  "eslint.workingDirectories": [
-    "."
-  ],
+  "eslint.workingDirectories": ["."],
   "eslint.validate": [
     "javascript",
     "javascriptreact",
@@ -139,8 +128,8 @@
   "jest.jestCommandLine": "npm test --",
   "jest.autoRun": "off",
   "jest.showCoverageOnLoad": false,
-  "playwright.reuseBrowser": true,
-  "playwright.showTrace": true,
+  "playwright.reuseBrowser": false,
+  "playwright.showTrace": false,
   "git.enableSmartCommit": true,
   "git.confirmSync": false,
   "git.autofetch": true,
@@ -163,22 +152,15 @@
   "scss.validate": false,
   "json.schemas": [
     {
-      "fileMatch": [
-        "package.json"
-      ],
+      "fileMatch": ["package.json"],
       "url": "https://json.schemastore.org/package.json"
     },
     {
-      "fileMatch": [
-        "tsconfig*.json"
-      ],
+      "fileMatch": ["tsconfig*.json"],
       "url": "https://json.schemastore.org/tsconfig.json"
     },
     {
-      "fileMatch": [
-        ".eslintrc*.js",
-        ".eslintrc*.json"
-      ],
+      "fileMatch": [".eslintrc*.js", ".eslintrc*.json"],
       "url": "https://json.schemastore.org/eslintrc.json"
     }
   ],

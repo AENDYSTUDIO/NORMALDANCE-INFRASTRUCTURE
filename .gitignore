@@ -30,6 +30,13 @@
 temp/
 tmp/
 
+# Batch files with secrets (use .bat.example instead)
+AUTO-SETUP.bat
+DEPLOY-AUTO.bat
+DEPLOY-NOW.bat
+*-setup.bat
+*-deploy.bat
+
 # debug
 npm-debug.log*
 yarn-debug.log*
