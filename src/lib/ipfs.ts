@@ -1,6 +1,7 @@
 // MIGRATION COMPLETE: Now using Helia as primary IPFS backend
 // Legacy ipfs-http-client has been fully replaced with Helia
 
+import { logger } from './logger';
 import {
   checkFileAvailabilityHelia,
   getFileFromIPFSHelia,
@@ -53,7 +54,7 @@ export async function uploadToIPFS(
     // Helia is now the primary implementation
     return await uploadToIPFSHelia(file, metadata);
   } catch (error) {
-    console.error("IPFS upload failed:", error);
+    logger.error("IPFS upload failed", error);
     throw new Error(`Failed to upload to IPFS: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -77,7 +78,7 @@ export async function getFileFromIPFS(
     // Helia implementation is now primary
     return await getFileFromIPFSHelia(cid);
   } catch (error) {
-    console.error("Failed to get file from IPFS:", error);
+    logger.error("Failed to get file from IPFS", error);
     throw new Error(`Failed to get file from IPFS: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -91,7 +92,7 @@ export async function getMetadataFromIPFS(cid: string): Promise<any> {
     
     return metadataJson;
   } catch (error) {
-    console.error("Failed to get metadata from IPFS:", error);
+    logger.error("Failed to get metadata from IPFS", error);
     throw new Error(`Failed to get metadata from IPFS: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -99,7 +100,7 @@ export async function getMetadataFromIPFS(cid: string): Promise<any> {
 // Закрепление файла в Pinata (зарезервировано для будущих нужд) 
 export async function pinFile(pinataApiKey: string, pinataSecretApiKey: string, cid: string): Promise<boolean> {
   try {
-    console.log(`Pinning file in Pinata: ${cid}`);
+    logger.info(`Pinning file in Pinata: ${cid}`);
     
     const response = await fetch('/api/ipfs/pin', {
       method: 'POST',
@@ -115,10 +116,10 @@ export async function pinFile(pinataApiKey: string, pinataSecretApiKey: string, 
       throw new Error(`Failed to pin file in Pinata: ${response.statusText}`);
     }
 
-    console.log(`File pinned successfully in Pinata: ${cid}`);
+    logger.info(`File pinned successfully in Pinata: ${cid}`);
     return true;
   } catch (error) {
-    console.error("Failed to pin file in Pinata:", error);
+    logger.error("Failed to pin file in Pinata", error);
     return false;
   }
 }
@@ -126,7 +127,7 @@ export async function pinFile(pinataApiKey: string, pinataSecretApiKey: string, 
 // Открепление файла из Pinata (зарезервировано для будущих нужд)
 export async function unpinFile(PINATA_JWT: string, cid: string): Promise<boolean> {
   try {
-    console.log(`Unpinning file from Pinata: ${cid}`);
+    logger.info(`Unpinning file from Pinata: ${cid}`);
     
     const response = await fetch(`/api/ipfs/unpin/${cid}`, {
       method: 'DELETE',
@@ -139,10 +140,10 @@ export async function unpinFile(PINATA_JWT: string, cid: string): Promise<boolea
       throw new Error(`Failed to unpin file from Pinata: ${response.statusText}`);
     }
 
-    console.log(`File unpinned successfully from Pinata: ${cid}`);
+    logger.info(`File unpinned successfully from Pinata: ${cid}`);
     return true;
   } catch (error) {
-    console.error("Failed to unpin file from Pinata:", error);
+    logger.error("Failed to unpin file from Pinata", error);
     return false;
   }
 }
@@ -156,7 +157,7 @@ export async function checkFileAvailability(cid: string): Promise<{
     // Use Helia implementation for availability check
     return await checkFileAvailabilityHelia(cid);
   } catch (error) {
-    console.error("Failed to check file availability:", error);
+    logger.error("Failed to check file availability", error);
     return {
       available: false,
       gateways: [],
@@ -173,7 +174,7 @@ export async function cleanupUnpinnedFiles(): Promise<{
   let cleanedCount = 0;
 
   try {
-    console.log('Starting cleanup of unpinned files...');
+    logger.info('Starting cleanup of unpinned files');
 
     return {
       cleanedCount,
@@ -181,7 +182,7 @@ export async function cleanupUnpinnedFiles(): Promise<{
     };
   } catch (error) {
     const errorMsg = `Failed to cleanup unpinned files: ${error instanceof Error ? error.message : 'Unknown error'}`;
-    console.error(errorMsg);
+    logger.error(errorMsg);
     errors.push(errorMsg);
     
     return {
@@ -200,7 +201,7 @@ export async function backupImportantFiles(): Promise<{
   let backedUpCount = 0;
 
   try {
-    console.log('Starting backup of important files...');
+    logger.info('Starting backup of important files');
     
     return {
       backedUpCount,
@@ -208,7 +209,7 @@ export async function backupImportantFiles(): Promise<{
     };
   } catch (error) {
     const errorMsg = `Failed to backup important files: ${error instanceof Error ? error.message : 'Unknown error'}`;
-    console.error(errorMsg);
+    logger.error(errorMsg);
     errors.push(errorMsg);
     
     return {
@@ -245,7 +246,7 @@ export async function generateIPFSStatistics(): Promise<{
       availableGateways: 0,
     };
   } catch (error) {
-    console.error("Failed to generate IPFS statistics:", error);
+    logger.error("Failed to generate IPFS statistics", error);
     throw new Error(`Failed to generate IPFS statistics: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
