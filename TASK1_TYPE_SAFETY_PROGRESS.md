@@ -3,7 +3,7 @@
 ## Summary
 Removing all explicit `any` types from the codebase to achieve 95%+ type safety.
 
-## Progress: 24% (12/50 files)
+## Progress: 28% (14/50 files)
 
 ### ✅ Completed Files
 
@@ -67,7 +67,18 @@ Removing all explicit `any` types from the codebase to achieve 95%+ type safety.
     - `orderBy: any` → typed orderBy
     - Consistent with tracks route
 
-### 🔄 Files Remaining (45)
+13. **`src/lib/ton-connect-service.ts`** ✅
+    - `actionsConfiguration: any` → proper config interface
+    - `payload/stateInit: any` → Cell | string
+    - Type-safe TON transactions
+
+14. **`src/lib/testing/testing-service.ts`** ✅
+    - `lmsConfig: any` → config interface
+    - `userAnswers: any[]` → typed array
+    - `detailedResults: any[]` → typed results
+    - All 9 any occurrences fixed
+
+### 🔄 Files Remaining (36)
 
 **High Priority (API Routes - 15 files):**
 - `src/app/api/auth/signup/route.ts`
