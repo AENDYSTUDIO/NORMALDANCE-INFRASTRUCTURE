@@ -187,6 +187,10 @@ export const joinClubSchema = z.object({
   paymentAmount: z.number().positive(),
 })
 
+export const leaveClubSchema = z.object({
+  // No body needed - uses session user
+})
+
 // ============================================
 // CHAT SCHEMAS
 // ============================================
@@ -205,6 +209,24 @@ export const chatVoteSchema = z.object({
 export const chatReportSchema = z.object({
   messageId: z.string().uuid(),
   reason: z.string().min(10, 'Reason too short').max(500, 'Reason too long'),
+})
+
+// ============================================
+// ANTI-PIRATE / PLAYBACK SCHEMAS
+// ============================================
+
+export const playbackStartSchema = z.object({
+  trackId: z.string().uuid('Invalid track ID'),
+  deviceId: z.string().min(1, 'Device ID required'),
+  walletAddress: z.string().regex(/^[A-Za-z0-9]{32,44}$/, 'Invalid wallet address'),
+  isBackground: z.boolean().optional(),
+  isOffline: z.boolean().optional(),
+})
+
+export const playbackPauseSchema = z.object({
+  sessionId: z.string().uuid('Invalid session ID'),
+  pausedTime: z.number().positive('Invalid pause time'),
+  reason: z.string().max(100).optional(),
 })
 
 // ============================================

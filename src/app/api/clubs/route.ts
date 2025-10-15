@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
+import { clubSchema } from '@/lib/schemas'
+import { handleApiError } from '@/lib/errors/errorHandler'
 
 // GET /api/clubs - Get all clubs
 export async function GET(request: NextRequest) {
@@ -86,11 +88,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error getting clubs:', error)
-    return NextResponse.json(
-      { error: 'Failed to get clubs' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -107,23 +105,16 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+    
+    // Validate with clubSchema
+    const validated = clubSchema.parse(body)
     const { 
       name, 
       description, 
       imageUrl, 
       price, 
-      maxMembers,
-      boostMultiplier = 0.15,
-      royaltyMultiplier = 0.05,
-      obligationRate = 0.20
-    } = body
-
-    if (!name || !description || !price) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
-    }
+      maxMembers
+    } = validated
 
     // Check if user has enough balance to create club
     const user = await db.user.findUnique({
@@ -207,10 +198,6 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error creating club:', error)
-    return NextResponse.json(
-      { error: 'Failed to create club' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

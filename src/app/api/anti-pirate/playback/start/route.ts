@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getServerSession } from 'next-auth/next'
 import { authOptions, getSessionUser } from '@/lib/auth'
+import { playbackStartSchema } from '@/lib/schemas'
+import { handleApiError } from '@/lib/errors/errorHandler'
 
 // POST /api/anti-pirate/playback/start - Start playback session
 export async function POST(request: Request) {
@@ -18,14 +20,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { trackId, deviceId, walletAddress, isBackground, isOffline } = body
-
-    if (!trackId || !deviceId || !walletAddress) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
-    }
+    const { trackId, deviceId, walletAddress, isBackground, isOffline } = playbackStartSchema.parse(body)
 
     // Check if user has active passes
     const now = new Date()
@@ -127,10 +122,6 @@ export async function POST(request: Request) {
     })
 
   } catch (error) {
-    console.error('Error starting playback session:', error)
-    return NextResponse.json(
-      { error: 'Failed to start playback session' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
