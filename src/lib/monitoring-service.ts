@@ -23,7 +23,7 @@ export interface Alert {
   message: string
   timestamp: string
   resolved: boolean
-  metadata?: any
+  metadata?: Record<string, unknown>
 }
 
 // Сервис мониторинга
@@ -202,7 +202,7 @@ export class MonitoringService {
   }
 
   // Создание оповещения
-  private createAlert(type: Alert['type'], severity: Alert['severity'], message: string, metadata?: any): void {
+  private createAlert(type: Alert['type'], severity: Alert['severity'], message: string, metadata?: Record<string, unknown>): void {
     const alert: Alert = {
       id: `alert_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type,

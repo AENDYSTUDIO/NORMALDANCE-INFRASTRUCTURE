@@ -303,7 +303,7 @@ export function isRateLimited(
  * ```
  */
 export function validateNumber(
-  value: any,
+  value: unknown,
   min?: number,
   max?: number
 ): number | null {
