@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
+import { trackContributionSchema } from '@/lib/schemas'
+import { handleApiError } from '@/lib/errors/errorHandler'
 
 // POST /api/tracks/[id]/contribute - Contribute to track progress
 export async function POST(
@@ -21,14 +23,7 @@ export async function POST(
     }
 
     const body = await request.json()
-    const { amount } = body
-
-    if (!amount || amount <= 0) {
-      return NextResponse.json(
-        { error: 'Invalid amount' },
-        { status: 400 }
-      )
-    }
+    const { amount, message } = trackContributionSchema.parse(body)
 
     // Find the track
     const track = await db.track.findUnique({
@@ -146,11 +141,7 @@ export async function POST(
     })
 
   } catch (error) {
-    console.error('Error recording contribution:', error)
-    return NextResponse.json(
-      { error: 'Failed to record contribution' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 

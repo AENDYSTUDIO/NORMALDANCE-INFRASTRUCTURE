@@ -4,6 +4,8 @@ import { writeFile } from "fs/promises";
 import { NextResponse } from "next/server";
 import { join } from "path";
 import { z } from "zod";
+import { handleApiError } from "@/lib/errors/errorHandler";
+import type { NextRequest } from "next/server";
 
 // Validation schema for track upload
 const uploadSchema = z.object({
@@ -260,10 +262,6 @@ export async function GET(request: NextRequest) {
       message: "Upload completed successfully",
     });
   } catch (error) {
-    console.error("Error checking upload status:", error);
-    return NextResponse.json(
-      { error: "Failed to check upload status" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }

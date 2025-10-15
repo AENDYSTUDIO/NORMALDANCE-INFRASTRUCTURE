@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
+import { trackProgressSchema } from '@/lib/schemas'
+import { handleApiError } from '@/lib/errors/errorHandler'
 
 // GET /api/tracks/[id]/progress - Get secret progress data
 export async function GET(
@@ -115,11 +117,7 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('Error getting progress data:', error)
-    return NextResponse.json(
-      { error: 'Failed to get progress data' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -140,14 +138,7 @@ export async function POST(
     }
 
     const body = await request.json()
-    const { amount } = body
-
-    if (!amount || amount <= 0) {
-      return NextResponse.json(
-        { error: 'Invalid amount' },
-        { status: 400 }
-      )
-    }
+    const { amount } = trackProgressSchema.parse(body)
 
     // Find the track
     const track = await db.track.findUnique({
@@ -244,11 +235,7 @@ export async function POST(
     })
 
   } catch (error) {
-    console.error('Error recording contribution:', error)
-    return NextResponse.json(
-      { error: 'Failed to record contribution' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
