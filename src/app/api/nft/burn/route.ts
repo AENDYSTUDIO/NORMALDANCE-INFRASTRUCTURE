@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { z } from 'zod'
+import { handleApiError } from '@/lib/errors/errorHandler'
 
 // Validation schema for burning NFT
 const burnSchema = z.object({
@@ -79,14 +80,6 @@ export async function POST(request: NextRequest) {
       quantity,
     })
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: error.errors },
-        { status: 400 }
-      )
-    }
-
-    console.error('Error burning NFT:', error)
-    return NextResponse.json({ error: 'Failed to burn NFT' }, { status: 500 })
+    return handleApiError(error)
   }
 }

@@ -1,14 +1,15 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { nftTransferSchema } from '@/lib/schemas'
+import { handleApiError } from '@/lib/errors/errorHandler'
+
+// Extended schema for internal transfer with quantity
 import { z } from 'zod'
 
-// Validation schema for transferring NFT
-const transferSchema = z.object({
-  nftId: z.string().min(1),
-  fromAddress: z.string().min(1),
-  toAddress: z.string().min(1),
-  quantity: z.number().min(1).default(1),
+const transferSchema = nftTransferSchema.extend({
+  fromAddress: z.string().regex(/^[A-Za-z0-9]{32,44}$/, 'Invalid from address'),
+  quantity: z.number().int().positive().default(1),
 })
 
 // POST /api/nft/transfer - Transfer NFT between addresses
@@ -144,17 +145,6 @@ export async function POST(request: NextRequest) {
       quantity,
     })
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: error.errors },
-        { status: 400 }
-      )
-    }
-
-    console.error('Error transferring NFT:', error)
-    return NextResponse.json(
-      { error: 'Failed to transfer NFT' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
