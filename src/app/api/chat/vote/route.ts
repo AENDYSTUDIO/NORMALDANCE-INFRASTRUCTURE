@@ -1,5 +1,7 @@
 import { db } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { chatVoteSchema } from '@/lib/schemas';
+import { handleApiError } from '@/lib/errors/errorHandler';
 
 // POST /api/chat/vote - Vote on chat message or poll
 export async function POST(request: Request) {
@@ -16,14 +18,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { messageId, voteType, metadata } = body
-
-    if (!messageId || !voteType) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
-    }
+    const { messageId, voteType } = chatVoteSchema.parse(body)
 
     // Find the message
     const message = await db.chatMessage.findUnique({
@@ -105,11 +100,7 @@ export async function POST(request: Request) {
     })
 
   } catch (error) {
-    console.error('Error voting:', error)
-    return NextResponse.json(
-      { error: 'Failed to vote' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 

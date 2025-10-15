@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getServerSession } from 'next-auth/next'
 import { authOptions, getSessionUser } from '@/lib/auth'
+import { chatReportSchema } from '@/lib/schemas'
+import { handleApiError } from '@/lib/errors/errorHandler'
 
 // POST /api/chat/report - Report spam or inappropriate content
 export async function POST(request: Request) {
@@ -18,14 +20,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { messageId, reason } = body
-
-    if (!messageId || !reason) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
-    }
+    const { messageId, reason } = chatReportSchema.parse(body)
 
     // Check if user has enough balance for report
     const user = await db.user.findUnique({
@@ -149,10 +144,6 @@ export async function POST(request: Request) {
     })
 
   } catch (error) {
-    console.error('Error reporting message:', error)
-    return NextResponse.json(
-      { error: 'Failed to report message' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
