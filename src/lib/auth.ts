@@ -264,7 +264,15 @@ export async function checkUserPermission(
 }
 
 // Функция для создания пользователя через OAuth
-export async function createOAuthUser(profile: any, provider: string) {
+interface OAuthProfile {
+  id: string
+  email?: string
+  name?: string
+  image?: string
+  [key: string]: unknown
+}
+
+export async function createOAuthUser(profile: OAuthProfile, provider: string) {
   // Проверяем, существует ли уже пользователь с таким email
   const existingUser = await db.user.findFirst({
     where: {

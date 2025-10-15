@@ -3,7 +3,7 @@
 ## Summary
 Removing all explicit `any` types from the codebase to achieve 95%+ type safety.
 
-## Progress: 10% (5/50 files)
+## Progress: 14% (7/50 files)
 
 ### ✅ Completed Files
 
@@ -31,6 +31,16 @@ Removing all explicit `any` types from the codebase to achieve 95%+ type safety.
    - Handles AppError, ZodError, Prisma errors
    - Consistent error responses
    - Sentry integration
+
+6. **`src/lib/auth.ts`** ✅
+   - `profile: any` → `profile: OAuthProfile`
+   - Created `OAuthProfile` interface
+   - Type-safe OAuth user creation
+
+7. **`src/lib/web-vitals.ts`** ✅
+   - `metric: any` (x8) → `metric: Metric`
+   - Added `import type { Metric } from 'web-vitals'`
+   - Type-safe web vitals monitoring
 
 ### 🔄 Files Remaining (45)
 
