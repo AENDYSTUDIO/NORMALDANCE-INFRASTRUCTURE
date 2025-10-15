@@ -114,7 +114,7 @@ export async function POST(request: Request) {
 }
 
 // Handle specific vote actions
-async function handleVoteAction(tx: any, message: any, voteTypeParam: string, userId: string) {
+async function handleVoteAction(tx: unknown, message: unknown, voteTypeParam: string, userId: string) {
   const voteType = message.metadata.voteType
  const target = message.metadata.target
 

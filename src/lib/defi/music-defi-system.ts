@@ -629,7 +629,7 @@ export class MusicDeFiSystem {
     return 'FARM_CONTRACT_' + Date.now()
   }
 
-  private async configureRewards(address: string, rewards: any[]): Promise<void> {
+  private async configureRewards(address: string, rewards: Record<string, unknown>[]): Promise<void> {
     // Настройка наград для фермы
     console.log('Configuring rewards for farm:', address)
   }
@@ -662,7 +662,7 @@ export class MusicDeFiSystem {
     }
   }
 
-  private async depositToFarm(farmId: string, positionId: string, deposits: any[]): Promise<void> {
+  private async depositToFarm(farmId: string, positionId: string, deposits: Record<string, unknown>[]): Promise<void> {
     // Депозит токенов в ферму
     console.log(`Depositing to farm ${farmId} for position ${positionId}`)
   }
@@ -725,7 +725,7 @@ export class MusicDeFiSystem {
     }
   }
 
-  private getSeasonalityFactors(): any {
+  private getSeasonalityFactors(): Record<string, unknown> {
     // Сезонные факторы
     return {
       'SUMMER': 1.2,
@@ -734,7 +734,7 @@ export class MusicDeFiSystem {
     }
   }
 
-  private async runPredictionModel(data: any): Promise<any> {
+  private async runPredictionModel(data: Record<string, unknown>): Promise<any> {
     // AI модель предсказания (упрощенная)
     const baseRevenue = data.historical.revenue * 1.15 // Базовый рост 15%
     const marketMultiplier = data.marketTrends.streamingGrowth

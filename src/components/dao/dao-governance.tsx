@@ -317,7 +317,7 @@ export function DAOGovernance({ userAddress, className }: DAOGovernanceProps) {
       </Card>
 
       {/* Основной контент */}
-      <Tabs value={selectedTab} onValueChange={(value: any) => setSelectedTab(value)}>
+      <Tabs value={selectedTab} onValueChange={(value: unknown) => setSelectedTab(value)}>
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="proposals">Предложения</TabsTrigger>
           <TabsTrigger value="create">Создать</TabsTrigger>
@@ -342,7 +342,7 @@ export function DAOGovernance({ userAddress, className }: DAOGovernanceProps) {
                     />
                   </div>
                 </div>
-                <Select value={filters.status} onValueChange={(value: any) => setFilters(prev => ({ ...prev, status: value }))}>
+                <Select value={filters.status} onValueChange={(value: unknown) => setFilters(prev => ({ ...prev, status: value }))}>
                   <SelectTrigger className="w-40">
                     <SelectValue />
                   </SelectTrigger>
@@ -354,7 +354,7 @@ export function DAOGovernance({ userAddress, className }: DAOGovernanceProps) {
                     <SelectItem value="executed">Выполненные</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={filters.category} onValueChange={(value: any) => setFilters(prev => ({ ...prev, category: value }))}>
+                <Select value={filters.category} onValueChange={(value: unknown) => setFilters(prev => ({ ...prev, category: value }))}>
                   <SelectTrigger className="w-40">
                     <SelectValue />
                   </SelectTrigger>
@@ -366,7 +366,7 @@ export function DAOGovernance({ userAddress, className }: DAOGovernanceProps) {
                     <SelectItem value="community">Сообщество</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+                <Select value={sortBy} onValueChange={(value: unknown) => setSortBy(value)}>
                   <SelectTrigger className="w-40">
                     <SelectValue />
                   </SelectTrigger>

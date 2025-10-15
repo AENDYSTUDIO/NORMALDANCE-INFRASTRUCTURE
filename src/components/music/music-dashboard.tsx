@@ -34,12 +34,12 @@ import {
 } from '@/components/icons'
 
 interface MusicDashboardData {
-  marketData: any
-  topTracks: any[]
-  topArtists: any[]
-  genreAnalytics: any[]
-  predictions: any
-  platformStats: any
+  marketData: unknown
+  topTracks: unknown[]
+  topArtists: unknown[]
+  genreAnalytics: unknown[]
+  predictions: unknown
+  platformStats: unknown
 }
 
 export function MusicDashboard() {
@@ -268,7 +268,7 @@ export function MusicDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {data.genreAnalytics?.slice(0, 3).map((genre: any, index: number) => (
+                  {data.genreAnalytics?.slice(0, 3).map((genre: unknown, index: number) => (
                     <div key={index} className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
@@ -302,7 +302,7 @@ export function MusicDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {data.topTracks?.map((track: any, index: number) => (
+                {data.topTracks?.map((track: unknown, index: number) => (
                   <div key={index} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
                     <div className="flex items-center space-x-4">
                       <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-400 rounded-lg flex items-center justify-center">
@@ -349,7 +349,7 @@ export function MusicDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {data.topArtists?.map((artist: any, index: number) => (
+                {data.topArtists?.map((artist: unknown, index: number) => (
                   <div key={index} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
                     <div className="flex items-center space-x-4">
                       <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-cyan-400 rounded-full flex items-center justify-center">
@@ -390,7 +390,7 @@ export function MusicDashboard() {
         {/* Genres Tab */}
         <TabsContent value="genres" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {data.genreAnalytics?.map((genre: any, index: number) => (
+            {data.genreAnalytics?.map((genre: unknown, index: number) => (
               <Card key={index}>
                 <CardHeader>
                   <CardTitle className="flex items-center">
@@ -450,7 +450,7 @@ export function MusicDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {data.topTracks?.slice(0, 3).map((track: any, index: number) => {
+                {data.topTracks?.slice(0, 3).map((track: unknown, index: number) => {
                   const prediction = data.predictions?.[`${track.id}_24h`]
                   if (!prediction) return null
                   
@@ -479,7 +479,7 @@ export function MusicDashboard() {
                       
                       <div className="space-y-2">
                         <p className="text-sm font-medium">Факторы влияния:</p>
-                        {prediction.factors?.slice(0, 3).map((factor: any, factorIndex: number) => (
+                        {prediction.factors?.slice(0, 3).map((factor: unknown, factorIndex: number) => (
                           <div key={factorIndex} className="flex items-center justify-between text-xs">
                             <span>{factor.name}</span>
                             <div className="flex items-center space-x-1">

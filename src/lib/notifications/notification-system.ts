@@ -42,7 +42,7 @@ export interface Notification {
   message: string
   priority: NotificationPriority
   status: NotificationStatus
-  data?: any
+  data?: Record<string, unknown>
   metadata?: {
     trackId?: string
     artistId?: string

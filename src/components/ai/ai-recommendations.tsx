@@ -12,10 +12,10 @@ import {
   Users,
   Brain,
   RefreshCw,
-  Music
-  Heart
+  Music,
+  Heart,
   Share2
-  } from "lucide-react";
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getAIRecommendationEngine } from "@/lib/ai-recommendations";
 import { useTelegram } from "@/contexts/telegram-context";

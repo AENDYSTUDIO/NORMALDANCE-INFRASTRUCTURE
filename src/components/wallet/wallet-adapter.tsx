@@ -192,8 +192,8 @@ export { NDT_PROGRAM_ID, NDT_MINT_ADDRESS, TRACKNFT_PROGRAM_ID, STAKING_PROGRAM_
 export async function createTransaction(
   connection: Connection,
   wallet: WalletAdapter,
-  instructions: any[],
-  signers: any[] = []
+  instructions: unknown[],
+  signers: unknown[] = []
 ): Promise<Transaction> {
   const transaction = new Transaction();
 
@@ -259,7 +259,7 @@ export function formatTokens(amount: number, decimals: number = 9): string {
 // Типы для событий кошелька
 export interface WalletEvent {
   type: "connect" | "disconnect" | "accountChange" | "chainChange";
-  data?: any;
+  data?: unknown;
 }
 
 // Эмиттер событий для кошелька
@@ -283,7 +283,7 @@ export class WalletEventEmitter {
     }
   }
 
-  emit(event: string, data?: any) {
+  emit(event: string, data?: unknown) {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
       callbacks.forEach((callback) => callback(data));

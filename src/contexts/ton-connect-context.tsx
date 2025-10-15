@@ -5,11 +5,11 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 
 interface TonConnectContextType {
   connected: boolean;
-  account: any;
+  account: unknown;
   network: string | null;
   connectWallet: () => Promise<void>;
   disconnectWallet: () => Promise<void>;
-  sendTransaction: (params: any) => Promise<any>;
+  sendTransaction: (params: unknown) => Promise<any>;
 }
 
 const TonConnectContext = createContext<TonConnectContextType | undefined>(
@@ -64,7 +64,7 @@ export function TonConnectProvider({
     }
   };
 
-  const sendTransaction = async (params: any) => {
+  const sendTransaction = async (params: unknown) => {
     try {
       return await tonConnectUI.sendTransaction(params);
     } catch (error) {
