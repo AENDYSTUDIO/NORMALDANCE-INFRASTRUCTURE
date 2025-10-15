@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
+import { handleApiError } from '@/lib/errors/errorHandler'
 
 // POST /api/clubs/leave - Leave current club
 export async function POST(request: NextRequest) {
@@ -92,10 +93,6 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error leaving club:', error)
-    return NextResponse.json(
-      { error: 'Failed to leave club' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getServerSession } from 'next-auth/next'
 import { authOptions, getSessionUser } from '@/lib/auth'
+import { playbackPauseSchema } from '@/lib/schemas'
+import { handleApiError } from '@/lib/errors/errorHandler'
 
 // POST /api/anti-pirate/playback/pause - Pause playback session
 export async function POST(request: Request) {
@@ -18,14 +20,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { sessionId, pausedTime, reason } = body
-
-    if (!sessionId || !pausedTime) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
-    }
+    const { sessionId, pausedTime, reason } = playbackPauseSchema.parse(body)
 
     // Find the playback session
     const playbackSession = await db.playbackSession.findUnique({
@@ -101,10 +96,6 @@ export async function POST(request: Request) {
     })
 
   } catch (error) {
-    console.error('Error pausing playback session:', error)
-    return NextResponse.json(
-      { error: 'Failed to pause playback session' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
