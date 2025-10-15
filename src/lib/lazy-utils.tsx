@@ -87,7 +87,7 @@ export function createLazyComponent<T extends ComponentType<any>>(
 ) {
   const LazyComponent = lazy(importFn)
   
-  const LazyWrapper = ({ fallback: customFallback, ...props }: any) => (
+  const LazyWrapper = ({ fallback: customFallback, ...props }: Record<string, unknown>) => (
     <Suspense fallback={customFallback || fallback}>
       <LazyComponent {...props} />
     </Suspense>
@@ -102,7 +102,7 @@ export function createLazyRoute<T extends ComponentType<any>>(
 ) {
   const LazyRoute = lazy(importFn)
   
-  const LazyRouteWrapper = (props: any) => (
+  const LazyRouteWrapper = (props: Record<string, unknown>) => (
     <Suspense fallback={<div>Загрузка страницы...</div>}>
       <LazyRoute {...props} />
     </Suspense>

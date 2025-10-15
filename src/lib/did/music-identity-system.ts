@@ -37,7 +37,7 @@ export interface VerificationMethod {
   id: string
   type: 'Ed25519VerificationKey2020' | 'X25519KeyAgreementKey2020' | 'Bls12381G2Key2020'
   controller: string
-  publicKeyJwk?: any
+  publicKeyJwk?: Record<string, unknown>
   publicKeyBase58?: string
   publicKeyMultibase?: string
 }
@@ -72,7 +72,7 @@ export interface VerifiableCredential {
   expirationDate?: string
   credentialSubject: {
     id: string // DID владельца
-    [key: string]: any
+    [key: string]: Record<string, unknown>
   }
   credentialSchema?: CredentialSchema
   credentialStatus?: CredentialStatus
@@ -237,7 +237,7 @@ export interface DAOProposal {
   votingEnd: string
   quorumRequired: number
   votes: ProposalVote[]
-  executionData?: any
+  executionData?: Record<string, unknown>
 }
 
 export interface ProposalVote {
@@ -717,7 +717,7 @@ export class MusicIdentitySystem {
     location?: string
     minReputation?: number
     instruments?: string[]
-  }): Promise<Array<{ did: string; profile: any; reputation: ReputationScore }>> {
+  }): Promise<Array<{ did: string; profile: Record<string, unknown>; reputation: ReputationScore }>> {
     // Поиск артистов по критериям
     const results = []
     

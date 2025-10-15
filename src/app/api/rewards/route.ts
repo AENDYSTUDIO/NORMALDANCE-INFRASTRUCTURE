@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { handleApiError } from '@/lib/errors/errorHandler'
 
 // GET /api/rewards - Get rewards for a user
 export async function GET(request: NextRequest) {
@@ -61,11 +62,7 @@ export async function GET(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Error fetching rewards:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch rewards' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 

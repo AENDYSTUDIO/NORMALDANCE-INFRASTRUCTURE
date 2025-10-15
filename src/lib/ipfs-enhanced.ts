@@ -1,3 +1,5 @@
+import { logger } from './logger';
+
 // Интерфейс для IPFS метаданных
 export interface IPFSTrackMetadata {
   title: string;
@@ -65,7 +67,7 @@ export async function uploadWithReplication(
   } = options;
 
   try {
-    console.log(`Starting upload for file: ${file.name} (${file.size} bytes)`);
+    logger.info(`Starting upload for file: ${file.name} (${file.size} bytes)`);
 
     // Используем существующую функцию загрузки из ipfs.ts (теперь с поддержкой Helia)
     const uploadResult = await uploadLargeFileToIPFS(file, metadata, chunkSize);
@@ -91,7 +93,7 @@ export async function uploadWithReplication(
       },
     };
   } catch (error) {
-    console.error("Enhanced IPFS upload failed:", error);
+    logger.error("Enhanced IPFS upload failed", error);
     throw new Error(`Failed to upload file with replication: ${error}`);
   }
 }
@@ -184,7 +186,7 @@ async function uploadLargeFileToIPFS(
       chunks.push(new Uint8Array(arrayBuffer));
     }
 
-    console.log(`File split into ${totalChunks} chunks`);
+    logger.debug(`File split into ${totalChunks} chunks`);
 
     // Используем unified IPFS API (теперь с поддержкой Helia)
     const { uploadToIPFS } = await import("./ipfs");
@@ -238,9 +240,9 @@ async function uploadLargeFileToIPFS(
       for (const chunkCID of chunkCIDs) {
         await pinFile(chunkCID);
       }
-      console.log("File pinned successfully via unified API");
+      logger.info("File pinned successfully via unified API");
     } catch (pinError) {
-      console.warn("Pinning failed:", pinError);
+      logger.warn("Pinning failed", pinError);
     }
 
     return {
@@ -250,7 +252,7 @@ async function uploadLargeFileToIPFS(
       metadata: sanitizedMetadata,
     };
   } catch (error) {
-    console.error("Chunked IPFS upload failed:", error);
+    logger.error("Chunked IPFS upload failed", error);
     throw new Error(`Failed to upload large file to IPFS: ${error}`);
   }
 }
@@ -273,14 +275,14 @@ async function replicateToMultipleGateways(
 
       if (response.ok) {
         successNodes.push(gateway);
-        console.log(`Successfully replicated to ${gateway}`);
+        logger.debug(`Successfully replicated to ${gateway}`);
       } else {
         failedNodes.push(gateway);
-        console.warn(`Failed to replicate to ${gateway}: ${response.status}`);
+        logger.warn(`Failed to replicate to ${gateway}: ${response.status}`);
       }
     } catch (error) {
       failedNodes.push(gateway);
-      console.warn(`Error replicating to ${gateway}:`, error);
+      logger.warn(`Error replicating to ${gateway}`, error);
     }
   }
 
@@ -303,7 +305,7 @@ async function uploadToFilecoin(cid: string): Promise<FilecoinStatus> {
       duration: "365 days",
     };
   } catch (error) {
-    console.error("Filecoin upload failed:", error);
+    logger.error("Filecoin upload failed", error);
     return {
       status: "failed",
     };
@@ -372,11 +374,11 @@ export async function getFileFromBestGateway(cid: string): Promise<Response> {
       const url = `${gateway}/ipfs/${cid}`;
       const response = await fetchWithRetry(url, 3);
       if (response.ok) {
-        console.log(`File retrieved from ${gateway}`);
+        logger.debug(`File retrieved from ${gateway}`);
         return response;
       }
     } catch (error) {
-      console.warn(`Failed to fetch from ${gateway}:`, error);
+      logger.warn(`Failed to fetch from ${gateway}`, error);
     }
   }
 
@@ -426,13 +428,13 @@ export async function monitorFileHealth(cid: string): Promise<{
 const cache = new Map<
   string,
   {
-    data: any;
+    data: unknown;
     timestamp: number;
     ttl: number;
   }
 >();
 
-export function getCachedData(key: string, ttl: number = 300000): any | null {
+export function getCachedData(key: string, ttl: number = 300000): unknown | null {
   const cached = cache.get(key);
   if (cached && Date.now() - cached.timestamp < ttl) {
     return cached.data;
@@ -442,7 +444,7 @@ export function getCachedData(key: string, ttl: number = 300000): any | null {
 
 export function setCachedData(
   key: string,
-  data: any,
+  data: unknown,
   ttl: number = 300000
 ): void {
   cache.set(key, {

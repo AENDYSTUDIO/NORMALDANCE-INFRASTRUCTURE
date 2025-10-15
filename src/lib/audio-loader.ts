@@ -78,7 +78,7 @@ class AudioLoader {
     url: string
     options: LoadAudioOptions
     resolve: (value: AudioBuffer) => void
-    reject: (reason?: any) => void
+    reject: (reason?: unknown) => void
   }> = []
   private isProcessingQueue = false
 

@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
 
 // Обработчики для различных Web3-функций
 
-async function handleConnectWallet(user: any, body: any) {
+async function handleConnectWallet(user: { id: string; telegramId: number }, body: { walletAddress: string; walletType: string }) {
   const { walletAddress } = body;
 
   if (!walletAddress) {
@@ -141,7 +141,7 @@ async function handleConnectWallet(user: any, body: any) {
   });
 }
 
-async function handleTransferTokens(user: any, body: any) {
+async function handleTransferTokens(user: { id: string; telegramId: number }, body: { recipient: string; amount: number; token: string }) {
   const { recipientAddress, tokenType, amount } = body;
 
   if (!recipientAddress || !tokenType || !amount) {
@@ -216,7 +216,7 @@ async function handleTransferTokens(user: any, body: any) {
   });
 }
 
-async function handleStakeTokens(user: any, body: any) {
+async function handleStakeTokens(user: { id: string; telegramId: number }, body: { amount: number; duration: number }) {
   const { amount } = body;
 
   if (!amount || amount <= 0) {
@@ -260,7 +260,7 @@ async function handleStakeTokens(user: any, body: any) {
   });
 }
 
-async function handleUnstakeTokens(user: any, body: any) {
+async function handleUnstakeTokens(user: { id: string; telegramId: number }, body: { stakeId: string }) {
   const { amount } = body;
 
   if (!amount || amount <= 0) {
@@ -302,7 +302,7 @@ async function handleUnstakeTokens(user: any, body: any) {
   });
 }
 
-async function handleSwapTokens(user: any, body: any) {
+async function handleSwapTokens(user: { id: string; telegramId: number }, body: { fromToken: string; toToken: string; amount: number; slippage: number }) {
   const { fromToken, toToken, amount } = body;
 
   if (!fromToken || !toToken || !amount) {
@@ -376,7 +376,7 @@ async function handleSwapTokens(user: any, body: any) {
   });
 }
 
-async function handleGetNFTs(user: any, body: any) {
+async function handleGetNFTs(user: { id: string; telegramId: number }, body: Record<string, unknown>) {
   // Возвращаем NFT пользователя
   const userNFTs = await db.nft.findMany({
     where: { ownerId: user.id },
@@ -391,7 +391,7 @@ async function handleGetNFTs(user: any, body: any) {
   });
 }
 
-async function handleMintNFT(user: any, body: any) {
+async function handleMintNFT(user: { id: string; telegramId: number }, body: { trackId: string; metadata: Record<string, unknown> }) {
   const { name, description, mediaUrl, attributes } = body;
 
   if (!name || !mediaUrl) {

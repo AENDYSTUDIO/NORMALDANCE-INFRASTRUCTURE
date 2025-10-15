@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { z } from 'zod'
+import { logger } from '@/lib/utils/logger'
 
 // Validation schema for creating/updating tracks
 const trackSchema = z.object({
@@ -44,8 +45,9 @@ export async function GET(request: NextRequest) {
       ]
     }
 
-    const orderBy: any = {}
-    orderBy[sortBy] = sortOrder
+    const orderBy = {
+      [sortBy]: sortOrder
+    } as const
 
     const [tracks, total] = await Promise.all([
       db.track.findMany({
@@ -83,7 +85,7 @@ export async function GET(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Error fetching tracks:', error)
+    logger.error('Error fetching tracks', error as Error, { page, limit, search, genre })
     return NextResponse.json(
       { error: 'Failed to fetch tracks' },
       { status: 500 }
@@ -97,8 +99,19 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = trackSchema.parse(body)
 
-    // For now, use a default artist ID - in real app this would come from auth context
-    const defaultArtistId = 'default-artist-id'
+    // TODO: Get authenticated user from session
+    // For development only - should be replaced with real auth
+    const defaultArtistId = process.env.NODE_ENV === 'development' 
+      ? 'dev-artist-id' 
+      : body.artistId || ''
+    
+    if (!defaultArtistId) {
+      logger.warn('No artist ID provided and no auth session')
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
 
     const track = await db.track.create({
       data: {
@@ -136,13 +149,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(track, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
+      logger.warn('Track validation failed', { errors: error.errors })
       return NextResponse.json(
         { error: 'Validation failed', details: error.errors },
         { status: 400 }
       )
     }
 
-    console.error('Error creating track:', error)
+    logger.error('Error creating track', error as Error, { title: body.title })
     return NextResponse.json(
       { error: 'Failed to create track' },
       { status: 500 }

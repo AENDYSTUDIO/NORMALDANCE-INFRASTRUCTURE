@@ -13,8 +13,8 @@ interface CodeAnalysisResult {
   functions: string[];
   classes: string[];
   comments: string[];
-  rooCodeAnalysis?: any; // Результаты анализа от RooCode
-  kiloCodeMetrics?: any; // Метрики от KiloCode
+  rooCodeAnalysis?: Record<string, unknown>; // Результаты анализа от RooCode
+  kiloCodeMetrics?: Record<string, unknown>; // Метрики от KiloCode
 }
 
 class CodeEmbeddings {

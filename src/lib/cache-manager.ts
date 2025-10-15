@@ -226,7 +226,7 @@ class CacheManager {
   /**
    * Расчет размера данных
    */
-  private calculateSize(data: any): number {
+  private calculateSize(data: unknown): number {
     try {
       const json = JSON.stringify(data)
       return new Blob([json]).size
@@ -402,7 +402,7 @@ class APICacheManager extends CacheManager {
   /**
    * Кеширование API ответа
    */
-  async cacheResponse(endpoint: string, params: Record<string, any>, data: any): Promise<void> {
+  async cacheResponse(endpoint: string, params: Record<string, unknown>, data: unknown): Promise<void> {
     const key = `api:${endpoint}`
     await this.set('api', endpoint, data, params)
   }
@@ -426,7 +426,7 @@ class UserCacheManager extends CacheManager {
   /**
    * Кеширование профиля пользователя
    */
-  async cacheUserProfile(userId: string, profile: any): Promise<void> {
+  async cacheUserProfile(userId: string, profile: Record<string, unknown>): Promise<void> {
     await this.set('user', userId, profile)
   }
 
@@ -440,7 +440,7 @@ class UserCacheManager extends CacheManager {
   /**
    * Кеширование плейлистов
    */
-  async cachePlaylists(userId: string, playlists: any[]): Promise<void> {
+  async cachePlaylists(userId: string, playlists: unknown[]): Promise<void> {
     await this.set('playlists', userId, playlists)
   }
 
@@ -479,7 +479,7 @@ export const cacheUtils = {
   /**
    * Дебаунс функция с кешированием
    */
-  debounceWithCache<T extends (...args: any[]) => any>(
+  debounceWithCache<T extends (...args: unknown[]) => unknown>(
     func: T,
     delay: number,
     cacheKey: string
@@ -487,7 +487,7 @@ export const cacheUtils = {
     let timeoutId: NodeJS.Timeout
     let lastCall = 0
     
-    return ((...args: any[]) => {
+    return ((...args: Parameters<T>) => {
       const now = Date.now()
       
       if (now - lastCall < delay) {
@@ -510,7 +510,7 @@ export const cacheUtils = {
   /**
    * Кеширование результата функции
    */
-  memoize<T extends (...args: any[]) => any>(
+  memoize<T extends (...args: unknown[]) => unknown>(
     func: T,
     keyGenerator?: (...args: Parameters<T>) => string
   ): T {

@@ -146,7 +146,7 @@ export class DAOGovernance {
       
       // Извлекаем ID предложения из события
       const proposalCreatedEvent = receipt.logs.find(
-        (log: any) => log.topics[0] === this.governanceContract!.interface.getEvent('ProposalCreated').topicHash
+        (log: { topics: string[] }) => log.topics[0] === this.governanceContract!.interface.getEvent('ProposalCreated').topicHash
       )
       
       if (proposalCreatedEvent) {

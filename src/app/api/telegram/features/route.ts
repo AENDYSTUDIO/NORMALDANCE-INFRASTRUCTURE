@@ -152,7 +152,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
 // Обработчики для различных функций
 
-async function handleMusicFeature(user: any, body: any) {
+async function handleMusicFeature(user: { id: string; telegramId: number }, body: { action: string; [key: string]: unknown }) {
   const { action, trackId, playlistId } = body;
 
   switch (action) {
@@ -221,7 +221,7 @@ async function handleMusicFeature(user: any, body: any) {
   }
 }
 
-async function handleNFTFeature(user: any, body: any) {
+async function handleNFTFeature(user: { id: string; telegramId: number }, body: { action: string; [key: string]: unknown }) {
   const { action, nftId, amount } = body;
 
   switch (action) {
@@ -333,7 +333,7 @@ async function handleNFTFeature(user: any, body: any) {
   }
 }
 
-async function handleStakingFeature(user: any, body: any) {
+async function handleStakingFeature(user: { id: string; telegramId: number }, body: { action: string; [key: string]: unknown }) {
   const { action, amount } = body;
 
   switch (action) {
@@ -421,7 +421,7 @@ async function handleStakingFeature(user: any, body: any) {
   }
 }
 
-async function handleAnalyticsFeature(user: any, body: any) {
+async function handleAnalyticsFeature(user: { id: string; telegramId: number }, body: { action: string; period?: string }) {
   const { action } = body;
 
   switch (action) {
@@ -461,7 +461,7 @@ async function handleAnalyticsFeature(user: any, body: any) {
 
       // Получаем информацию о треках
       const favoriteTracks = await Promise.all(
-        listenStats.map(async (stat: any) => {
+        listenStats.map(async (stat: { trackId: string; count: number; duration: number }) => {
           const track = await db.track.findUnique({
             where: { id: stat.trackId },
             include: { artist: true },
@@ -485,7 +485,7 @@ async function handleAnalyticsFeature(user: any, body: any) {
   }
 }
 
-async function handlePaymentsFeature(user: any, body: any) {
+async function handlePaymentsFeature(user: { id: string; telegramId: number }, body: { action: string; [key: string]: unknown }) {
   const { action, recipientId, amount, message } = body;
 
   switch (action) {
@@ -584,7 +584,7 @@ async function handlePaymentsFeature(user: any, body: any) {
   }
 }
 
-async function handleNotificationsFeature(user: any, body: any) {
+async function handleNotificationsFeature(user: { id: string; telegramId: number }, body: { action: string; settings?: Record<string, boolean> }) {
   const { action } = body;
 
   switch (action) {

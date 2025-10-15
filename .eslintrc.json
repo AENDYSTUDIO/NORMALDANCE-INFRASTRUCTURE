@@ -1,6 +1,8 @@
 {
-  "$schema": "https://json.schemastore.org/eslintrc",
-  "root": true,
   "extends": ["next/core-web-vitals"],
-  "ignorePatterns": ["**/*"]
+  "rules": {
+    "no-console": ["warn", { "allow": ["warn", "error"] }],
+    "@typescript-eslint/no-explicit-any": "error",
+    "no-debugger": "error"
+  }
 }

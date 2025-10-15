@@ -2,6 +2,9 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { validateTelegramInitData } from '@/lib/security/telegram-validator'
 import { sanitizeHTML } from '@/lib/security/input-sanitizer'
+import { donationSchema } from '@/lib/schemas'
+import { handleApiError } from '@/lib/errors/errorHandler'
+import { db } from '@/lib/db'
 
 // 🔐 SECURITY: Rate limiting map (in-memory for now)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
@@ -70,42 +73,11 @@ export async function POST(request: NextRequest) {
     }
     
     const body = await request.json()
-    const { memorialId, amount, message } = body
-
-    // 🔐 SECURITY 3: Input validation
-    if (!memorialId || typeof memorialId !== 'string') {
-      return NextResponse.json(
-        { success: false, error: 'Invalid memorial ID' },
-        { status: 400 }
-      )
-    }
     
-    if (!amount || typeof amount !== 'number' || amount <= 0) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid donation amount' },
-        { status: 400 }
-      )
-    }
+    // 🔐 SECURITY 3: Input validation with Zod
+    const { memorialId, amount, currency, message, isAnonymous } = donationSchema.parse(body)
     
-    // 🔐 SECURITY 4: Amount limits (prevent abuse)
-    const MIN_DONATION = 0.01; // SOL
-    const MAX_DONATION = 1000; // SOL
-    
-    if (amount < MIN_DONATION) {
-      return NextResponse.json(
-        { success: false, error: `Minimum donation is ${MIN_DONATION} SOL` },
-        { status: 400 }
-      )
-    }
-    
-    if (amount > MAX_DONATION) {
-      return NextResponse.json(
-        { success: false, error: `Maximum donation is ${MAX_DONATION} SOL` },
-        { status: 400 }
-      )
-    }
-    
-    // 🔐 SECURITY 5: Sanitize message (prevent XSS)
+    // 🔐 SECURITY 4: Sanitize message (prevent XSS)
     const sanitizedMessage = message ? sanitizeHTML(message.substring(0, 500)) : '';
 
     // В реальном приложении здесь будет:
@@ -121,7 +93,7 @@ export async function POST(request: NextRequest) {
       message: sanitizedMessage,
       donor: userId, // Use authenticated Telegram user ID
       timestamp: new Date().toISOString(),
-      transactionHash: '0x' + Math.random().toString(16).substr(2, 64), // Мок-хеш (TODO: real transaction)
+      transactionHash: '', // TODO: Implement real blockchain transaction
       status: 'PENDING'
     }
 

@@ -12,7 +12,7 @@ export interface Track {
   ipfsHash: string
   audioUrl: string
   coverImage?: string
-  metadata?: any
+  metadata?: Record<string, unknown>
   price?: number
   isExplicit: boolean
   isPublished: boolean

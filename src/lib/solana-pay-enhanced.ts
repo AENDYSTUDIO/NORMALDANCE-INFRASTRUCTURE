@@ -27,13 +27,13 @@ export interface PaymentResult {
   success: boolean;
   signature?: string;
   error?: string;
-  transaction?: any;
+  transaction?: Record<string, unknown>;
   fee?: string;
 }
 
 export interface TelegramPaymentConfig extends EnhancedSolanaPayConfig {
   enableTelegramVerification?: boolean;
-  customVerificationParams?: any;
+  customVerificationParams?: Record<string, unknown>;
 }
 
 export class EnhancedSolanaPayService {
@@ -219,7 +219,7 @@ export class EnhancedSolanaPayService {
   /**
    * Send webhook notification
    */
-  private async sendWebhookNotification(data: any): Promise<void> {
+  private async sendWebhookNotification(data: Record<string, unknown>): Promise<void> {
     if (!this.webhookUrl) return;
 
     try {

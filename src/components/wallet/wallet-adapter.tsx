@@ -3,6 +3,7 @@ import {
   WalletAdapterNetwork,
   WalletNotConnectedError,
 } from "@solana/wallet-adapter-base";
+import { logger } from "@/lib/utils/logger";
 import { PhantomWalletAdapter } from "@solana/wallet-adapter-phantom";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import {
@@ -39,13 +40,22 @@ export interface WalletAdapter {
 // Создание подключения к Solana
 export function createConnection(): Connection {
   const timeoutMs = Number(process.env.SOLANA_RPC_TIMEOUT || "8000");
+  
+  // Custom fetch with timeout for reliability
+  const fetchWithTimeout = (url: RequestInfo, init?: RequestInit): Promise<Response> => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    
+    return fetch(url, {
+      ...init,
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeoutId));
+  };
+  
   return new Connection(RPC_URL, {
     commitment: "confirmed",
-    // Use a fetch with AbortSignal timeout to avoid hanging requests
-    // @ts-ignore - web3.js supports custom fetch
-    fetch: (url: string, options?: any) =>
-      fetch(url, { ...options, signal: AbortSignal.timeout(timeoutMs) as any }),
-  } as any);
+    fetchMiddleware: fetchWithTimeout,
+  });
 }
 
 // Инициализация кошелька Phantom
@@ -82,7 +92,7 @@ export function useSolanaWallet() {
     try {
       return await wallet.signMessage(message);
     } catch (error) {
-      console.error("Error signing message:", error);
+      logger.error("Error signing message", error as Error);
       Sentry.captureException(error);
       throw error;
     }
@@ -97,7 +107,7 @@ export function useSolanaWallet() {
       const signature = await wallet.sendTransaction(transaction, connection);
       return signature;
     } catch (error) {
-      console.error("Error sending transaction:", error);
+      logger.error("Error sending transaction", error as Error);
       Sentry.captureException(error);
       throw error;
     }
@@ -110,7 +120,9 @@ export function useSolanaWallet() {
       const balance = await connection.getBalance(wallet.publicKey);
       return balance / LAMPORTS_PER_SOL;
     } catch (error) {
-      console.error("Error getting balance:", error);
+      logger.error("Error getting balance", error as Error, { 
+        publicKey: wallet.publicKey?.toBase58() 
+      });
       Sentry.captureException(error);
       return 0;
     }
@@ -154,7 +166,10 @@ export function useSolanaWallet() {
 
       return balance;
     } catch (error) {
-      console.error("Error getting token balance:", error);
+      logger.error("Error getting token balance", error as Error, { 
+        mintAddress,
+        publicKey: wallet.publicKey?.toBase58() 
+      });
       Sentry.captureException(error);
       return 0;
     }
@@ -177,8 +192,8 @@ export { NDT_PROGRAM_ID, NDT_MINT_ADDRESS, TRACKNFT_PROGRAM_ID, STAKING_PROGRAM_
 export async function createTransaction(
   connection: Connection,
   wallet: WalletAdapter,
-  instructions: any[],
-  signers: any[] = []
+  instructions: unknown[],
+  signers: unknown[] = []
 ): Promise<Transaction> {
   const transaction = new Transaction();
 
@@ -244,7 +259,7 @@ export function formatTokens(amount: number, decimals: number = 9): string {
 // Типы для событий кошелька
 export interface WalletEvent {
   type: "connect" | "disconnect" | "accountChange" | "chainChange";
-  data?: any;
+  data?: unknown;
 }
 
 // Эмиттер событий для кошелька
@@ -268,7 +283,7 @@ export class WalletEventEmitter {
     }
   }
 
-  emit(event: string, data?: any) {
+  emit(event: string, data?: unknown) {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
       callbacks.forEach((callback) => callback(data));

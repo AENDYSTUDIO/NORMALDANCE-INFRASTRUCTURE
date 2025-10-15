@@ -112,7 +112,7 @@ interface Activity {
   amount: number
   currency: string
   timestamp: Date
-  details: any
+  details: Record<string, unknown>
 }
 
 // Класс для работы с NFT маркетплейсами
@@ -252,7 +252,7 @@ export class NFTMarketplaces {
         }
       })
 
-      const collections: NFTCollection[] = response.data.map((item: any) => ({
+      const collections: NFTCollection[] = response.data.map((item: { id: string; name: string; [key: string]: unknown }) => ({
         id: item.id,
         name: item.name,
         description: item.description,
@@ -305,7 +305,7 @@ export class NFTMarketplaces {
         }
       })
 
-      const nfts: NFTItem[] = response.data.map((item: any) => ({
+      const nfts: NFTItem[] = response.data.map((item: { mint: string; name: string; [key: string]: unknown }) => ({
         id: item.id,
         tokenId: item.token_id,
         name: item.name,
@@ -353,7 +353,7 @@ export class NFTMarketplaces {
         }
       })
 
-      const listings: Listing[] = response.data.map((item: any) => ({
+      const listings: Listing[] = response.data.map((item: { price: number; seller: string; [key: string]: unknown }) => ({
         id: item.id,
         nftId: item.asset.id,
         marketplaceId,
@@ -514,7 +514,7 @@ export class NFTMarketplaces {
         }
       })
 
-      const nfts: NFTItem[] = response.data.map((item: any) => ({
+      const nfts: NFTItem[] = response.data.map((item: { mint: string; name: string; [key: string]: unknown }) => ({
         id: item.id,
         tokenId: item.token_id,
         name: item.name,
@@ -608,7 +608,7 @@ export class NFTMarketplaces {
         }
       })
 
-      const nfts: NFTItem[] = response.data.map((item: any) => ({
+      const nfts: NFTItem[] = response.data.map((item: { mint: string; name: string; [key: string]: unknown }) => ({
         id: item.id,
         tokenId: item.token_id,
         name: item.name,

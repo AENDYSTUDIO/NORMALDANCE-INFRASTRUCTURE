@@ -85,7 +85,7 @@ interface Playlist {
   name: string
   description?: string
   coverImage?: string
-  tracks: any[]
+  tracks: unknown[]
   isPublic: boolean
   createdAt: Date
   updatedAt: Date
@@ -309,11 +309,11 @@ export function AudioPlayer() {
     setVolume(newVolume)
   }
 
-  const handleQueueItemClick = (track: any, index: number) => {
+  const handleQueueItemClick = (track: unknown, index: number) => {
     playTrack(track)
   }
 
-  const playTrack = (track: any) => {
+  const playTrack = (track: unknown) => {
     play(track)
   }
 
@@ -581,7 +581,7 @@ export function AudioPlayer() {
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-sm font-medium">Визуализация</h4>
             <div className="flex items-center gap-2">
-              <Select value={visualizerType} onValueChange={(value: any) => setVisualizerType(value)}>
+              <Select value={visualizerType} onValueChange={(value: unknown) => setVisualizerType(value)}>
                 <SelectTrigger className="w-24 h-6">
                   <SelectValue />
                 </SelectTrigger>

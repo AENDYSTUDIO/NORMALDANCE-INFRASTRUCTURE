@@ -387,14 +387,14 @@ export class TelegramPartnership {
   }
 
   // Получение небезопасных данных инициализации
-  getInitDataUnsafe(): any {
+  getInitDataUnsafe(): Record<string, unknown> {
     if (!this.webApp) return null
     
     return this.webApp.initDataUnsafe || null
   }
 
   // Получение параметров запуска
-  getLaunchParams(): any {
+  getLaunchParams(): Record<string, unknown> {
     if (!this.webApp) return null
     
     return this.webApp.initDataUnsafe?.start_param || null
@@ -415,7 +415,7 @@ export class TelegramPartnership {
   }
 
   // Отправка данных в Telegram
-  sendData(data: any): void {
+  sendData(data: string | Record<string, unknown>): void {
     if (this.webApp) {
       this.webApp.sendData(JSON.stringify(data))
     }
@@ -592,7 +592,7 @@ export class TelegramPartnership {
     version: string
     platform: string
     colorScheme: string
-    themeParams: any
+    themeParams: Record<string, unknown>
     isExpanded: boolean
     viewportHeight: number
     viewportStableHeight: number
