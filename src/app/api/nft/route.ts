@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    const where: any = {
+    const where = {
       AND: [
         search ? {
           OR: [
@@ -52,8 +52,9 @@ export async function GET(request: NextRequest) {
       ]
     }
 
-    const orderBy: any = {}
-    orderBy[sortBy] = sortOrder
+    const orderBy = {
+      [sortBy]: sortOrder
+    } as const
 
     const [nfts, total] = await Promise.all([
       db.nft.findMany({
