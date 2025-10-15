@@ -72,7 +72,7 @@ export class InputValidator {
   }
 
   // Validate numeric input
-  static validateNumber(input: any, min?: number, max?: number): ValidationResult {
+  static validateNumber(input: unknown, min?: number, max?: number): ValidationResult {
     const num = Number(input);
     
     if (isNaN(num)) {

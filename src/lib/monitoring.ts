@@ -475,7 +475,7 @@ export function getMonitoring(config?: Partial<AlertConfig>): MonitoringSystem {
 
 // Express middleware for request monitoring
 export function createMonitoringMiddleware(monitoring: MonitoringSystem) {
-  return (req: any, res: any, next: any) => {
+  return (req: Request, res: Response, next: () => void) => {
     const startTime = Date.now();
     
     // Record request start
@@ -497,11 +497,11 @@ export function createMonitoringMiddleware(monitoring: MonitoringSystem) {
 
 // Monitoring decorator for functions
 export function monitorFunction(context?: string) {
-  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
+  return function (target: object, propertyName: string, descriptor: PropertyDescriptor) {
     const method = descriptor.value;
     const monitoring = getMonitoring();
 
-    descriptor.value = async function (...args: any[]) {
+    descriptor.value = async function (...args: unknown[]) {
       return monitoring.measureAsync(() => method.apply(this, args), context);
     };
 

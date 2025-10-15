@@ -23,14 +23,14 @@ export class AppError extends Error {
   public readonly code: ErrorCode;
   public readonly statusCode: number;
   public readonly isOperational: boolean;
-  public readonly details?: any;
+  public readonly details?: Record<string, unknown>;
 
   constructor(
     message: string,
     code: ErrorCode,
     statusCode: number = 500,
     isOperational: boolean = true,
-    details?: any
+    details?: Record<string, unknown>
   ) {
     super(message);
     this.code = code;
@@ -105,7 +105,7 @@ export class ErrorHandler {
   }
 
   // Predefined error creators
-  static validationError(message: string, details?: any): AppError {
+  static validationError(message: string, details?: Record<string, unknown>): AppError {
     return new AppError(message, ErrorCode.VALIDATION_ERROR, 400, true, details);
   }
 
@@ -125,7 +125,7 @@ export class ErrorHandler {
     return new AppError(message, ErrorCode.RATE_LIMIT_EXCEEDED, 429);
   }
 
-  static databaseError(message: string, details?: any): AppError {
+  static databaseError(message: string, details?: Record<string, unknown>): AppError {
     return new AppError(
       process.env.NODE_ENV === 'production' ? 'Database operation failed' : message,
       ErrorCode.DATABASE_ERROR,
@@ -135,7 +135,7 @@ export class ErrorHandler {
     );
   }
 
-  static externalServiceError(service: string, details?: any): AppError {
+  static externalServiceError(service: string, details?: Record<string, unknown>): AppError {
     return new AppError(
       `External service ${service} is unavailable`,
       ErrorCode.EXTERNAL_SERVICE_ERROR,
@@ -147,8 +147,8 @@ export class ErrorHandler {
 }
 
 // Async error wrapper for API routes
-export function asyncHandler(fn: Function) {
-  return async (...args: any[]) => {
+export function asyncHandler<T extends unknown[]>(fn: (...args: T) => Promise<unknown>) {
+  return async (...args: T) => {
     try {
       return await fn(...args);
     } catch (error) {
@@ -159,7 +159,7 @@ export function asyncHandler(fn: Function) {
 
 // Global error boundary for unhandled promise rejections
 if (typeof window === 'undefined') {
-  process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+  process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) => {
     logger.error('Unhandled Promise Rejection', {
       reason: reason?.message || reason,
       stack: reason?.stack,
