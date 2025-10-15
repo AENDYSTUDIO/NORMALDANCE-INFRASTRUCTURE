@@ -1,18 +1,21 @@
 import { signJWT } from "@/lib/jwt";
 import { verifyTelegramWebAppData } from "@/lib/telegram-auth";
 import { NextResponse } from "next/server";
+import { z } from "zod";
+import { telegramUserSchema } from "@/lib/schemas";
+import { handleApiError } from "@/lib/errors/errorHandler";
+import { db } from "@/lib/db";
+
+// Validation schema
+const telegramAuthSchema = z.object({
+  initData: z.string().min(1, "initData is required"),
+});
 
 // POST /api/telegram/auth - Аутентификация через Telegram Web App
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
-    const { initData } = await request.json();
-
-    if (!initData) {
-      return NextResponse.json(
-        { error: "initData is required" },
-        { status: 400 }
-      );
-    }
+    const body = await request.json();
+    const { initData } = telegramAuthSchema.parse(body);
 
     // Валидация данных Telegram
     const isValid = await verifyTelegramWebAppData(initData);
@@ -35,7 +38,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const telegramUser = JSON.parse(decodeURIComponent(userParam));
+    const telegramUser = telegramUserSchema.parse(
+      JSON.parse(decodeURIComponent(userParam))
+    );
 
     // Проверяем, существует ли пользователь в базе данных
     let user = await db.user.findUnique({
@@ -93,10 +98,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error in Telegram auth:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }

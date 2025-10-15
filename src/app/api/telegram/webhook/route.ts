@@ -1,6 +1,8 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { telegramIntegration2025 } from '@/lib/telegram-integration-2025'
+import type { TelegramMessage, TelegramUser, TelegramCallbackQuery, TelegramInlineQuery, TelegramPreCheckoutQuery } from '@/types/telegram'
+import { logger } from '@/lib/utils/logger'
 
 // POST /api/telegram/webhook - Telegram webhook handler
 export async function POST(request: NextRequest) {
@@ -20,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true })
   } catch (error) {
-    console.error('Error processing Telegram webhook:', error)
+    logger.error('Error processing Telegram webhook:', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 })
   }
 }
@@ -44,7 +46,7 @@ export async function GET(request: NextRequest) {
 /**
  * 📱 Обработка сообщений
  */
-async function handleMessage(message: any) {
+async function handleMessage(message: TelegramMessage) {
   const chatId = message.chat.id
   const userId = message.from.id
   const text = message.text
@@ -63,7 +65,7 @@ async function handleMessage(message: any) {
 /**
  * 🎯 Обработка команд
  */
-async function handleCommand(chatId: number, userId: number, command: string, user: any) {
+async function handleCommand(chatId: number, userId: number, command: string, user: TelegramUser) {
   switch (command) {
     case '/start':
       await telegramIntegration2025.sendTelegramMessage(chatId, {
@@ -211,7 +213,7 @@ async function handleCommand(chatId: number, userId: number, command: string, us
 /**
  * 💬 Обработка текстовых сообщений
  */
-async function handleTextMessage(chatId: number, userId: number, text: string, user: any) {
+async function handleTextMessage(chatId: number, userId: number, text: string, user: TelegramUser) {
   // Простой анализ сообщения для определения намерений
   const lowerText = text.toLowerCase()
   
@@ -284,7 +286,7 @@ async function handleTextMessage(chatId: number, userId: number, text: string, u
 /**
  * 🔘 Обработка callback query
  */
-async function handleCallbackQuery(callbackQuery: any) {
+async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
   const chatId = callbackQuery.message.chat.id
   const userId = callbackQuery.from.id
   const data = callbackQuery.data
@@ -316,7 +318,7 @@ async function handleCallbackQuery(callbackQuery: any) {
 /**
  * 🔍 Обработка inline query
  */
-async function handleInlineQuery(inlineQuery: any) {
+async function handleInlineQuery(inlineQuery: TelegramInlineQuery) {
   const queryId = inlineQuery.id
   const query = inlineQuery.query.toLowerCase()
   const userId = inlineQuery.from.id
@@ -381,7 +383,7 @@ async function handleInlineQuery(inlineQuery: any) {
 /**
  * 💳 Обработка pre-checkout query
  */
-async function handlePreCheckoutQuery(preCheckoutQuery: any) {
+async function handlePreCheckoutQuery(preCheckoutQuery: TelegramPreCheckoutQuery) {
   const queryId = preCheckoutQuery.id
   const userId = preCheckoutQuery.from.id
   const currency = preCheckoutQuery.currency

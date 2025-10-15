@@ -29,12 +29,12 @@ import {
 } from '@/components/icons'
 
 interface DashboardData {
-  market: any
-  liquidity: any
-  trading: any
-  risk: any
-  predictions: any
-  arbitrage: any[]
+  market: Record<string, unknown>
+  liquidity: Record<string, unknown>
+  trading: Record<string, unknown>
+  risk: Record<string, unknown>
+  predictions: Record<string, unknown>
+  arbitrage: Record<string, unknown>[]
   recommendations: string[]
   timestamp: number
 }
@@ -343,7 +343,7 @@ export function AdvancedDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {data.liquidity?.yieldOptimization?.map((strategy: any, index: number) => (
+                  {data.liquidity?.yieldOptimization?.map((strategy: Record<string, unknown>, index: number) => (
                     <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
                       <div>
                         <p className="font-medium">{strategy.name}</p>
@@ -404,7 +404,7 @@ export function AdvancedDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {data.trading?.topTraders?.slice(0, 5).map((trader: any, index: number) => (
+                  {data.trading?.topTraders?.slice(0, 5).map((trader: Record<string, unknown>, index: number) => (
                     <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -461,7 +461,7 @@ export function AdvancedDashboard() {
                   
                   <div className="space-y-2">
                     <p className="text-sm font-medium">Факторы влияния:</p>
-                    {prediction.factors?.map((factor: any, index: number) => (
+                    {prediction.factors?.map((factor: Record<string, unknown>, index: number) => (
                       <div key={index} className="flex items-center justify-between text-xs">
                         <span>{factor.name}</span>
                         <div className="flex items-center space-x-1">
@@ -495,7 +495,7 @@ export function AdvancedDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {data.arbitrage?.slice(0, 5).map((arb: any, index: number) => (
+                  {data.arbitrage?.slice(0, 5).map((arb: Record<string, unknown>, index: number) => (
                     <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
                       <div>
                         <p className="font-medium">{arb.source} → {arb.target}</p>

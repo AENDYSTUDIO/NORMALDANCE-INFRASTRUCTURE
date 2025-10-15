@@ -36,7 +36,7 @@ export interface TelegramNotification {
   type: 'order_executed' | 'price_alert' | 'liquidity_opportunity' | 'volatility_warning'
   title: string
   message: string
-  data: any
+  data: Record<string, unknown>
   timestamp: number
   sent: boolean
 }
@@ -223,7 +223,7 @@ export class TelegramIntegration2025 {
   /**
    * 📊 Отправка аналитики в группу/канал
    */
-  async sendAnalyticsToChannel(channelId: string, analytics: any): Promise<boolean> {
+  async sendAnalyticsToChannel(channelId: string, analytics: Record<string, unknown>): Promise<boolean> {
     try {
       const message = this.formatAnalyticsMessage(analytics)
       
@@ -304,7 +304,7 @@ export class TelegramIntegration2025 {
   /**
    * 🔔 Отправка уведомления о сработавшем ордере
    */
-  async sendOrderExecutionNotification(userId: number, orderData: any): Promise<boolean> {
+  async sendOrderExecutionNotification(userId: number, orderData: Record<string, unknown>): Promise<boolean> {
     const message = `🎯 *Ордер исполнен!*\n\n` +
       `Тип: ${orderData.type === 'buy' ? 'Покупка' : 'Продажа'}\n` +
       `Пара: ${orderData.from} → ${orderData.to}\n` +
@@ -343,7 +343,7 @@ export class TelegramIntegration2025 {
   /**
    * 💰 Отправка уведомления об арбитражной возможности
    */
-  async sendArbitrageOpportunity(userId: number, opportunity: any): Promise<boolean> {
+  async sendArbitrageOpportunity(userId: number, opportunity: Record<string, unknown>): Promise<boolean> {
     const message = `💰 *Арбитражная возможность!*\n\n` +
       `Источник: ${opportunity.source}\n` +
       `Цель: ${opportunity.target}\n` +
@@ -363,7 +363,7 @@ export class TelegramIntegration2025 {
   /**
    * 📊 Форматирование сообщения с аналитикой
    */
-  private formatAnalyticsMessage(analytics: any): string {
+  private formatAnalyticsMessage(analytics: Record<string, unknown>): string {
     const market = analytics.market
     const liquidity = analytics.liquidity
     const trading = analytics.trading
@@ -520,7 +520,7 @@ export class TelegramIntegration2025 {
   /**
    * 📱 Отправка сообщения в Telegram
    */
-  private async sendTelegramMessage(chatId: string | number, message: any): Promise<boolean> {
+  private async sendTelegramMessage(chatId: string | number, message: Record<string, unknown> | string): Promise<boolean> {
     try {
       const response = await fetch(`https://api.telegram.org/bot${this.botToken}/sendMessage`, {
         method: 'POST',

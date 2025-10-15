@@ -147,7 +147,7 @@ export class LMSIntegration {
 
     // Преобразование данных Moodle в формат нашей системы
     return (
-      data.tests?.map((moodleTest: any) =>
+      data.tests?.map((moodleTest: Record<string, unknown>) =>
         this.mapMoodleTestToSystemTest(moodleTest)
       ) || []
     );
@@ -262,12 +262,12 @@ export class LMSIntegration {
 
     // Фильтрация заданий, которые являются тестами
     const testAssignments = assignments.filter(
-      (assignment: any) =>
+      (assignment: Record<string, unknown>) =>
         assignment.description?.toLowerCase().includes("test") ||
         assignment.name?.toLowerCase().includes("quiz")
     );
 
-    return testAssignments.map((assignment: any) =>
+    return testAssignments.map((assignment: Record<string, unknown>) =>
       this.mapCanvasAssignmentToSystemTest(assignment)
     );
   }
@@ -364,7 +364,7 @@ export class LMSIntegration {
       if (testsResponse.ok) {
         const testsData = await testsResponse.json();
         const courseTests =
-          testsData.results?.map((test: any) =>
+          testsData.results?.map((test: Record<string, unknown>) =>
             this.mapBlackboardTestToSystemTest(test, course)
           ) || [];
         allTests = [...allTests, ...courseTests];
@@ -434,7 +434,7 @@ export class LMSIntegration {
 
     // Находим submission для текущего пользователя
     const userSubmission = submissions.studentSubmissions?.find(
-      (sub: any) => sub.userId === testResult.userId
+      (sub: Record<string, unknown>) => sub.userId === testResult.userId
     );
 
     if (userSubmission) {
@@ -486,11 +486,11 @@ export class LMSIntegration {
     // Фильтрация заданий, которые являются тестами/опросами
     const testCourseWork =
       courseWorkData.courseWork?.filter(
-        (cw: any) =>
+        (cw: Record<string, unknown>) =>
           cw.workType === "QUIZ" || cw.title?.toLowerCase().includes("test")
       ) || [];
 
-    return testCourseWork.map((cw: any) =>
+    return testCourseWork.map((cw: Record<string, unknown>) =>
       this.mapGoogleClassroomWorkToSystemTest(cw)
     );
   }
@@ -526,7 +526,7 @@ export class LMSIntegration {
   /**
    * Преобразование теста Moodle в формат нашей системы
    */
-  private mapMoodleTestToSystemTest(moodleTest: any): Test {
+  private mapMoodleTestToSystemTest(moodleTest: Record<string, unknown>): Test {
     return {
       id: moodleTest.id || `moodle_${Date.now()}`,
       title: moodleTest.name || moodleTest.title || "Тест из Moodle",
@@ -550,7 +550,7 @@ export class LMSIntegration {
   /**
    * Преобразование задания Canvas в формат нашей системы
    */
-  private mapCanvasAssignmentToSystemTest(canvasAssignment: any): Test {
+  private mapCanvasAssignmentToSystemTest(canvasAssignment: Record<string, unknown>): Test {
     return {
       id: canvasAssignment.id || `canvas_${Date.now()}`,
       title: canvasAssignment.name || "Тест из Canvas",
@@ -574,7 +574,7 @@ export class LMSIntegration {
   /**
    * Преобразование теста Blackboard в формат нашей системы
    */
-  private mapBlackboardTestToSystemTest(bbTest: any, course: any): Test {
+  private mapBlackboardTestToSystemTest(bbTest: Record<string, unknown>, course: Record<string, unknown>): Test {
     return {
       id: bbTest.id || `blackboard_${Date.now()}`,
       title: bbTest.name || "Тест из Blackboard",
@@ -598,7 +598,7 @@ export class LMSIntegration {
   /**
    * Преобразование задания Google Classroom в формат нашей системы
    */
-  private mapGoogleClassroomWorkToSystemTest(gcWork: any): Test {
+  private mapGoogleClassroomWorkToSystemTest(gcWork: Record<string, unknown>): Test {
     return {
       id: gcWork.id || `gc_${Date.now()}`,
       title: gcWork.title || "Тест из Google Classroom",
@@ -622,7 +622,7 @@ export class LMSIntegration {
   /**
    * Извлечение навыков из профиля Moodle
    */
-  private extractSkillsFromMoodleProfile(moodleUser: any): string[] {
+  private extractSkillsFromMoodleProfile(moodleUser: Record<string, unknown>): string[] {
     // В реальной системе это будет извлекаться из пользовательских полей, профиля курсов и т.д.
     const skills: string[] = [];
 
@@ -643,7 +643,7 @@ export class LMSIntegration {
   /**
    * Оценка сложности из Moodle
    */
-  private estimateDifficultyFromMoodle(moodleTest: any): any {
+  private estimateDifficultyFromMoodle(moodleTest: Record<string, unknown>): Record<string, unknown> {
     // Простая эвристика на основе максимального балла или других параметров
     if (moodleTest.maxgrade >= 90) return "expert";
     if (moodleTest.maxgrade >= 70) return "advanced";
@@ -654,7 +654,7 @@ export class LMSIntegration {
   /**
    * Оценка сложности из Canvas
    */
-  private estimateDifficultyFromCanvas(canvasAssignment: any): any {
+  private estimateDifficultyFromCanvas(canvasAssignment: Record<string, unknown>): Record<string, unknown> {
     if (canvasAssignment.points_possible >= 90) return "expert";
     if (canvasAssignment.points_possible >= 70) return "advanced";
     if (canvasAssignment.points_possible >= 50) return "intermediate";
@@ -664,7 +664,7 @@ export class LMSIntegration {
   /**
    * Оценка сложности из Blackboard
    */
-  private estimateDifficultyFromBlackboard(bbTest: any): any {
+  private estimateDifficultyFromBlackboard(bbTest: Record<string, unknown>): Record<string, unknown> {
     if (bbTest.totalPoints >= 90) return "expert";
     if (bbTest.totalPoints >= 70) return "advanced";
     if (bbTest.totalPoints >= 50) return "intermediate";
@@ -674,7 +674,7 @@ export class LMSIntegration {
   /**
    * Оценка сложности из Google Classroom
    */
-  private estimateDifficultyFromGoogleClassroom(gcWork: any): any {
+  private estimateDifficultyFromGoogleClassroom(gcWork: Record<string, unknown>): Record<string, unknown> {
     if (gcWork.maxPoints >= 90) return "expert";
     if (gcWork.maxPoints >= 70) return "advanced";
     if (gcWork.maxPoints >= 50) return "intermediate";
@@ -684,7 +684,7 @@ export class LMSIntegration {
   /**
    * Расчет ограничения по времени
    */
-  private calculateTimeLimit(gcWork: any): number | undefined {
+  private calculateTimeLimit(gcWork: Record<string, unknown>): number | undefined {
     if (gcWork.dueDate && gcWork.dueTime) {
       // В реальной системе это будет вычислено на основе дедлайна
       return undefined; // Google Classroom управляет временем по-своему
@@ -708,6 +708,6 @@ export interface LMSConfig {
     courseId?: string;
     assignmentId?: string;
     gradeColumnId?: string;
-    [key: string]: any;
+    [key: string]: Record<string, unknown>;
   };
 }

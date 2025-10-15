@@ -224,7 +224,7 @@ class SpotifyIntegration {
         }
       })
 
-      return response.data.tracks.filter((track: any) => track !== null)
+      return response.data.tracks.filter((track: unknown) => track !== null)
     } catch (error) {
       console.error('Failed to get tracks:', error)
       throw new Error('Failed to get tracks from Spotify')
@@ -290,7 +290,7 @@ class SpotifyIntegration {
         }
       })
 
-      return response.data.items.map((item: any) => item.track).filter((track: any) => track !== null)
+      return response.data.items.map((item: { track: unknown }) => item.track).filter((track: unknown) => track !== null)
     } catch (error) {
       console.error('Failed to get playlist tracks:', error)
       throw new Error('Failed to get Spotify playlist tracks')

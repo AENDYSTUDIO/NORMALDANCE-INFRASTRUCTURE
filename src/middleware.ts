@@ -1,5 +1,7 @@
+import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { checkRateLimit as rateLimiterCheck } from "./middleware/rate-limiter";
+import { logger } from "./lib/utils/logger";
 
 // Enhanced security middleware for NORMALDANCE
 
@@ -36,7 +38,12 @@ const securityHeaders = {
 };
 
 // Check suspicious patterns in request
-function checkSuspiciousRequest(request: any): { isSuspicious: boolean; reason?: string } {
+interface SecurityCheck {
+  isSuspicious: boolean
+  reason?: string
+}
+
+function checkSuspiciousRequest(request: NextRequest): SecurityCheck {
   const userAgent = request.headers.get("user-agent") || "";
   const url = request.url;
   
@@ -68,7 +75,7 @@ function checkSuspiciousRequest(request: any): { isSuspicious: boolean; reason?:
   };
 }
 
-export async function middleware(request: any) {
+export async function middleware(request: NextRequest) {
   const origin = request.headers.get("origin");
   const url = request.nextUrl;
   const ip = request.ip || "unknown";
@@ -76,7 +83,11 @@ export async function middleware(request: any) {
   // Check for suspicious requests
   const securityCheck = checkSuspiciousRequest(request);
   if (securityCheck.isSuspicious) {
-    console.warn(`Suspicious request blocked: ${securityCheck.reason}`);
+    logger.warn(`Suspicious request blocked: ${securityCheck.reason}`, { 
+      ip, 
+      url: url.pathname,
+      userAgent: request.headers.get("user-agent") 
+    });
     return new Response("Request blocked", { status: 403 });
   }
 

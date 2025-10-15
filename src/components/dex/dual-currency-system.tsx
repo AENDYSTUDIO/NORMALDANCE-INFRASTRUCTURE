@@ -1,5 +1,6 @@
-// @ts-nocheck
 'use client'
+
+// Note: This file needs full type refactoring - tracked in GitHub issue #XXX
 
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, Button, Badge, Input } from '@/components/ui'

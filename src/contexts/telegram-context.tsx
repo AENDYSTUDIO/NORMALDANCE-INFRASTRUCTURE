@@ -3,8 +3,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 
 interface TelegramContextType {
-  webApp: any
-  user: any
+  webApp: Record<string, unknown>
+  user: Record<string, unknown>
   isReady: boolean
   theme: 'light' | 'dark'
   isTMA: boolean

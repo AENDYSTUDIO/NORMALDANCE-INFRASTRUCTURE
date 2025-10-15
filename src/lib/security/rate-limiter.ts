@@ -106,7 +106,7 @@ export const uploadRateLimiter = new RateLimiter({
 // Middleware function for Next.js API routes
 export function withRateLimit(limiter: RateLimiter) {
   return (handler: Function) => {
-    return async (req: NextRequest, ...args: any[]) => {
+    return async (req: NextRequest, ...args: unknown[]) => {
       const result = limiter.check(req);
       
       if (!result.allowed) {

@@ -1,6 +1,8 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/utils/logger'
+import { nftMintSchema } from '@/lib/schemas'
 import { z } from 'zod'
 import { validateTelegramInitData } from '@/lib/security/telegram-validator'
 import { isValidSolanaAddress } from '@/lib/security/input-sanitizer'
@@ -41,7 +43,7 @@ export async function POST(request: NextRequest) {
     const initData = request.headers.get('x-telegram-init-data');
     
     if (!initData) {
-      console.warn('[Security] NFT mint attempt without Telegram auth');
+      logger.warn('NFT mint attempt without Telegram auth');
       return NextResponse.json(
         { error: 'Unauthorized: Telegram authentication required' },
         { status: 401 }
@@ -50,7 +52,7 @@ export async function POST(request: NextRequest) {
     
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     if (!botToken) {
-      console.error('[Security] TELEGRAM_BOT_TOKEN not configured!');
+      logger.error('TELEGRAM_BOT_TOKEN not configured!');
       return NextResponse.json(
         { error: 'Server configuration error' },
         { status: 500 }
@@ -60,7 +62,7 @@ export async function POST(request: NextRequest) {
     const validation = validateTelegramInitData(initData, botToken, 3600);
     
     if (!validation.valid) {
-      console.warn('[Security] Invalid Telegram initData for NFT mint:', validation.error);
+      logger.warn('Invalid Telegram initData for NFT mint', { error: validation.error });
       return NextResponse.json(
         { error: `Authentication failed: ${validation.error}` },
         { status: 401 }
@@ -71,7 +73,7 @@ export async function POST(request: NextRequest) {
     
     // 🔐 SECURITY 2: Very strict rate limiting (3 mints per minute)
     if (!checkMintRateLimit(`nft-mint:${userId}`, 3)) {
-      console.warn('[Security] Rate limit exceeded for NFT minting:', userId);
+      logger.warn('Rate limit exceeded for NFT minting', { userId });
       return NextResponse.json(
         { error: 'Too many mint requests. Please wait before minting again.' },
         { status: 429, headers: { 'Retry-After': '60' } }
@@ -93,7 +95,7 @@ export async function POST(request: NextRequest) {
     
     // 🔐 SECURITY 4: Validate Solana address format
     if (!isValidSolanaAddress(recipientAddress)) {
-      console.warn('[Security] Invalid Solana address for NFT mint:', recipientAddress);
+      logger.warn('Invalid Solana address for NFT mint', { recipientAddress });
       return NextResponse.json(
         { error: 'Invalid Solana wallet address' },
         { status: 400 }
@@ -102,7 +104,7 @@ export async function POST(request: NextRequest) {
     
     // 🔐 SECURITY 5: Suspicious activity detection
     if (quantity > 5) {
-      console.warn('[Security] Suspicious NFT mint quantity:', { userId, quantity, nftId });
+      logger.warn('Suspicious NFT mint quantity', { userId, quantity, nftId });
       // Log for manual review but don't block yet
     }
 
@@ -197,13 +199,12 @@ export async function POST(request: NextRequest) {
     }
 
     // 🔐 SECURITY 6: Log successful mint event
-    console.log('[Security] NFT minted successfully:', {
+    logger.info('NFT minted successfully', {
       userId,
       nftId,
       recipientAddress,
       quantity,
       transactionSignature: mintTransaction.signature,
-      timestamp: new Date().toISOString()
     });
 
     return NextResponse.json({
@@ -214,13 +215,14 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
+      logger.warn('NFT mint validation failed', { errors: error.errors })
       return NextResponse.json(
         { error: 'Validation failed', details: error.errors },
         { status: 400 }
       )
     }
 
-    console.error('Error minting NFT:', error)
+    logger.error('Error minting NFT', error as Error)
     return NextResponse.json(
       { error: 'Failed to mint NFT' },
       { status: 500 }
