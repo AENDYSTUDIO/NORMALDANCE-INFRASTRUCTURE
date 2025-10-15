@@ -26,7 +26,7 @@ export interface UserProfile {
   listeningHistory: Track[]
   likedTracks: Track[]
   skippedTracks: Track[]
-  playlists: any[]
+  playlists: unknown[]
   createdAt: Date
   updatedAt: Date
 }
@@ -51,7 +51,7 @@ export interface Recommendation {
 export class AIRecommendationSystem {
   private userProfiles: Map<string, UserProfile> = new Map()
   private trackFeatures: Map<string, AudioFeatures> = new Map()
-  private model: any = null
+  private model: unknown = null
 
   constructor() {
     this.initializeModel()
