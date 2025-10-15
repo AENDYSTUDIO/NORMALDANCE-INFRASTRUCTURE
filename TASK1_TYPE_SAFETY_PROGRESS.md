@@ -3,7 +3,7 @@
 ## Summary
 Removing all explicit `any` types from the codebase to achieve 95%+ type safety.
 
-## Progress: 14% (7/50 files)
+## Progress: 24% (12/50 files)
 
 ### ✅ Completed Files
 
@@ -41,6 +41,31 @@ Removing all explicit `any` types from the codebase to achieve 95%+ type safety.
    - `metric: any` (x8) → `metric: Metric`
    - Added `import type { Metric } from 'web-vitals'`
    - Type-safe web vitals monitoring
+
+8. **`src/types/telegram.ts`** ✅ (Created)
+   - Complete Telegram Bot API types
+   - 20+ interfaces for messages, users, queries
+   - Reusable across all Telegram integrations
+
+9. **`src/app/api/telegram/webhook/route.ts`** ✅
+   - All `any` parameters → Telegram types
+   - Added logger integration
+   - Type-safe message handling
+
+10. **`src/app/api/telegram/web3/route.ts`** ✅
+    - All 7 handler functions typed
+    - Proper user/body interfaces
+    - Type-safe Web3 operations
+
+11. **`src/app/api/telegram/features/route.ts`** ✅
+    - All 6 feature handlers typed
+    - Consistent action patterns
+    - Type-safe feature operations
+
+12. **`src/app/api/nft/route.ts`** ✅
+    - `where: any` → typed where clause
+    - `orderBy: any` → typed orderBy
+    - Consistent with tracks route
 
 ### 🔄 Files Remaining (45)
 
