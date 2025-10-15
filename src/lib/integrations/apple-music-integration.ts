@@ -524,7 +524,7 @@ class AppleMusicIntegration {
         headers: this.getHeaders()
       })
 
-      return response.data.data.map((storefront: any) => ({
+      return response.data.data.map((storefront: { id: string; attributes: { name: string } }) => ({
         id: storefront.id,
         name: storefront.attributes.name
       }))

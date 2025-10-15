@@ -3,7 +3,7 @@
 ## Summary
 Removing all explicit `any` types from the codebase to achieve 95%+ type safety.
 
-## Progress: 42% (21/50 files)
+## Progress: 54% (27/50 files)
 
 ### ✅ Completed Files
 
@@ -105,7 +105,30 @@ Removing all explicit `any` types from the codebase to achieve 95%+ type safety.
     - All 7 any occurrences fixed
     - Generic function types improved
 
-### 🔄 Files Remaining (36)
+### Batch 2: Integration Libs ✅ (6 files)
+
+22. **`src/lib/integrations/spotify-integration.ts`** ✅
+    - Track filter types fixed
+
+23. **`src/lib/integrations/nft-marketplaces.ts`** ✅
+    - 7 any types → proper interfaces
+    - NFT item mapping types
+
+24. **`src/lib/integrations/apple-music-integration.ts`** ✅
+    - Storefront mapping types
+
+25. **`src/lib/telegram-integration-2025.ts`** ✅
+    - 6 any types → Record<string, unknown>
+    - Message/analytics typing
+
+26. **`src/lib/telegram-partnership.ts`** ✅
+    - WebApp data types fixed
+    - Theme params typed
+
+27. **`src/lib/solana-pay-enhanced.ts`** ✅
+    - Transaction/webhook types
+
+### 🔄 Files Remaining (23)
 
 **High Priority (API Routes - 15 files):**
 - `src/app/api/auth/signup/route.ts`
