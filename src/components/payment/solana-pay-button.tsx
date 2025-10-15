@@ -102,7 +102,7 @@ const SolanaPayButton: React.FC<SolanaPayButtonProps> = ({
           status: 'failed',
           error: error.message
         }));
-      }));
+      });
     } else {
       // Standard web payment flow
       const payment = await solanaPayService.createEnhancedPaymentRequest({
@@ -128,6 +128,17 @@ const SolanaPayButton: React.FC<SolanaPayButtonProps> = ({
 
       // In web mode, we'd show a "payment completed" button
       // The user manually confirms after payment
+    }
+    } catch (error) {
+      setPaymentState(prev => ({
+        ...prev,
+        status: 'failed',
+        error: error instanceof Error ? error.message : 'Payment failed'
+      }));
+      
+      if (onError && error instanceof Error) {
+        onError(error);
+      }
     }
   }, [amount, recipient, label, message, memo, isTMA, enableTelegramEnhancement, onError, onSuccess]);
 

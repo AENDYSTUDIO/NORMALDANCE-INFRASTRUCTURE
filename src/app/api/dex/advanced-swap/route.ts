@@ -88,8 +88,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    let swapResult: any
-    let updatedPool: any
+    let swapResult: Record<string, unknown>
+    let updatedPool: Record<string, unknown>
 
     if (useAdvancedAMM) {
       // Use advanced AMM with hybrid algorithms

@@ -44,15 +44,15 @@ interface NFTMarketplaceProps {
 }
 
 interface NFTCardProps {
-  nft: any
-  onBuy: (nft: any) => void
-  onAddToWatchlist: (nft: any) => void
-  onPlaceBid: (nft: any, amount: number) => void
+  nft: unknown
+  onBuy: (nft: unknown) => void
+  onAddToWatchlist: (nft: unknown) => void
+  onPlaceBid: (nft: unknown, amount: number) => void
 }
 
 interface CollectionCardProps {
-  collection: any
-  onSelect: (collection: any) => void
+  collection: unknown
+  onSelect: (collection: unknown) => void
 }
 
 interface MarketplaceSelectorProps {
@@ -167,7 +167,7 @@ export function NFTMarketplace({ userId }: NFTMarketplaceProps) {
   }, [selectedMarketplace, selectedCollection, activeFilters])
 
   // Применение фильтров и сортировки
-  const applyFiltersAndSort = useCallback((data: any[]) => {
+  const applyFiltersAndSort = useCallback((data: unknown[]) => {
     let filtered = [...data]
 
     // Фильтрация по цене
@@ -184,7 +184,7 @@ export function NFTMarketplace({ userId }: NFTMarketplaceProps) {
     // Фильтрация по редкости
     if (activeFilters.rarity !== 'all') {
       filtered = filtered.filter(nft => 
-        nft.attributes?.some((attr: any) => 
+        nft.attributes?.some((attr: unknown) => 
           attr.trait_type?.toLowerCase() === 'rarity' && 
           attr.value?.toLowerCase() === activeFilters.rarity
         )
@@ -272,14 +272,14 @@ export function NFTMarketplace({ userId }: NFTMarketplaceProps) {
   const loadWatchlist = async () => {
     try {
       const watchlistData = await nftMarketplaces.getUserWatchlist(userId)
-      setWatchlist(watchlistData.map((item: any) => item.nftId))
+      setWatchlist(watchlistData.map((item: unknown) => item.nftId))
     } catch (error) {
       console.error('Error loading watchlist:', error)
     }
   }
 
   // Обработка покупки NFT
-  const handleBuyNFT = async (nft: any) => {
+  const handleBuyNFT = async (nft: unknown) => {
     try {
       const response = await fetch(`/api/nft/${nft.id}/purchase`, {
         method: 'POST',
@@ -309,7 +309,7 @@ export function NFTMarketplace({ userId }: NFTMarketplaceProps) {
   }
 
   // Обработка ставки на аукцион
-  const handlePlaceBid = async (nft: any, amount: number) => {
+  const handlePlaceBid = async (nft: unknown, amount: number) => {
     try {
       const response = await fetch(`/api/nft/${nft.id}/bid`, {
         method: 'POST',
@@ -338,7 +338,7 @@ export function NFTMarketplace({ userId }: NFTMarketplaceProps) {
   }
 
   // Обработка добавления в избранное
-  const handleAddToWatchlist = async (nft: any) => {
+  const handleAddToWatchlist = async (nft: unknown) => {
     try {
       const isInWatchlist = watchlist.includes(nft.id)
       
@@ -360,13 +360,13 @@ export function NFTMarketplace({ userId }: NFTMarketplaceProps) {
   }
 
   // Обработка выбора коллекции
-  const handleCollectionSelect = async (collection: any) => {
+  const handleCollectionSelect = async (collection: unknown) => {
     setSelectedCollection(collection.contractAddress)
     await loadMarketplaceData()
   }
 
   // Обновление фильтров
-  const handleFilterChange = (key: keyof FilterOptions, value: any) => {
+  const handleFilterChange = (key: keyof FilterOptions, value: unknown) => {
     setActiveFilters(prev => ({
       ...prev,
       [key]: value
@@ -1083,7 +1083,7 @@ function NFTCard({ nft, onBuy, onAddToWatchlist, onPlaceBid }: NFTCardProps) {
                   <div>
                     <h4 className="font-medium mb-3">Атрибуты</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {nft.attributes.map((attr: any, index: number) => (
+                      {nft.attributes.map((attr: unknown, index: number) => (
                         <div key={index} className="p-3 bg-muted rounded-lg text-center">
                           <div className="text-sm font-medium">{attr.trait_type}</div>
                           <div className="text-xs text-muted-foreground">{attr.value}</div>
@@ -1133,7 +1133,7 @@ function NFTCard({ nft, onBuy, onAddToWatchlist, onPlaceBid }: NFTCardProps) {
         
         {nft.attributes && nft.attributes.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-3">
-            {nft.attributes.slice(0, 3).map((attr: any, index: number) => (
+            {nft.attributes.slice(0, 3).map((attr: unknown, index: number) => (
               <Badge key={index} variant="outline" className="text-xs">
                 {attr.trait_type}: {attr.value}
               </Badge>

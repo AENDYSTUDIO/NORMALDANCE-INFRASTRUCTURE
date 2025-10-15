@@ -228,7 +228,7 @@ export function OptimizedAudioPlayer() {
   }, [currentTrack, selectedQuality, effectiveType, audioQualities])
 
   // Функция предзагрузки аудио
-  const preloadAudio = useCallback(async (track: any, quality: string) => {
+  const preloadAudio = useCallback(async (track: unknown, quality: string) => {
     const cacheKey = `${track.id}_${quality}`
     
     if (audioCache[cacheKey]) {
@@ -378,7 +378,7 @@ export function OptimizedAudioPlayer() {
     setVolume(newVolume)
   }, [setVolume])
 
-  const handleQueueItemClick = useCallback((track: any, index: number) => {
+  const handleQueueItemClick = useCallback((track: unknown, index: number) => {
     play(track)
   }, [play])
 
@@ -663,7 +663,7 @@ export function OptimizedAudioPlayer() {
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-sm font-medium">Визуализация</h4>
             <div className="flex items-center gap-2">
-              <Select value={visualizerType} onValueChange={(value: any) => setVisualizerType(value)}>
+              <Select value={visualizerType} onValueChange={(value: unknown) => setVisualizerType(value)}>
                 <SelectTrigger className="w-24 h-6">
                   <SelectValue />
                 </SelectTrigger>

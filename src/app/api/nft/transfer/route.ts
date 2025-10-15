@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     // Process the transfer
     let remainingQuantity = quantity
-    const transferRecords: any[] = []
+    const transferRecords: unknown[] = []
 
     // First, remove from sender
     for (const ownership of senderOwnership) {

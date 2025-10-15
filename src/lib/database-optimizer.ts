@@ -102,7 +102,7 @@ class DatabaseOptimizer {
     parameters: unknown[],
     executionTime: number,
     resultCount: number,
-    error?: any
+    error?: Error
   ): void {
     const queryStats: QueryStats = {
       query,
@@ -233,7 +233,7 @@ class DatabaseOptimizer {
     } = options
 
     return this.executeQuery(async () => {
-      const where: any = {}
+      const where: Record<string, unknown> = {}
       
       if (genre) {
         where.genre = genre
@@ -243,7 +243,7 @@ class DatabaseOptimizer {
         where.artistId = artistId
       }
 
-      const orderBy: any = {}
+      const orderBy: Record<string, unknown> = {}
       orderBy[sortBy] = sortOrder
 
       const tracks = await this.prisma.track.findMany({
@@ -557,7 +557,7 @@ class DatabaseOptimizer {
   /**
    * Расчет оценки производительности
    */
-  private calculatePerformanceScore(stats: any): number {
+  private calculatePerformanceScore(stats: { avgExecutionTime: number; slowQueryCount: number; errorRate: number }): number {
     const baseScore = 100
     const slowQueryPenalty = stats.slowQueries * 2
     const executionTimePenalty = stats.averageExecutionTime / 10

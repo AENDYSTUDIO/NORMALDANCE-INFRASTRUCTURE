@@ -289,8 +289,8 @@ export function withWallet<P extends object>(
 
 // Типы для транзакций
 export interface TransactionParams {
-  instructions: any[];
-  signers?: any[];
+  instructions: unknown[];
+  signers?: unknown[];
   feePayer?: PublicKey;
   commitment?: "processed" | "confirmed" | "finalized";
 }
@@ -307,7 +307,7 @@ export function useTransactions() {
       const transaction = new Transaction();
 
       // Добавляем инструкции
-      params.instructions.forEach((instruction: any) => {
+      params.instructions.forEach((instruction: unknown) => {
         transaction.add(instruction);
       });
 
@@ -336,7 +336,7 @@ export function useTransactions() {
       );
 
       return signature;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Transaction error:", error);
       // Более детальная обработка ошибок
       if (error.message.includes("Transaction was not confirmed")) {

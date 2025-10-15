@@ -156,7 +156,7 @@ export function AdvancedTelegramFeatures() {
 
   // Send custom notification
   const sendNotification = useCallback(async (title: string, message: string, icon: string = "🎵") => {
-    if (!("Notification" in window || notificationPermission !== "granted") {
+    if (!("Notification" in window) || notificationPermission !== "granted") {
       return false;
     }
 
