@@ -4,6 +4,7 @@
  */
 
 // Импорты будут добавлены динамически для избежания SSR проблем
+import type { Metric } from 'web-vitals'
 
 // Интерфейс для метрик производительности
 export interface PerformanceMetrics {
@@ -87,37 +88,37 @@ export class WebVitalsService {
     // Импортируем web-vitals динамически для избежания SSR проблем
     import('web-vitals').then(({ onCLS, onFID, onLCP, onFCP, onTTFB, onINP }) => {
       // Largest Contentful Paint
-      onLCP((metric: any) => {
+      onLCP((metric: Metric) => {
         this.metrics.lcp = metric.value
         this.sendToMonitoring('lcp', metric)
       })
 
       // First Input Delay
-      onFID((metric: any) => {
+      onFID((metric: Metric) => {
         this.metrics.fid = metric.value
         this.sendToMonitoring('fid', metric)
       })
 
       // Cumulative Layout Shift
-      onCLS((metric: any) => {
+      onCLS((metric: Metric) => {
         this.metrics.cls = metric.value
         this.sendToMonitoring('cls', metric)
       })
 
       // First Contentful Paint
-      onFCP((metric: any) => {
+      onFCP((metric: Metric) => {
         this.metrics.fcp = metric.value
         this.sendToMonitoring('fcp', metric)
       })
 
       // Time to First Byte
-      onTTFB((metric: any) => {
+      onTTFB((metric: Metric) => {
         this.metrics.ttfb = metric.value
         this.sendToMonitoring('ttfb', metric)
       })
 
       // Interaction to Next Paint
-      onINP((metric: any) => {
+      onINP((metric: Metric) => {
         this.metrics.inp = metric.value
         this.sendToMonitoring('inp', metric)
       })
@@ -174,7 +175,7 @@ export class WebVitalsService {
   }
 
   // Отправка метрик в мониторинг
-  private sendToMonitoring(type: string, metric: any): void {
+  private sendToMonitoring(type: string, metric: Metric | { value: number; [key: string]: unknown }): void {
     if (process.env.NODE_ENV !== 'production') return
 
     // Отправка в Sentry (если доступно)
@@ -337,7 +338,7 @@ export class WebVitalsService {
       const stats: Record<string, any> = {}
 
       Object.keys(storedMetrics).forEach(type => {
-        const values = storedMetrics[type].map((m: any) => m.value)
+        const values = storedMetrics[type].map((m: { value: number }) => m.value)
         if (values.length > 0) {
           stats[type] = {
             count: values.length,

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 import { updateUserLevel } from '@/lib/auth'
+import { logger } from '@/lib/utils/logger'
 
 // Validation schema for user registration
 const signupSchema = z.object({
@@ -47,7 +48,17 @@ export async function POST(request: Request) {
     }
 
     // Create user
-    const userData: any = {
+    const userData: {
+      username: string
+      wallet: string
+      isArtist: boolean
+      level: string
+      email?: string
+      displayName?: string
+      bio?: string
+      artistName?: string
+      genre?: string
+    } = {
       username: validatedData.username,
       wallet: validatedData.wallet,
       isArtist: validatedData.isArtist,
@@ -127,7 +138,7 @@ export async function POST(request: Request) {
       )
     }
 
-    console.error('Signup error:', error)
+    logger.error('Signup error:', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json(
       { error: 'Failed to create user' },
       { status: 500 }
