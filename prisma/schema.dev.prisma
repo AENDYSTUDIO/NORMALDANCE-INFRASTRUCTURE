@@ -1,0 +1,16 @@
+// Development Prisma Schema for NORMAL DANCE (SQLite)
+// This schema is used for local development
+// For production, use schema.prisma with PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// NOTE: This is a simplified schema for development
+// Production schema.prisma has the full schema with PostgreSQL
+// To use this schema, copy it to schema.prisma for local development

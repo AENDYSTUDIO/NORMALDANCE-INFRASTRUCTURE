@@ -1,3 +1,6 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import { AudioPlayer } from '@/components/audio/audio-player'
 import { ListeningNow } from '@/components/audio/listening-now'
 import { TrackCard } from '@/components/audio/track-card'
@@ -16,60 +19,83 @@ import {
 import { MainLayout } from '@/components/layout/main-layout'
 import { Avatar, AvatarFallback, AvatarImage, Badge, Button, Card, CardContent, CardHeader, CardTitle, Input } from '@/components/ui'
 import { CommunityStats } from '@/components/stats/community-stats'
+import { logger } from '@/lib/utils/logger'
 
-// Mock data for demonstration
-const mockTracks = [
-  {
-    id: '1',
-    title: 'Summer Vibes',
-    artistName: 'DJ Melody',
-    genre: 'Electronic',
-    duration: 180,
-    playCount: 15420,
-    likeCount: 892,
-    ipfsHash: 'QmXxx...',
-    audioUrl: '/sample-audio.mp3',
-    coverImage: '/placeholder-album.jpg',
-    isExplicit: false,
-    isPublished: true,
-    createdAt: '2024-01-15T10:00:00Z',
-    updatedAt: '2024-01-15T10:00:00Z'
-  },
-  {
-    id: '2',
-    title: 'Midnight Dreams',
-    artistName: 'Luna Star',
-    genre: 'Ambient',
-    duration: 240,
-    playCount: 8750,
-    likeCount: 543,
-    ipfsHash: 'QmYyy...',
-    audioUrl: '/sample-audio.mp3',
-    coverImage: '/placeholder-album.jpg',
-    isExplicit: false,
-    isPublished: true,
-    createdAt: '2024-01-14T15:30:00Z',
-    updatedAt: '2024-01-14T15:30:00Z'
-  },
-  {
-    id: '3',
-    title: 'Urban Beats',
-    artistName: 'Street Composer',
-    genre: 'Hip-Hop',
-    duration: 200,
-    playCount: 23100,
-    likeCount: 1521,
-    ipfsHash: 'QmZzz...',
-    audioUrl: '/sample-audio.mp3',
-    coverImage: '/placeholder-album.jpg',
-    isExplicit: true,
-    isPublished: true,
-    createdAt: '2024-01-13T09:00:00Z',
-    updatedAt: '2024-01-13T09:00:00Z'
-  }
-]
+// Development-only imports
+const isDevelopment = process.env.NODE_ENV === 'development'
+const mockData = isDevelopment ? require('@/__mocks__/tracks') : null
+
+interface Track {
+  id: string
+  title: string
+  artistName: string
+  genre: string
+  duration: number
+  playCount: number
+  likeCount: number
+  ipfsHash: string
+  audioUrl: string
+  coverImage?: string
+  isExplicit: boolean
+  isPublished: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+interface Artist {
+  name: string
+  tracks: number
+  followers: string
+}
 
 export default function Home() {
+  const [tracks, setTracks] = useState<Track[]>([])
+  const [artists, setArtists] = useState<Artist[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        // In development, use mock data
+        if (isDevelopment && mockData) {
+          setTracks(mockData.mockTracks)
+          setArtists(mockData.mockArtists)
+          setLoading(false)
+          return
+        }
+
+        // In production, fetch real data from API
+        const response = await fetch('/api/tracks?limit=6&sortBy=playCount&sortOrder=desc')
+        if (response.ok) {
+          const data = await response.json()
+          setTracks(data.tracks || [])
+        } else {
+          logger.warn('Failed to fetch tracks', { status: response.status })
+        }
+        
+        // TODO: Fetch real artists data
+        setArtists([])
+        
+      } catch (error) {
+        logger.error('Error fetching homepage data', error as Error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </MainLayout>
+    )
+  }
+
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -133,9 +159,13 @@ export default function Home() {
                 </Button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {mockTracks.map((track) => (
-                  <TrackCard key={track.id} track={track} />
-                ))}
+                {tracks.length > 0 ? (
+                  tracks.slice(0, 3).map((track) => (
+                    <TrackCard key={track.id} track={track} />
+                  ))
+                ) : (
+                  <p className="text-muted-foreground col-span-2">Нет доступных треков</p>
+                )}
               </div>
             </section>
 
@@ -151,9 +181,13 @@ export default function Home() {
                 </Button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {mockTracks.slice().reverse().map((track) => (
-                  <TrackCard key={track.id} track={track} />
-                ))}
+                {tracks.length > 0 ? (
+                  tracks.slice(3, 6).map((track) => (
+                    <TrackCard key={track.id} track={track} />
+                  ))
+                ) : (
+                  <p className="text-muted-foreground col-span-2">Нет новых релизов</p>
+                )}
               </div>
             </section>
 
@@ -169,11 +203,8 @@ export default function Home() {
                 </Button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {[
-                  { name: 'DJ Melody', tracks: 45, followers: '12K' },
-                  { name: 'Luna Star', tracks: 32, followers: '8K' },
-                  { name: 'Street Composer', tracks: 28, followers: '15K' }
-                ].map((artist, index) => (
+                {artists.length > 0 ? (
+                  artists.map((artist, index) => (
                   <Card key={index} className="text-center p-4 hover:shadow-md transition-shadow">
                     <Avatar className="h-16 w-16 mx-auto mb-3">
                       <AvatarImage src="/placeholder-avatar.jpg" />
@@ -190,7 +221,10 @@ export default function Home() {
                       Подписаться
                     </Button>
                   </Card>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-muted-foreground col-span-3">Нет данных об артистах</p>
+                )}
               </div>
             </section>
           </div>

@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
       message: sanitizedMessage,
       donor: userId, // Use authenticated Telegram user ID
       timestamp: new Date().toISOString(),
-      transactionHash: '0x' + Math.random().toString(16).substr(2, 64), // Мок-хеш (TODO: real transaction)
+      transactionHash: '', // TODO: Implement real blockchain transaction
       status: 'PENDING'
     }
 
