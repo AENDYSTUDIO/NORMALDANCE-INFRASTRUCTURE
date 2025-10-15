@@ -3,15 +3,16 @@ import type { NextAuthOptions, Session } from "next-auth";
 import AppleProvider from "next-auth/providers/apple";
 import CredentialsProvider from "next-auth/providers/credentials";
 import SpotifyProvider from "next-auth/providers/spotify";
-import { SiweMessage } from "siwe";
+import { SiweMessage } from "sime";
 import { db } from "./db";
 import { getNextAuthConfig } from "./nextauth-config";
+import { logger } from "./utils/logger";
 
 // Проверяем конфигурацию NextAuth
 const authConfig = getNextAuthConfig();
 
 if (!authConfig) {
-  console.error(
+  logger.error(
     "NextAuth configuration is missing required environment variables"
   );
 }
@@ -78,7 +79,7 @@ export const authOptions: NextAuthOptions = {
 
           return null;
         } catch (error) {
-          console.error("Auth error:", error);
+          logger.error("Auth error", error as Error);
           return null;
         }
       },
@@ -188,7 +189,7 @@ export const getSessionUser = (session: unknown): AppSessionUser | null => {
 export async function getCurrentUser() {
   // Функция getCurrentUser должна использоваться в серверных компонентах с напрямую переданной сессией
   // или с использованием вызова в роуте
-  console.warn(
+  logger.warn(
     "getCurrentUser should be used with direct session access in server components"
   );
   return null;
