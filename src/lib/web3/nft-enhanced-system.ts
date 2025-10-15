@@ -528,7 +528,7 @@ export class AdvancedNFTSystem {
     return `LAYER_MINT_${layer.type}_${Date.now()}`
   }
 
-  private async generateAIMetadata(metadata: any): Promise<AIMetadata> {
+  private async generateAIMetadata(metadata: Record<string, unknown>): Promise<AIMetadata> {
     // Генерация AI метаданных на основе аудио анализа
     return {
       generatedAt: new Date().toISOString(),
@@ -678,7 +678,7 @@ export class AdvancedNFTSystem {
   private async deployDAOContract(
     layerId: string,
     governanceToken: string,
-    config: any
+    config: Record<string, unknown>
   ): Promise<string> {
     // Развертывание DAO контракта
     return `DAO_CONTRACT_${layerId}`

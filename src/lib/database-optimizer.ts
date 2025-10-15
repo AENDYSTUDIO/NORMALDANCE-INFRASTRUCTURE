@@ -9,7 +9,7 @@ interface QueryStats {
   query: string
   executionTime: number
   timestamp: number
-  parameters: any[]
+  parameters: unknown[]
   resultCount: number
 }
 
@@ -70,7 +70,7 @@ class DatabaseOptimizer {
   async executeQuery<T>(
     query: () => Promise<T>,
     queryName: string,
-    parameters: any[] = []
+    parameters: unknown[] = []
   ): Promise<T> {
     const startTime = Date.now()
     
@@ -99,7 +99,7 @@ class DatabaseOptimizer {
    */
   private logQuery(
     query: string,
-    parameters: any[],
+    parameters: unknown[],
     executionTime: number,
     resultCount: number,
     error?: any

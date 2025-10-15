@@ -428,13 +428,13 @@ export async function monitorFileHealth(cid: string): Promise<{
 const cache = new Map<
   string,
   {
-    data: any;
+    data: unknown;
     timestamp: number;
     ttl: number;
   }
 >();
 
-export function getCachedData(key: string, ttl: number = 300000): any | null {
+export function getCachedData(key: string, ttl: number = 300000): unknown | null {
   const cached = cache.get(key);
   if (cached && Date.now() - cached.timestamp < ttl) {
     return cached.data;
@@ -444,7 +444,7 @@ export function getCachedData(key: string, ttl: number = 300000): any | null {
 
 export function setCachedData(
   key: string,
-  data: any,
+  data: unknown,
   ttl: number = 300000
 ): void {
   cache.set(key, {
