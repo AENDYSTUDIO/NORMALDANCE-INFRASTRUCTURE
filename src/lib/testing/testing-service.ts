@@ -18,7 +18,7 @@ import { TestGenerator } from "./test-generator";
 export class TestingService {
   private lmsIntegration?: LMSIntegration;
 
-  constructor(lmsConfig?: any) {
+  constructor(lmsConfig?: { apiUrl: string; apiKey: string; [key: string]: unknown }) {
     if (lmsConfig) {
       this.lmsIntegration = new LMSIntegration(lmsConfig);
     }
@@ -121,7 +121,7 @@ export class TestingService {
     allQuestions: Question[],
     userId: string,
     userProfile: {
-      currentLevel: any;
+      currentLevel: string | number;
       skills: string[];
       weakAreas?: string[];
     },
@@ -144,7 +144,7 @@ export class TestingService {
   /**
    * Оценка ответов пользователя и формирование результата теста
    */
-  gradeTest(test: Test, userId: string, userAnswers: any[]): TestResult {
+  gradeTest(test: Test, userId: string, userAnswers: Array<{ questionId: string; answer: string | string[] }>): TestResult {
     // Создание объектов UserAnswer из предоставленных ответов
     const answers = userAnswers.map((answer) => ({
       questionId: answer.questionId,
@@ -232,7 +232,7 @@ export class TestingService {
   /**
    * Генерация аналитического отчета по результатам теста
    */
-  generateTestReport(testResult: TestResult): any {
+  generateTestReport(testResult: TestResult): Record<string, unknown> {
     return AnalyticsService.generateTestReport(testResult);
   }
 
@@ -243,7 +243,7 @@ export class TestingService {
     userTests: TestResult[],
     startDate?: Date,
     endDate?: Date
-  ): any {
+  ): Record<string, unknown> {
     return AnalyticsService.generateProgressReport(
       userTests,
       startDate,
@@ -254,11 +254,11 @@ export class TestingService {
   /**
    * Генерация персонализированных рекомендаций
    */
-  generateRecommendations(detailedResults: any[]): string[] {
+  generateRecommendations(detailedResults: Array<{ isCorrect: boolean; questionTitle: string }>): string[] {
     // Определение пробелов в знаниях
     const knowledgeGaps = detailedResults
-      .filter((result: any) => !result.isCorrect)
-      .map((result: any) => result.questionTitle);
+      .filter((result) => !result.isCorrect)
+      .map((result) => result.questionTitle);
 
     const recommendations: string[] = [];
 
@@ -343,7 +343,7 @@ export class TestingService {
   /**
    * Оценка общей сложности теста на основе сложности вопросов
    */
-  private estimateTestDifficulty(questions: Question[]): any {
+  private estimateTestDifficulty(questions: Question[]): { level: string; score: number } {
     if (questions.length === 0) {
       return "beginner";
     }

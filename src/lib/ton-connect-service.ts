@@ -1,17 +1,21 @@
-import { Address, beginCell, Transaction } from "@ton/ton";
+import { Address, beginCell, Transaction, Cell } from "@ton/ton";
 import { TonConnectUI } from "@tonconnect/ui-react";
 
 export interface TonConnectConfig {
   manifestUrl: string;
   buttonRootId?: string;
-  actionsConfiguration?: any;
+  actionsConfiguration?: {
+    twaReturnUrl?: string;
+    modals?: string[];
+    [key: string]: unknown;
+  };
 }
 
 export interface TonTransactionConfig {
   address: Address;
   amount: bigint;
-  payload?: any;
-  stateInit?: any;
+  payload?: Cell | string;
+  stateInit?: Cell | string;
   validUntil?: number;
 }
 
@@ -53,7 +57,7 @@ export class TonConnectService {
       return await this.tonConnectUI.sendTransaction(transaction);
     } catch (error) {
       console.error("TON transaction error:", error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 
