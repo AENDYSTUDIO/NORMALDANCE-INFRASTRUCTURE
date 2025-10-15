@@ -2,6 +2,8 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { isAdmin } from '@/lib/rbac'
+import { z } from 'zod'
+import { handleApiError } from '@/lib/errors/errorHandler'
 
 // GET /api/nft/[id] - Get a specific NFT
 export async function GET(
@@ -40,11 +42,7 @@ export async function GET(
 
     return NextResponse.json(nft)
   } catch (error) {
-    console.error('Error fetching NFT:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch NFT' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -93,11 +91,7 @@ export async function PUT(
 
     return NextResponse.json(nft)
   } catch (error) {
-    console.error('Error updating NFT:', error)
-    return NextResponse.json(
-      { error: 'Failed to update NFT' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -117,11 +111,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'NFT deleted successfully' })
   } catch (error) {
-    console.error('Error deleting NFT:', error)
-    return NextResponse.json(
-      { error: 'Failed to delete NFT' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -202,10 +192,6 @@ export async function POST(
       transactionHash: `0x${Math.random().toString(16).substr(2, 64)}` // Mock transaction hash
     })
   } catch (error) {
-    console.error('Error purchasing NFT:', error)
-    return NextResponse.json(
-      { error: 'Failed to purchase NFT' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
