@@ -23,6 +23,15 @@ export const trackSchema = z.object({
 
 export const trackUpdateSchema = trackSchema.partial()
 
+export const trackContributionSchema = z.object({
+  amount: z.number().positive('Amount must be positive'),
+  message: z.string().max(500).optional(),
+})
+
+export const trackProgressSchema = z.object({
+  amount: z.number().positive('Amount must be positive'),
+})
+
 export const trackQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(10),

@@ -2,6 +2,8 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { isAdmin } from '@/lib/rbac'
+import { trackUpdateSchema } from '@/lib/schemas'
+import { handleApiError } from '@/lib/errors/errorHandler'
 
 // GET /api/tracks/[id] - Get a specific track
 export async function GET(
@@ -39,11 +41,7 @@ export async function GET(
 
     return NextResponse.json(track)
   } catch (error) {
-    console.error('Error fetching track:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch track' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -58,6 +56,9 @@ export async function PUT(
     }
     const { id } = await params
     const body = await request.json()
+    
+    // Validate with trackUpdateSchema
+    const validated = trackUpdateSchema.parse(body)
     
     // Only allow updating certain fields
     const updateData = {
