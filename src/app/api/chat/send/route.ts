@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getServerSession } from 'next-auth/next'
 import { authOptions, getSessionUser } from '@/lib/auth'
+import { chatMessageSchema } from '@/lib/schemas'
+import { handleApiError } from '@/lib/errors/errorHandler'
 
 // POST /api/chat/send - Send message to chat
 export async function POST(request: Request) {
@@ -17,14 +19,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { content, chatType, metadata } = body
-
-    if (!content || !chatType) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
-    }
+    const { content, chatType, metadata } = chatMessageSchema.parse(body)
 
     // Check if user has enough balance
     const user = await db.user.findUnique({
@@ -204,11 +199,7 @@ export async function POST(request: Request) {
     })
 
   } catch (error) {
-    console.error('Error sending message:', error)
-    return NextResponse.json(
-      { error: 'Failed to send message' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
