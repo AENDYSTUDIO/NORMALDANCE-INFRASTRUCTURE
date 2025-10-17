@@ -70,6 +70,7 @@ prompt
 # backup directories
 backup/
 trash/
+scripts/backups
 
 # mobile app
 mobile-app/jest.config.js
@@ -199,3 +200,9 @@ out
 build
 dist
 *.tsbuildinfo
+AUTO-SETUP.bat.example
+JUST-RUN-THIS.txt
+backups/NORMALDANCE-backup-20251015-143103.zip
+backups/NORMALDANCE-backup15.10.zip
+NormalDanceChain.zip
+gitlab-ssh-setup.md
