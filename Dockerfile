@@ -99,8 +99,8 @@ ENV CACHE_DIR "/app/cache"
 ENV LOG_DIR "/app/logs"
 
 # Health check для Kubernetes
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-    CMD node healthcheck.js || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:3000/api/health || exit 1
 
 # Запуск приложения через dumb-init для корректной обработки сигналов в Kubernetes
 ENTRYPOINT ["dumb-init", "--"]

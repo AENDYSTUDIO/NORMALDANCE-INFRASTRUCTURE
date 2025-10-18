@@ -1,0 +1,99 @@
+/* Медиа-запросы для адаптивного дизайна */
+
+/* Мобильные устройства (до 768px) */
+@media (max-width: 768px) {
+  /* Общие стили */
+  body {
+    font-size: 14px;
+  }
+
+  /* Контейнеры */
+  .container {
+    padding: 0.5rem;
+  }
+
+  /* Карточки */
+  .card {
+    margin-bottom: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  /* Аудио плеер */
+  .audio-player-container {
+    padding: 0.5rem;
+  }
+
+  .audio-controls {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .audio-visualizer {
+    height: 80px;
+  }
+
+  /* Треки */
+  .track-grid {
+    grid-template-columns: repeat(1, 1fr);
+  }
+
+  .track-list {
+    padding: 0.25rem;
+  }
+
+  .track-card {
+    padding: 0.5rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  .track-card-image {
+    width: 50px;
+    height: 50px;
+  }
+
+  /* Навигация */
+  .main-nav {
+    padding: 0.5rem;
+  }
+
+  /* Кнопки */
+  .button-large {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  /* Слайдеры */
+  .slider-container {
+    width: 100%;
+  }
+}
+
+/* Планшеты (768px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .track-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .audio-visualizer {
+    height: 120px;
+  }
+}
+
+/* Оптимизация для устройств с экономией трафика */
+@media (prefers-reduced-data: reduce) {
+  img, video {
+    max-resolution: 0.5dppx;
+  }
+
+  .audio-visualizer {
+    display: none;
+  }
+}
+
+/* Оптимизация для устройств с темной темой */
+@media (prefers-color-scheme: dark) {
+  .track-card {
+    background-color: #1f1f1f;
+    color: #f0f0f0;
+  }
+}
