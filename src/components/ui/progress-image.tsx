@@ -1,9 +1,9 @@
-import React, { useState, useRef } from "react";
-import Image, { ImageProps } from "next/image";
-import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import Image from "next/image";
+import React, { useEffect, useRef, useState } from "react";
 
-interface ProgressiveImageProps extends Omit<ImageProps> {
+interface ProgressiveImageProps {
   src: string;
   alt?: string;
   className?: string;
@@ -14,54 +14,47 @@ interface ProgressiveImageProps extends Omit<ImageProps> {
   blurDataURL?: string;
   unoptimizedLoad?: boolean;
   threshold?: number;
-  rootMargin?: number;
-  sizes?: string[];
+  rootMargin?: string;
+  sizes?: string;
   priority?: boolean;
   fetchPriority?: "high" | "low" | "auto";
-  decodin?: "async" | "sync";
+  decoding?: "async" | "sync";
   loading?: "lazy";
   onLoadClassName?: string;
   quality?: number;
 }
 
-interface ImageState {
-  isLoaded: boolean;
-  hasError: boolean;
-  src: string;
-  imageNode: HTMLImageElement | null;
-  showPlaceholder: boolean;
-  hasBlur: boolean;
-  blurValue: number;
-  targetRef: string;
-}
-
 const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
   src,
-  alt,
+  alt = "",
   className,
   fallbackSrc,
   onLoad,
   onError,
   placeholder,
-  blurDataURL = "data:image/svg+xml,<svg><rect width=\"40\" height=\"40\" fill=\"%23979f\"/><rect width=\"20\" height=\"20\" fill=\"%23979f\"/></svg>", // Placeholder blur
-  unoptimizedLoad = false,
-  threshold = 0.25,
+  blurDataURL = 'data:image/svg+xml,<svg><rect width="40" height="40" fill="%23979f"/><rect width="20" height="20" fill="%23979f"/></svg>', // Placeholder blur
+  unoptimizedLoad,
+  threshold,
+  rootMargin,
+  sizes,
   priority = false,
   loading = "lazy",
-  ...props
+  quality = 75,
+  fetchPriority = "auto",
+  decoding = "async",
 }) => {
-  const [imageNode, setImageNode] = useState<HTMLImageElement | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [showPlaceholder, setShowPlaceholder] = useState(true);
   const [hasBlur, setHasBlur] = useState(true);
-  const [blurValue, setBlurValue] = useState(0);
-  const [targetRef, setTargetRef] = useState("");
+  const [blurValue, setBlurValue] = useState(10);
+  const ref = useRef<HTMLImageElement>(null);
 
   const handleLoad = () => {
     setIsLoaded(true);
     setShowPlaceholder(false);
     setHasBlur(false);
+    setBlurValue(0);
     onLoad?.();
   };
 
@@ -72,113 +65,70 @@ const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
     onError?.();
   };
 
-  const handleLoadComplete = () => {
-    setShowPlaceholder(false);
-  };
-
-  const ref = useRef<HTMLImageElement>(null);
-
   // Fallback src for errors
-  const defaultSrc = fallbackSrc || placeholder || blurDataURL;
-
-  const isInViewport = useIntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          const entryTarget = entry.target;
-          if (entry.target === ref.current) {
-            if (entry.target instanceof HTMLImageElement) {
-              setImageNode(entry.target);
-              setShowPlaceholder(false);
-            }
-          }
-        }
-      });
-    },
-    {
-      threshold: threshold || 0.1,
-      rootMargin: rootMargin
-    }
-  );
+  const defaultSrc =
+    hasError && fallbackSrc ? fallbackSrc : src || placeholder || blurDataURL;
 
   // Load image when component mounts or when src changes
   useEffect(() => {
     if (!src) return;
 
-    if (!imageNode.current && imageNode.current.src === src) {
-      setIsLoaded(true);
-      setShowPlaceholder(false);
-      setHasBlur(false);
-      return;
-    }
-
-    setImageNode(new Image());
-    
-    imageNode.current.onload = handleLoad;
-    imageNode.current.onerror = handleError;
-    imageNode.onLoadComplete = handleLoadComplete;
-    setImageNode.src = src;
-  }, [src]);
+    const img = new window.Image();
+    img.onload = () => {
+      handleLoad();
+    };
+    img.onerror = () => {
+      handleError();
+    };
+    img.src = src;
+  }, [src, hasError, fallbackSrc, placeholder, blurDataURL]);
 
   return (
     <>
       {/* Lazy loaded image with progressive enhancement */}
-      <div
-        className={cn(
-          "relative overflow-hidden",
-          "group",
-          className
-        )}
-      >
+      <div className={cn("relative overflow-hidden", "group", className)}>
         <Image
           ref={ref}
           src={defaultSrc}
           alt={alt}
           className={cn(
             "transition-opacity duration-500",
-            "data-loaded": isLoaded,
-            "has-error": hasError,
-            "blur-2xl",
-            "data-loaded": isLoaded ? "0" : "10px",
-            "data-error": hasError ? "1" : "0"
+            isLoaded ? "opacity-100" : "opacity-0",
+            hasBlur ? "blur-xl" : ""
           )}
           onLoad={handleLoad}
           onError={handleError}
           style={{
-            opacity: isLoaded ? 1 : 0,
             filter: `blur(${blurValue}px)`,
-            transition: "filter 500ms"
+            transition: "filter 500ms, opacity 500ms",
           }}
           priority={priority}
           fetchPriority={fetchPriority}
           loading={loading}
           quality={quality}
+          decoding={decoding}
+          sizes={sizes}
         />
-        
+
         {/* Loading placeholder */}
-        {showPlaceholder && (
+        {showPlaceholder && !isLoaded && (
           <div
-          className={cn(
-            "absolute inset-0 flex items-center justify-center bg-muted/50 backdrop-blur-sm",
-            "image-node-layer",
-            "blur-xl",
-            "transition-all duration-500"
-          )}
+            className={cn(
+              "absolute inset-0 flex items-center justify-center bg-muted/50 backdrop-blur-sm",
+              "image-node-layer",
+              "transition-all duration-500"
+            )}
           >
             <Skeleton className="w-full h-full min-h-full" />
           </div>
         )}
-        
+
         {/* Error placeholder */}
         {hasError && (
-          <div
-          className="absolute inset-0 flex items-center justify-center bg-destructive/50 backdrop-blur-sm"
-          >
+          <div className="absolute inset-0 flex items-center justify-center bg-destructive/50 backdrop-blur-sm">
             <div className="text-destructive text-sm p-4 text-center">
               <div className="h-6 w-6 text-red-500 mb-2">⚠️</div>
-              <div className="text-red-400 text-sm">
-                Failed to load image
-              </div>
+              <div className="text-red-400 text-sm">Failed to load image</div>
             </div>
           </div>
         )}

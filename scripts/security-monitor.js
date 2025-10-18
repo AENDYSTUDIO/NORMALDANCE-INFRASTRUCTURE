@@ -18,11 +18,11 @@
  *   --help          Show help message
  */
 
-const fs = require('fs').promises;
-const path = require('path');
-const { execSync } = require('child_process');
-const { SecretsTemplateManager } = require('../config/secrets-templates');
-const axios = require('axios');
+import fs from 'fs';.promises;
+import path from 'path';;
+import { execSync  } from 'child_process';;
+import { SecretsTemplateManager  } from '../config/secrets-templates';;
+import axios from 'axios';;
 
 class SecurityMonitor {
   constructor() {

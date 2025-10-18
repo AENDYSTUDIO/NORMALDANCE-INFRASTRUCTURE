@@ -3,7 +3,7 @@ import '@testing-library/jest-native/extend-expect'
 // Mock React Native modules
 jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper')
 jest.mock('react-native-reanimated', () => {
-  const Reanimated = require('react-native-reanimated/mock')
+  import Reanimated from 'react-native-reanimated/mock';
   ReAnimated.default = ReAnimated
   return ReAnimated
 })

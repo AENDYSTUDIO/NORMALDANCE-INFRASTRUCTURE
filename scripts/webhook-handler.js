@@ -14,13 +14,13 @@
  * - Logging and monitoring
  */
 
-const fs = require('fs').promises;
-const path = require('path');
-const crypto = require('crypto');
-const https = require('https');
-const http = require('http');
-const { exec } = require('child_process');
-const { promisify } = require('util');
+import fs from 'fs';.promises;
+import path from 'path';;
+import crypto from 'crypto';;
+import https from 'https';;
+import http from 'http';;
+import { exec  } from 'child_process';;
+import { promisify  } from 'util';;
 
 const execAsync = promisify(exec);
 

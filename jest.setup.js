@@ -254,7 +254,7 @@ jest.mock("socket.io-client", () => ({
 
 // Mock zustand
 jest.mock("zustand", () => ({
-  create: jest.fn((fn) => {
+  create: jest.fn(() => {
     const mockStore = {
       getState: jest.fn(),
       setState: jest.fn(),

@@ -60,7 +60,7 @@ class RooCodeService {
   }
 
   private extractFunctions(code: string, language: string): string[] {
-    let functions: string[] = [];
+    const functions: string[] = [];
 
     if (language === "typescript" || language === "javascript") {
       // Регулярное выражение для поиска функций

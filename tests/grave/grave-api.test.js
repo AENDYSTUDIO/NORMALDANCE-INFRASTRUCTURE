@@ -3,7 +3,7 @@
  * Тестируем основные функции цифрового кладбища
  */
 
-const http = require('http');
+import http from 'http';
 
 describe('G.rave API Tests', () => {
   const baseUrl = 'http://localhost:3000';

@@ -17,11 +17,11 @@
  *   --help          Show help message
  */
 
-const fs = require('fs').promises;
-const path = require('path');
-const { execSync } = require('child_process');
-const { SecretsTemplateManager } = require('../config/secrets-templates');
-const axios = require('axios');
+import fs from 'fs';.promises;
+import path from 'path';;
+import { execSync  } from 'child_process';;
+import { SecretsTemplateManager  } from '../config/secrets-templates';;
+import axios from 'axios';;
 
 class SecretsManagementSetup {
   constructor() {
@@ -230,7 +230,7 @@ class SecretsManagementSetup {
       console.log('Please authenticate with Vercel:');
       console.log('vercel login');
       // Wait for user to authenticate
-      const readline = require('readline');
+      import readline from 'readline';;
       const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout
@@ -277,7 +277,7 @@ class SecretsManagementSetup {
       console.log('Please authenticate with GitHub:');
       console.log('gh auth login');
       // Wait for user to authenticate
-      const readline = require('readline');
+      import readline from 'readline';;
       const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout
@@ -504,7 +504,7 @@ jobs:
     // Create alert scripts
     const alertScript = `#!/usr/bin/env node
 
-const { SecurityMonitor } = require('../scripts/security-monitor');
+import { SecurityMonitor  } from '../scripts/security-monitor';;
 
 const monitor = new SecurityMonitor();
 

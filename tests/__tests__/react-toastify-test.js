@@ -1,5 +1,5 @@
 // Тест для проверки работы react-toastify mock
-const reactToastifyMock = require('../__mocks__/react-toastify');
+import reactToastifyMock from '../__mocks__/react-toastify';
 
 describe('react-toastify mock', () => {
   test('should export toast object with required methods', () => {

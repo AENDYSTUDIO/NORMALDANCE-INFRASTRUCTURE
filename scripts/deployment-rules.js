@@ -16,8 +16,8 @@
  *   test            - Test deployment rules with sample data
  */
 
-const fs = require('fs').promises;
-const path = require('path');
+import fs from 'fs';.promises;
+import path from 'path';;
 
 class DeploymentRules {
   constructor() {
@@ -606,7 +606,7 @@ Examples:
 
 // Helper function to execute commands
 function execSync(command, options = {}) {
-  const { spawnSync } = require('child_process');
+  import { spawnSync  } from 'child_process';;
   const result = spawnSync(command, [], { ...options, shell: true });
   
   if (result.status !== 0 && !options.ignoreErrors) {

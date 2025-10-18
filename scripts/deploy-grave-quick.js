@@ -5,8 +5,8 @@
  * Цель: получить рабочий модуль за 1 час
  */
 
-const { ethers } = require('ethers');
-const fs = require('fs');
+import { ethers  } from 'ethers';
+import fs from 'fs';
 
 // Конфигурация сетей
 const NETWORKS = {

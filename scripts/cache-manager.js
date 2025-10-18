@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
-const { execSync } = require('child_process');
-const os = require('os');
+import fs from 'fs';;
+import path from 'path';;
+import crypto from 'crypto';;
+import { execSync  } from 'child_process';;
+import os from 'os';;
 
 class CacheManager {
   constructor(configPath = './scripts/cache-config.json') {
@@ -211,7 +211,7 @@ class CacheManager {
   }
 
   getMatchingFiles(pattern) {
-    const glob = require('glob');
+    import glob from 'glob';;
     try {
       return glob.sync(pattern, { ignore: ['**/node_modules/**', '**/.git/**'] });
     } catch (error) {

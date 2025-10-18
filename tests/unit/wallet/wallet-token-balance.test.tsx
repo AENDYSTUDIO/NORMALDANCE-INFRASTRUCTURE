@@ -143,7 +143,7 @@ describe("Wallet Adapter - Token Balance Tests", () => {
       // Мокаем getParsedAccountInfo чтобы вернуть непарсенную информацию
       mockConnection.getParsedAccountInfo.mockResolvedValue({
         value: {
-          data: {},
+          data: Record<string, unknown>,
         },
       });
 

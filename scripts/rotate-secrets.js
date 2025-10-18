@@ -4,9 +4,9 @@
  * Скрипт для безопасной ротации секретов в проекте
  */
 
-const fs = require("fs");
-const path = require("path");
-const crypto = require("crypto");
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
 
 class SecretsRotator {
   constructor() {
@@ -99,7 +99,7 @@ class SecretsRotator {
           const [key, ...valueParts] = line.split("=");
           const keyTrimmed = key.trim();
 
-          if (vars.hasOwnProperty(keyTrimmed)) {
+          if (Object.prototype.hasOwnProperty.call(vars, keyTrimmed)) {
             const value = vars[keyTrimmed];
             // Сохраняем оригинальные кавычки если они были
             const quote = line.includes('"')
@@ -119,7 +119,7 @@ class SecretsRotator {
       // Если файла нет, создаем его из .env.example
       const exampleVars = this.readEnvFile(this.envExamplePath);
       Object.keys(exampleVars).forEach((key) => {
-        if (vars.hasOwnProperty(key)) {
+        if (Object.prototype.hasOwnProperty.call(vars, key)) {
           lines.push(`${key}="${vars[key]}"`);
         } else {
           lines.push(`${key}="${exampleVars[key]}"`);
@@ -164,7 +164,7 @@ class SecretsRotator {
       // Ротируем секреты
       let rotatedCount = 0;
       secretsToRotate.forEach(({ key, generator }) => {
-        if (currentVars.hasOwnProperty(key)) {
+        if (Object.prototype.hasOwnProperty.call(currentVars, key)) {
           const oldValue = currentVars[key];
           const newValue = generator();
           currentVars[key] = newValue;

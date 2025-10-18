@@ -5,9 +5,9 @@
  * Creates server with specs: 4 vCPU, 8 GB RAM, 160 GB NVMe
  */
 
-const https = require('https');
-const fs = require('fs');
-const path = require('path');
+import https from 'https';
+import fs from 'fs';
+import path from 'path';
 
 // Configuration
 const CONFIG = {
