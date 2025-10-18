@@ -11,10 +11,10 @@
  * - Integration between components
  */
 
-const fs = require('fs').promises;
-const path = require('path');
-const { exec } = require('child_process');
-const { promisify } = require('util');
+import fs from 'fs';.promises;
+import path from 'path';;
+import { exec  } from 'child_process';;
+import { promisify  } from 'util';;
 
 const execAsync = promisify(exec);
 

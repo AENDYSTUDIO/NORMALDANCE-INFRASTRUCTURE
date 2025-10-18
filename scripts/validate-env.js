@@ -5,8 +5,8 @@
  * Supports different validation levels based on command line arguments
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 // Required environment variables for different environments
 const REQUIRED_VARS = {

@@ -25,11 +25,11 @@
  *   help               Show help message
  */
 
-const fs = require('fs').promises;
-const path = require('path');
-const { execSync } = require('child_process');
-const { SecretsTemplateManager } = require('../config/secrets-templates');
-const crypto = require('crypto');
+import fs from 'fs';.promises;
+import path from 'path';;
+import { execSync  } from 'child_process';;
+import { SecretsTemplateManager  } from '../config/secrets-templates';;
+import crypto from 'crypto';;
 
 class SecretsManager {
   constructor() {
@@ -778,7 +778,7 @@ class SecretsManager {
   // Helper methods
   async promptForSecret(key, environment) {
     return new Promise((resolve) => {
-      const readline = require('readline');
+      import readline from 'readline';;
       const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout
@@ -793,7 +793,7 @@ class SecretsManager {
 
   async promptForConfirmation(message) {
     return new Promise((resolve) => {
-      const readline = require('readline');
+      import readline from 'readline';;
       const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout

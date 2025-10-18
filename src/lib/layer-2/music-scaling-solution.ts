@@ -506,7 +506,7 @@ export class MusicScalingSolution {
       totalStaked: initialStake,
       apy: this.calculateSidechainAPY(initialStake),
       pools: [],
-      bridgeContracts: {},
+      bridgeContracts: Record<string, unknown>,
       crossChainMessages: [],
       lastCheckpoint: new Date().toISOString()
     }

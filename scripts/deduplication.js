@@ -14,10 +14,10 @@
  * - Monitoring and metrics
  */
 
-const fs = require('fs').promises;
-const path = require('path');
-const crypto = require('crypto');
-const { EventEmitter } = require('events');
+import fs from 'fs';.promises;
+import path from 'path';;
+import crypto from 'crypto';;
+import { EventEmitter  } from 'events';;
 
 class DeduplicationSystem extends EventEmitter {
   constructor(config = {}) {
@@ -716,7 +716,7 @@ if (require.main === module) {
     });
   } else if (args.includes('--server')) {
     // Start as a server
-    const http = require('http');
+    import http from 'http';;
     
     deduplicationSystem.initialize().then(() => {
       const server = http.createServer((req, res) => {

@@ -1,9 +1,9 @@
 
 #!/usr/bin/env node
 
-const { execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import { execSync  } from 'child_process';;
+import fs from 'fs';;
+import path from 'path';;
 
 // Configuration
 const config = {
@@ -577,7 +577,7 @@ curl -X POST https://api.normaldance.com/webhooks \\
 NormalDance signs all webhook requests with a HMAC-SHA256 signature using your webhook secret.
 
 \`\`\`javascript
-const crypto = require('crypto');
+import crypto from 'crypto';;
 
 function verifyWebhook(request, secret) {
   const signature = request.headers['x-normaldance-signature'];

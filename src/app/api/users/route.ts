@@ -34,8 +34,8 @@ export async function GET(request: NextRequest) {
             { displayName: { contains: search, mode: 'insensitive' as const } },
             { email: { contains: search, mode: 'insensitive' as const } },
           ]
-        } : {},
-        isArtist !== null ? { isArtist } : {},
+        } : Record<string, unknown>,
+        isArtist !== null ? { isArtist } : Record<string, unknown>,
         { isActive: true }
       ]
     }

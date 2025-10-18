@@ -6,14 +6,14 @@
  * ротацию и мониторинг.
  */
 
-const fs = require('fs').promises;
-const path = require('path');
-const { execSync } = require('child_process');
-const { SecretsTemplateManager } = require('../config/secrets-templates');
-const { SecretsManager } = require('../scripts/secrets-manager');
-const { SecurityMonitor } = require('../scripts/security-monitor');
-const { HardcodedSecretsChecker } = require('../scripts/check-hardcoded-secrets');
-const { SecretRotator } = require('../scripts/rotate-secrets');
+import fs from 'fs';.promises;
+import path from 'path';;
+import { execSync  } from 'child_process';;
+import { SecretsTemplateManager  } from '../config/secrets-templates';;
+import { SecretsManager  } from '../scripts/secrets-manager';;
+import { SecurityMonitor  } from '../scripts/security-monitor';;
+import { HardcodedSecretsChecker  } from '../scripts/check-hardcoded-secrets';;
+import { SecretRotator  } from '../scripts/rotate-secrets';;
 
 describe('Система управления секретами NORMALDANCE', () => {
   const testDir = path.join(__dirname, '../temp-test');

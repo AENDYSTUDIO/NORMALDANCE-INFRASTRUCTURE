@@ -171,7 +171,7 @@ export async function cleanupUnpinnedFiles(): Promise<{
   errors: string[];
 }> {
   const errors: string[] = [];
-  let cleanedCount = 0;
+  const cleanedCount = 0;
 
   try {
     logger.info('Starting cleanup of unpinned files');
@@ -198,7 +198,7 @@ export async function backupImportantFiles(): Promise<{
   errors: string[];
 }> {
   const errors: string[] = [];
-  let backedUpCount = 0;
+  const backedUpCount = 0;
 
   try {
     logger.info('Starting backup of important files');

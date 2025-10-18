@@ -14,9 +14,9 @@
  * - Automatic recovery mechanisms
  */
 
-const fs = require('fs').promises;
-const path = require('path');
-const { EventEmitter } = require('events');
+import fs from 'fs';.promises;
+import path from 'path';;
+import { EventEmitter  } from 'events';;
 
 class ErrorHandler extends EventEmitter {
   constructor(config = {}) {
