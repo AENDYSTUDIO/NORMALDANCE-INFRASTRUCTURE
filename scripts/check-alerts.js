@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const { SecurityMonitor } = require('../scripts/security-monitor');
+import { SecurityMonitor  } from '../scripts/security-monitor';
 
 const monitor = new SecurityMonitor();
 

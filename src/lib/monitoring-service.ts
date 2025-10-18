@@ -96,7 +96,7 @@ export class MonitoringService {
       let totalReplicationFactor = 0
       let totalStorage = 0
       let failedUploads = 0
-      let uploadTimes: number[] = []
+      const uploadTimes: number[] = []
       
       const fileChecks = tracks.map(async (track) => {
         try {

@@ -16,9 +16,9 @@ describe('Auth API - Comprehensive Tests', () => {
     // Setup default mock implementations
     mockAuthOptions.mockReturnValue({
       providers: [],
-      callbacks: {},
-      session: {},
-      pages: {},
+      callbacks: Record<string, unknown>,
+      session: Record<string, unknown>,
+      pages: Record<string, unknown>,
     })
     
     mockNextAuth.mockImplementation((options) => ({

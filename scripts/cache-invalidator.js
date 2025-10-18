@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
-const CacheManager = require('./cache-manager');
+import fs from 'fs';
+import path from 'path';
+import { execSync  } from 'child_process';
+import CacheManager from './cache-manager';
 
 class CacheInvalidator extends CacheManager {
   constructor(configPath = './scripts/cache-config.json') {

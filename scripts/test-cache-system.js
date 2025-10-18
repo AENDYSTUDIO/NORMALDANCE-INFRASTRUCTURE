@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
-const CacheManager = require('./cache-manager');
-const CacheMonitor = require('./cache-monitor');
-const CacheInvalidator = require('./cache-invalidator');
+import fs from 'fs';
+import path from 'path';
+import { execSync  } from 'child_process';
+import CacheManager from './cache-manager';
+import CacheMonitor from './cache-monitor';
+import CacheInvalidator from './cache-invalidator';
 
 class CacheSystemTester {
   constructor() {

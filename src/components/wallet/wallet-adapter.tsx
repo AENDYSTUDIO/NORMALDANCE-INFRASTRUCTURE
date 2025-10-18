@@ -266,14 +266,14 @@ export interface WalletEvent {
 export class WalletEventEmitter {
   private listeners: Map<string, Function[]> = new Map();
 
-  on(event: string, callback: Function) {
+  on(event: string, callback: (...args: unknown[]) => unknown) {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, []);
     }
     this.listeners.get(event)!.push(callback);
   }
 
-  off(event: string, callback: Function) {
+  off(event: string, callback: (...args: unknown[]) => unknown) {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
       const index = callbacks.indexOf(callback);

@@ -467,7 +467,7 @@ export class MusicDeFiSystem {
         name: '',
         bio: '',
         avatar: '',
-        socialLinks: {},
+        socialLinks: Record<string, unknown>,
         achievements: []
       },
       credentials: profileData.credentials || [],

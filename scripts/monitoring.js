@@ -5,9 +5,9 @@
  * Provides real-time metrics and health monitoring
  */
 
-const express = require('express');
-const path = require('path');
-const { createLogger } = require('../src/utils/logger');
+import express from 'express';;
+import path from 'path';;
+import { createLogger  } from '../src/utils/logger';;
 
 const MONITORING_PORT = process.env.MONITORING_PORT || 3001;
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://normaldance.online';

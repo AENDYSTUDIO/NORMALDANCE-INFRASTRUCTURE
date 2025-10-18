@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
-const os = require('os');
-const { performance } = require('perf_hooks');
+import fs from 'fs';
+import path from 'path';
+import { execSync  } from 'child_process';
+import os from 'os';
+import { performance  } from 'perf_hooks';
 
 class CacheMonitor {
   constructor(configPath = './scripts/cache-config.json') {

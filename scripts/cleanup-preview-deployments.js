@@ -11,8 +11,8 @@
  * - Поддерживает dry run режим
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 class CleanupPreviewDeployments {
   constructor(options = {}) {

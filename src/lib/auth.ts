@@ -3,7 +3,7 @@ import type { NextAuthOptions, Session } from "next-auth";
 import AppleProvider from "next-auth/providers/apple";
 import CredentialsProvider from "next-auth/providers/credentials";
 import SpotifyProvider from "next-auth/providers/spotify";
-import { SiweMessage } from "sime";
+import { SiweMessage } from "siwe";
 import { db } from "./db";
 import { getNextAuthConfig } from "./nextauth-config";
 import { logger } from "./utils/logger";
@@ -265,11 +265,11 @@ export async function checkUserPermission(
 
 // Функция для создания пользователя через OAuth
 interface OAuthProfile {
-  id: string
-  email?: string
-  name?: string
-  image?: string
-  [key: string]: unknown
+  id: string;
+  email?: string;
+  name?: string;
+  image?: string;
+  [key: string]: unknown;
 }
 
 export async function createOAuthUser(profile: OAuthProfile, provider: string) {

@@ -9,7 +9,7 @@ const config: StorybookConfig = {
   ],
   framework: {
     name: '@storybook/nextjs',
-    options: {},
+    options: Record<string, unknown>,
   },
   typescript: {
     check: false,

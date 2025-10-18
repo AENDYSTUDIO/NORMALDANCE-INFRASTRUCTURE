@@ -1,16 +1,16 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
-    "noImplicitAny": true,
+    "noImplicitAny": false, // Allow implicit any for Web3 compatibility as per AGENTS.md
+    "strictNullChecks": true, // Keep strict null checks for safety
+    "noUnusedLocals": false, // Allow unused locals during development
+    "noUnusedParameters": false, // Allow unused parameters during development
+    "exactOptionalPropertyTypes": false, // Allow optional properties for Web3 compatibility
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
@@ -24,17 +24,10 @@
       }
     ],
     "paths": {
-      "@/*": [
-        "./src/*"
-      ]
+      "@/*": ["./src/*"]
     }
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts"
-  ],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": [
     "node_modules",
     "tests",
