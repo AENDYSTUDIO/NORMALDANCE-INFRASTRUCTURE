@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, memo, useRef, useEffect } from 'react'
 import { useAudioStore } from '@/store/use-audio-store'
 import useNetworkStatus from '@/hooks/useNetworkStatus' // Импортируем наш новый хук
 import { Card, CardContent, Button, Badge, Avatar, AvatarFallback, AvatarImage } from '@/components/ui'
@@ -15,13 +15,14 @@ import {
 import { formatNumber, formatTime } from '@/lib/utils'
 import { Track } from '@/store/use-audio-store'
 import { cn } from '@/lib/utils'
+import { useImageOptimizer, ImageQuality } from '@/utils/image-optimizer'
 
 interface TrackCardProps {
   track: Track
   className?: string
 }
 
-export function TrackCard({ track, className }: TrackCardProps) {
+function TrackCardComponent({ track, className }: TrackCardProps) {
   const {
     currentTrack,
     isPlaying,
@@ -30,7 +31,10 @@ export function TrackCard({ track, className }: TrackCardProps) {
     toggleLike
   } = useAudioStore()
 
-  const { effectiveType } = useNetworkStatus() // Используем хук
+  const { effectiveType, isMobile, saveData } = useNetworkStatus()
+  const imageOptimizer = useImageOptimizer()
+  const [optimizedImageSrc, setOptimizedImageSrc] = useState<string>(track.coverImage || '/placeholder-album.jpg')
+  const imageRef = useRef<HTMLImageElement>(null)
 
   const [isLiked, setIsLiked] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
@@ -38,9 +42,35 @@ export function TrackCard({ track, className }: TrackCardProps) {
   const isCurrentTrack = currentTrack?.id === track.id
   const isTrackPlaying = isCurrentTrack && isPlaying
 
-  // Определяем, какой URL изображения использовать
-  const useLowQualityImage = effectiveType === 'slow-2g' || effectiveType === '2g';
-  const imageSrc = useLowQualityImage ? '/placeholder-album.jpg' : track.coverImage;
+  // Оптимизируем изображение на основе сетевого подключения
+  useEffect(() => {
+    if (!imageOptimizer || !track.coverImage) return;
+    
+    // Определяем качество изображения на основе сети
+    let quality = ImageQuality.HIGH;
+    
+    if (saveData || effectiveType === 'slow-2g' || effectiveType === '2g') {
+      quality = ImageQuality.LOW;
+    } else if (isMobile && effectiveType === '3g') {
+      quality = ImageQuality.MEDIUM;
+    }
+    
+    // Получаем оптимизированный URL
+    const optimizedSrc = imageOptimizer.getOptimizedImageUrl(track.coverImage, quality);
+    setOptimizedImageSrc(optimizedSrc);
+    
+    // Если изображение видимо, наблюдаем за ним для ленивой загрузки
+    if (imageRef.current) {
+      imageOptimizer.observe(imageRef.current);
+    }
+    
+    // Очистка при размонтировании
+    return () => {
+      if (imageRef.current) {
+        imageOptimizer.unobserve(imageRef.current);
+      }
+    };
+  }, [track.coverImage, imageOptimizer, effectiveType, isMobile, saveData]);
 
   const handlePlay = () => {
     if (isCurrentTrack) {
@@ -63,8 +93,9 @@ export function TrackCard({ track, className }: TrackCardProps) {
   return (
     <Card 
       className={cn(
-        'group cursor-pointer transition-all hover:shadow-md',
+        'group cursor-pointer transition-all hover:shadow-md track-card',
         isCurrentTrack && 'ring-2 ring-primary',
+        isMobile ? 'p-0 shadow-sm' : '', // Уменьшаем отступы и тень для мобильных устройств
         className
       )}
       onMouseEnter={() => setIsHovered(true)}
@@ -76,7 +107,11 @@ export function TrackCard({ track, className }: TrackCardProps) {
           {/* Track image and play button */}
           <div className="relative aspect-square">
             <Avatar className="w-full h-full rounded-lg">
-              <AvatarImage src={imageSrc} /> {/* Используем адаптированный URL */}
+              <AvatarImage 
+                ref={imageRef}
+                src={optimizedImageSrc} 
+                className="track-card-image"
+              />
               <AvatarFallback className="rounded-lg text-lg">
                 {track.title.charAt(0)}
               </AvatarFallback>
@@ -160,3 +195,15 @@ export function TrackCard({ track, className }: TrackCardProps) {
     </Card>
   )
 }
+
+// Оптимизируем компонент с помощью React.memo для предотвращения лишних ререндеров
+export const TrackCard = memo(TrackCardComponent, (prevProps, nextProps) => {
+  // Сравниваем только необходимые свойства для определения необходимости ререндера
+  return prevProps.track.id === nextProps.track.id && 
+         prevProps.track.title === nextProps.track.title &&
+         prevProps.track.artistName === nextProps.track.artistName &&
+         prevProps.track.coverImage === nextProps.track.coverImage &&
+         prevProps.track.playCount === nextProps.track.playCount &&
+         prevProps.track.likeCount === nextProps.track.likeCount &&
+         prevProps.className === nextProps.className;
+});
