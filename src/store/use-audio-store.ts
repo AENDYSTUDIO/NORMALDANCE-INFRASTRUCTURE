@@ -1,6 +1,19 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+export interface TrackMetadata {
+  bpm?: number
+  key?: string
+  albumArt?: string
+  description?: string
+  releaseDate?: string
+  fileSize?: number
+  mimeType?: string
+  bitrate?: number
+  year?: string | number
+  label?: string
+}
+
 export interface Track {
   id: string
   title: string
@@ -12,15 +25,12 @@ export interface Track {
   ipfsHash: string
   audioUrl: string
   coverImage?: string
-  metadata?: Record<string, unknown>
+  metadata?: TrackMetadata
   price?: number
   isExplicit: boolean
   isPublished: boolean
   // Optional fields used by UI components
   isPremium?: boolean
-  bitrate?: number
-  year?: string | number
-  label?: string
   createdAt: string
   updatedAt: string
 }
