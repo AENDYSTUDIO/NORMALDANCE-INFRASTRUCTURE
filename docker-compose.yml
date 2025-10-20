@@ -1,98 +1,84 @@
-version: "3.8"
+version: '3.8'
 
 services:
-  # Основное приложение
-  app:
+  frontend:
     build:
       context: .
-      dockerfile: Dockerfile.dev
+      dockerfile: docker/nextjs.Dockerfile
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=production
-      - DATABASE_URL=postgresql://${DB_USER:-normaldance}:${DB_PASSWORD:-secure_password}@db:5432/normaldance
-      - NEXTAUTH_URL=https://normaldance.com
-      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-default_secret_key_for_dev}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-    volumes:
-      - .:/app # Монтируем весь проект для live reload
-      - /app/node_modules # Исключаем node_modules из монтирования
-      - /app/.next
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://normaldance:password@postgres:5432/normaldance
+      - REDIS_URL=redis://redis:6379
+      - BACKEND_URL=http://backend:8080
+      - IPFS_SERVICE_URL=http://ipfs:8080
     depends_on:
-      db: # Добавляем зависимость от готовности БД
-        condition: service_healthy
-      redis:
-        condition: service_started
-    restart: unless-stopped
-    # Добавляем security конфигурации
-    security_opt:
-      - no-new-privileges:true
-    # Добавляем healthcheck для приложения
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "--quiet",
-          "--tries=1",
-          "--spider",
-          "http://localhost:3000/api/health",
-        ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-    # Ограничиваем ресурсы для безопасности
-    mem_limit: 1g
-    mem_reservation: 512m
-    cpus: "0.5"
-    # Устанавливаем пользователя
-    user: "1000:1000"
+      - postgres
+      - redis
+      - backend
+      - ipfs
+    networks:
+      - normaldance
 
-  # База данных PostgreSQL
-  db:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://normaldance:password@postgres:5432/normaldance
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - normaldance
+
+  ipfs:
+    build:
+      context: .
+      dockerfile: docker/ipfs-service.Dockerfile
+    ports:
+      - "8081:8080"
+      - "5001:5001"
+      - "4001:4001"
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ipfs_data:/data/ipfs
+    networks:
+      - normaldance
+
+  postgres:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: ${DB_USER:-normaldance}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-secure_password}
-      POSTGRES_DB: ${DB_NAME:-normaldance}
+      - POSTGRES_DB=normaldance
+      - POSTGRES_USER=normaldance
+      - POSTGRES_PASSWORD=password
     ports:
       - "5432:5432"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d normaldance"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-    # Добавляем security конфигурации
-    security_opt:
-      - no-new-privileges:true
-    # Ограничиваем ресурсы
-    mem_limit: 512m
-    mem_reservation: 256m
-    # Запускаем от непривилегированного пользователя
-    user: "999:999"
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - normaldance
 
-  # Redis для кэширования и сессий
   redis:
-    image: redis:alpine
+    image: redis:7-alpine
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
-    restart: unless-stopped
-    # Добавляем security конфигурации
-    security_opt:
-      - no-new-privileges:true
-    # Ограничиваем ресурсы
-    mem_limit: 256m
-    mem_reservation: 128m
-    # Запускаем от непривилегированного пользователя
-    user: "999:999"
+    networks:
+      - normaldance
 
 volumes:
-  postgres-data:
+  postgres_data:
   redis_data:
+  ipfs_data:
+
+networks:
+  normaldance:
+    driver: bridge

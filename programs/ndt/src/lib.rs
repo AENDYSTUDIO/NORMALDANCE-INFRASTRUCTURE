@@ -15,8 +15,10 @@ pub mod ndt {
         
         ndt.authority = authority.key();
         ndt.total_supply = 0;
-        ndt.burn_percentage = 1; // 1% сжигание при транзакциях
+        ndt.burn_percentage = 2; // 2% сжигание при транзакциях
         ndt.staking_apr = 5; // 5% базовый APY для стейкинга
+        ndt.staking_rewards_percentage = 20; // 20% от сжигания идет на стейкинг rewards
+        ndt.treasury_percentage = 30; // 30% от сжигания идет в казну
         
         Ok(())
     }
@@ -52,16 +54,22 @@ pub mod ndt {
         Ok(())
     }
 
-    // Транзакция с автоматическим сжиганием
+    // Транзакция с автоматическим сжиганием и распределением
     pub fn transfer(ctx: Context<Transfer>, amount: u64) -> Result<()> {
         let ndt = &mut ctx.accounts.ndt;
         let from = &ctx.accounts.from;
         let to = &ctx.accounts.to;
         let authority = &ctx.accounts.authority;
         
-        // Рассчитываем количество для сжигания (1% от суммы)
+        // Рассчитываем количество для сжигания (2% от суммы)
         let burn_amount = amount.checked_mul(ndt.burn_percentage).unwrap() / 100;
         let transfer_amount = amount.checked_sub(burn_amount).unwrap();
+        
+        // Рассчитываем распределение сожженных токенов
+        let staking_rewards_amount = burn_amount.checked_mul(ndt.staking_rewards_percentage).unwrap() / 100;
+        let treasury_amount = burn_amount.checked_mul(ndt.treasury_percentage).unwrap() / 100;
+        // Оставшаяся часть идет на сжигание (могут быть небольшие расхождения из-за округления)
+        let actual_burn_amount = burn_amount.checked_sub(staking_rewards_amount).unwrap().checked_sub(treasury_amount).unwrap();
         
         // Переводим токены
         anchor_spl::token::transfer(
@@ -86,17 +94,19 @@ pub mod ndt {
                     authority: authority.to_account_info(),
                 },
             ),
-            burn_amount,
+            actual_burn_amount,
         )?;
         
         // Обновляем общий объем
-        ndt.total_supply = ndt.total_supply.checked_sub(burn_amount).unwrap();
+        ndt.total_supply = ndt.total_supply.checked_sub(actual_burn_amount).unwrap();
         
         emit!(TransferEvent {
             from: from.key(),
             to: to.key(),
             amount: transfer_amount,
-            burn_amount,
+            burn_amount: actual_burn_amount,
+            staking_rewards_amount,
+            treasury_amount,
             timestamp: Clock::get()?.unix_timestamp,
         });
         
@@ -275,6 +285,8 @@ pub struct NdtState {
     pub total_supply: u64,
     pub burn_percentage: u64, // Percentage of tokens burned per transaction
     pub staking_apr: u64,    // Base APR for staking
+    pub staking_rewards_percentage: u64, // Percentage of burned tokens for staking rewards
+    pub treasury_percentage: u64,       // Percentage of burned tokens for treasury
 }
 
 #[account]
@@ -295,6 +307,8 @@ pub struct TransferEvent {
     pub to: Pubkey,
     pub amount: u64,
     pub burn_amount: u64,
+    pub staking_rewards_amount: u64,
+    pub treasury_amount: u64,
     pub timestamp: i64,
 }
 
