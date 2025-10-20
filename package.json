@@ -60,7 +60,7 @@
     "deploy:guide": "echo 'Откройте DEPLOYMENT_STEP_BY_STEP_COMPLETE.md для полной инструкции по развертыванию'"
   },
   "dependencies": {
-    "@helia/unixfs": "^3.0.0",
+    "@helia/unixfs": "^6.0.1",
     "@libp2p/mplex": "^10.0",
     "@libp2p/tcp": "^9.0.0",
     "@modelcontextprotocol/sdk": "^0.4.0",
