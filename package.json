@@ -63,7 +63,7 @@
     "@helia/unixfs": "^3.0.0",
     "@libp2p/mplex": "^10.0",
     "@libp2p/tcp": "^9.0.0",
-    "@modelcontextprotocol/sdk": "^0.4.0",
+    "@modelcontextprotocol/sdk": "^1.20.1",
     "@next-auth/prisma-adapter": "^1.0.7",
     "@pinata/sdk": "^2.1.0",
     "@prisma/client": "^5.0.0",
