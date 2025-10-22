@@ -95,7 +95,7 @@
     "@radix-ui/react-toggle-group": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@react-spring/three": "^9.7.3",
-    "@react-three/drei": "^9.92.0",
+    "@react-three/drei": "^10.7.6",
     "@react-three/fiber": "^8.15.0",
     "@sentry/nextjs": "^10.1.0",
     "@socket.io/redis-adapter": "^8.2.1",
