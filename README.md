@@ -1,4 +1,4 @@
-# NORMAL DANCE  - Production-Ready Web3 Music Platform
+# NORMAL DANCE v0.0.0 - Production-Ready Web3 Music Platform
 
 [![Version](https://img.shields.io/badge/version-0.0.0-blue)](https://github.com/AENDYSTUDIO/NORMALDANCE-REVOLUTION/releases/tag/v0.0.0)
 [![Status](https://img.shields.io/badge/status-production--ready-brightgreen)](https://github.com/AENDYSTUDIO/NORMALDANCE-REVOLUTION)
@@ -8,7 +8,7 @@
 
 ## 🚀 Platform Overview
 
-NORMAL DANCE is a production-ready decentralized music platform that revolutionizes music distribution through Web3 technology. Built with Next.js, Solana integration, and IPFS storage, it provides artists with unprecedented control over their music and revenue streams.
+NORMAL DANCE v0.0.0 is a production-ready decentralized music platform that revolutionizes music distribution through Web3 technology. Built with Next.js, Solana integration, and IPFS storage, it provides artists with unprecedented control over their music and revenue streams.
 
 ### Core Features
 
@@ -141,4 +141,4 @@ npm run dev
 
 ---
 
-_NORMAL DANCE - Revolutionizing Web3 Music Distribution_
+_NORMAL DANCE v0.0.0 - Revolutionizing Web3 Music Distribution_
