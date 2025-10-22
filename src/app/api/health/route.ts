@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getMonitoring } from '@/lib/monitoring';
 import { logger } from '@/lib/utils/logger';
+import { handleApiError } from '@/lib/errors/errorHandler';
 
 export async function GET(req: NextRequest) {
   try {
@@ -26,19 +27,7 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    logger.error('Health check failed', error as Error)
-    
-    return new Response(JSON.stringify({
-      status: 'unhealthy',
-      error: errorMessage,
-      timestamp: Date.now(),
-    }), {
-      status: 503,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    return handleApiError(error);
   }
 }
 

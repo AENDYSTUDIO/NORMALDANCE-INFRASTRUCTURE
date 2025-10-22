@@ -42,6 +42,18 @@ export const trackQuerySchema = z.object({
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
 })
 
+export const trackStreamQuerySchema = z.object({
+  id: z.string().uuid(),
+});
+
+export const trackStreamPostSchema = z.object({
+  id: z.string().uuid(),
+  userId: z.string().uuid().optional(),
+  duration: z.number().int().optional(),
+  completed: z.boolean().optional(),
+  position: z.number().int().optional(),
+});
+
 // ============================================
 // NFT SCHEMAS
 // ============================================
@@ -63,9 +75,19 @@ export const nftMintSchema = z.object({
   price: z.number().min(0).optional(),
 })
 
+export const nftUpdateSchema = nftSchema.partial();
+
+export const nftBurnSchema = z.object({
+  nftId: z.string().uuid(),
+  ownerAddress: z.string().regex(/^[A-Za-z0-9]{32,44}$/, 'Invalid wallet address'),
+  quantity: z.number().int().positive().default(1),
+});
+
 export const nftTransferSchema = z.object({
   nftId: z.string().uuid(),
+  fromAddress: z.string().regex(/^[A-Za-z0-9]{32,44}$/, 'Invalid wallet address'),
   toAddress: z.string().regex(/^[A-Za-z0-9]{32,44}$/, 'Invalid wallet address'),
+  quantity: z.number().int().positive().default(1),
 })
 
 // ============================================
@@ -83,6 +105,17 @@ export const userSchema = z.object({
 })
 
 export const userUpdateSchema = userSchema.partial()
+
+export const userRoleSchema = z.object({
+  role: z.enum(["LISTENER", "ARTIST", "CURATOR", "ADMIN"]),
+});
+
+export const userQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(100).default(10),
+  search: z.string().max(100).optional(),
+  artist: z.enum(['true', 'false']).optional().transform(val => val === 'true'),
+});
 
 // ============================================
 // WALLET SCHEMAS
@@ -122,20 +155,7 @@ export const donationSchema = z.object({
 // TELEGRAM SCHEMAS
 // ============================================
 
-export const telegramUserSchema = z.object({
-  id: z.number().int().positive(),
-  first_name: z.string(),
-  last_name: z.string().optional(),
-  username: z.string().optional(),
-  language_code: z.string().optional(),
-  is_premium: z.boolean().optional(),
-})
-
-export const telegramStarsPaymentSchema = z.object({
-  amount: z.number().int().positive(),
-  description: z.string().max(200),
-  userId: z.number().int().positive(),
-})
+export * from './telegram';
 
 // ============================================
 // PLAYLIST SCHEMAS
@@ -233,23 +253,57 @@ export const playbackPauseSchema = z.object({
 // DEX SCHEMAS
 // ============================================
 
-export const swapSchema = z.object({
-  from: z.enum(['TON', 'NDT']),
-  to: z.enum(['TON', 'NDT']),
-  inputAmount: z.number().positive('Amount must be positive'),
-  slippage: z.number().min(0).max(50).default(0.5), // percentage
-})
-
-export const liquiditySchema = z.object({
-  type: z.enum(['ADD', 'REMOVE']),
-  tonAmount: z.number().positive().optional(),
-  ndtAmount: z.number().positive().optional(),
-  lpTokens: z.number().positive().optional(),
-})
+export * from './dex';
 
 // ============================================
-// VALIDATION HELPERS
+// IPFS SCHEMAS
 // ============================================
+
+export * from './ipfs';
+
+// ============================================
+// SOLANA SCHEMAS
+// ============================================
+
+export * from './solana';
+
+// ============================================
+// FILECOIN SCHEMAS
+// ============================================
+
+export * from './filecoin';
+
+// ============================================
+// REDUNDANCY SCHEMAS
+// ============================================
+
+export * from './redundancy';
+
+// ============================================
+// CLUB SCHEMAS
+// ============================================
+
+export * from './club';
+
+// ============================================
+// ANALYTICS SCHEMAS
+// ============================================
+
+export * from './analytics';
+
+// ============================================
+// NOTIFICATIONS SCHEMAS
+// ============================================
+
+export * from './notifications';
+export * from './notificationSettings';
+
+// ============================================
+// MESSAGES SCHEMAS
+// ============================================
+
+export * from './messages';
+
 
 export type ValidationResult<T> = 
   | { success: true; data: T }

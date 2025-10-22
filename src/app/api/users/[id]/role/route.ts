@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions, getSessionUser } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { userRoleSchema } from '@/lib/schemas'
+import { handleApiError } from '@/lib/errors/errorHandler'
 
 export async function PATCH(
   request: NextRequest,
@@ -18,13 +20,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { role } = await request.json()
-    
-    // Валидация роли
-    const validRoles = ['LISTENER', 'ARTIST', 'CURATOR', 'ADMIN']
-    if (!validRoles.includes(role)) {
-      return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
-    }
+    const body = await request.json()
+    const { role } = userRoleSchema.parse(body)
 
     // Обновляем роль пользователя
     const updatedUser = await db.user.update({
@@ -42,11 +39,7 @@ export async function PATCH(
     })
 
   } catch (error) {
-    console.error('Role update error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -82,10 +75,6 @@ export async function GET(
     return NextResponse.json({ user: targetUser })
 
   } catch (error) {
-    console.error('Role fetch error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

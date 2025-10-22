@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useSession } from 'next-auth/react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Input, Badge } from '@/components/ui'
 import { 
@@ -18,6 +18,7 @@ import {
 } from '@/components/icons'
 import { TrackCard } from '@/components/audio/track-card'
 import { formatNumber, formatTime } from '@/lib/utils'
+import { FixedSizeList as VirtualList } from 'react-window'
 
 interface Track {
   id: string
@@ -66,7 +67,8 @@ export default function TracksPage() {
     fetchTracks()
   }, [filters])
 
-  const fetchTracks = async () => {
+  // Мемоизируем функцию fetchTracks для предотвращения лишних ререндеров
+  const fetchTracks = useCallback(async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams({
@@ -86,7 +88,7 @@ export default function TracksPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filters]) // Добавляем зависимость filters для корректной работы useCallback
 
   const handleSearch = (value: string) => {
     setFilters(prev => ({ ...prev, search: value }))
@@ -110,6 +112,38 @@ export default function TracksPage() {
       viewMode: prev.viewMode === 'grid' ? 'list' : 'grid'
     }))
   }
+
+  // Мемоизируем отфильтрованные треки для предотвращения повторных вычислений при ререндере
+  const filteredTracks = useMemo(() => {
+    if (!tracks.length) return [];
+    
+    // Фильтрация по поиску
+    let result = tracks;
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      result = result.filter(track => 
+        track.title.toLowerCase().includes(searchLower) || 
+        track.artistName.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    // Фильтрация по жанру
+    if (filters.genre) {
+      result = result.filter(track => track.genre === filters.genre);
+    }
+    
+    // Сортировка
+    return [...result].sort((a, b) => {
+      const aValue = a[filters.sortBy];
+      const bValue = b[filters.sortBy];
+      
+      if (filters.sortOrder === 'asc') {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+  }, [tracks, filters]);
 
   const genres = [
     'Все жанры',
@@ -244,7 +278,7 @@ export default function TracksPage() {
           <CardContent className="p-4 text-center">
             <Play className="h-6 w-6 mx-auto mb-2 text-purple-500" />
             <p className="text-2xl font-bold">
-              {formatNumber(tracks.reduce((sum, track) => sum + track.playCount, 0))}
+              {formatNumber(useMemo(() => tracks.reduce((sum, track) => sum + track.playCount, 0), [tracks]))}
             </p>
             <p className="text-xs text-muted-foreground">Прослушиваний</p>
           </CardContent>
@@ -265,7 +299,7 @@ export default function TracksPage() {
             </Card>
           ))}
         </div>
-      ) : tracks.length === 0 ? (
+      ) : filteredTracks.length === 0 ? (
         <div className="text-center py-12">
           <Music className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
           <h3 className="text-lg font-medium mb-2">Треки не найдены</h3>
@@ -277,15 +311,31 @@ export default function TracksPage() {
           </Button>
         </div>
       ) : (
-        <div className={
-          filters.viewMode === 'grid' 
-            ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
-            : 'space-y-4'
-        }>
-          {tracks.map((track) => (
-            <TrackCard key={track.id} track={track} />
-          ))}
-        </div>
+        <>
+          {filters.viewMode === 'grid' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredTracks.map((track) => (
+                <TrackCard key={track.id} track={track} />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-0">
+              <VirtualList
+                height={600}
+                width="100%"
+                itemCount={filteredTracks.length}
+                itemSize={80}
+                className="scrollbar-thin"
+              >
+                {({ index, style }) => (
+                  <div style={style} className="py-1">
+                    <TrackCard key={filteredTracks[index].id} track={filteredTracks[index]} />
+                  </div>
+                )}
+              </VirtualList>
+            </div>
+          )}
+        </>
       )}
 
       {/* Load More */}

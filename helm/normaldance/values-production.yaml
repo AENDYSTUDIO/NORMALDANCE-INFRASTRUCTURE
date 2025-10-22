@@ -1,48 +1,94 @@
-# Production configuration for NormalDance
-# This file contains production-specific values for the Helm chart
+replicaCount: 3
 
-# Global settings
-global:
-  # Environment
-  env:
-    NODE_ENV: production
-    LOG_LEVEL: info
-    
-  # Domain settings
-  domain: normaldance.app
-  ingress:
-    enabled: true
-    className: "nginx"
-    annotations:
-      cert-manager.io/cluster-issuer: "letsencrypt-prod"
-      nginx.ingress.kubernetes.io/ssl-redirect: "true"
-      nginx.ingress.kubernetes.io force-ssl-redirect: "true"
-      nginx.ingress.kubernetes.io/rate-limit: "100"
-      nginx.ingress.kubernetes.io/rate-limit-window: "1m"
-    tls:
-      - secretName: normaldance-tls
-        hosts:
-          - normaldance.app
-          - www.normaldance.app
-
-# Image settings
 image:
-  repository: ghcr.io/normaldance/normaldance
-  tag: latest
-  pullPolicy: IfNotPresent
-  pullSecrets:
-    - name: ghcr-secret
+  registry: ghcr.io
+  repository: aendystudio/normaldance-nextjs
+  pullPolicy: Always
 
-# Service settings
-service:
-  type: LoadBalancer
-  port: 80
-  targetPort: 3000
-  annotations:
-    service.beta.kubernetes.io/aws-load-balancer-type: nlb
-    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
 
-# Ingress settings
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+backend:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: aendystudio/normaldance-backend
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+ipfs:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: aendystudio/normaldance-ipfs
+  resources:
+    limits:
+      cpu: 300m
+      memory: 512Mi
+    requests:
+      cpu: 150m
+      memory: 256Mi
+
+contracts:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: aendystudio/normaldance-contracts
+
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: "CHANGE_ME_IN_PRODUCTION"
+    username: normaldance
+    password: "CHANGE_ME_IN_PRODUCTION"
+    database: normaldance
+  primary:
+    persistence:
+      enabled: true
+      size: 50Gi
+      storageClass: "fast-ssd"
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+      requests:
+        cpu: 500m
+        memory: 1Gi
+
+redis:
+  enabled: true
+  auth:
+    enabled: true
+    password: "CHANGE_ME_IN_PRODUCTION"
+  master:
+    persistence:
+      enabled: true
+      size: 8Gi
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+
 ingress:
   enabled: true
   className: "nginx"
@@ -50,580 +96,17 @@ ingress:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/rate-limit: "100"
-    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
-    nginx.ingress.kubernetes.io/limit-rps: "10"
-    nginx.ingress.kubernetes.io/limit-connections: "100"
-    nginx.ingress.kubernetes.io/websocket-services: normaldance
   hosts:
-    - host: normaldance.app
+    - host: normaldance.com
       paths:
         - path: /
-          pathType: Prefix
-        - path: /api/socketio
           pathType: Prefix
   tls:
     - secretName: normaldance-tls
       hosts:
-        - normaldance.app
-        - www.normaldance.app
+        - normaldance.com
 
-# Resource limits and requests
-resources:
-  limits:
-    cpu: "2"
-    memory: "4Gi"
-    ephemeral-storage: "10Gi"
-  requests:
-    cpu: "500m"
-    memory: "1Gi"
-    ephemeral-storage: "1Gi"
-
-# Horizontal Pod Autoscaler
-autoscaling:
-  enabled: true
-  minReplicas: 3
-  maxReplicas: 10
-  targetCPUUtilizationPercentage: 70
-  targetMemoryUtilizationPercentage: 80
-  metrics:
-    - type: Resource
-      resource:
-        name: cpu
-        target:
-          type: Utilization
-          averageUtilization: 70
-    - type: Resource
-      resource:
-        name: memory
-        target:
-          type: Utilization
-          averageUtilization: 80
-    - type: Pods
-      pods:
-        metric:
-          name: packets_per_second
-        target:
-          type: AverageValue
-          averageValue: 1000
-
-# Pod Disruption Budget
-pdb:
-  enabled: true
-  minAvailable: 2
-  maxUnavailable: 1
-
-# Node affinity and tolerations
-nodeAffinity:
-  requiredDuringSchedulingIgnoredDuringExecution:
-    nodeSelectorTerms:
-      - matchExpressions:
-          - key: node-role.kubernetes.io/worker
-            operator: In
-            values:
-              - production
-tolerations:
-  - key: "dedicated"
-    operator: "Equal"
-    value: "production"
-    effect: "NoSchedule"
-  - key: "node.kubernetes.io/not-ready"
-    operator: "Exists"
-    effect: "NoExecute"
-    tolerationSeconds: 300
-  - key: "node.kubernetes.io/unreachable"
-    operator: "Exists"
-    effect: "NoExecute"
-    tolerationSeconds: 300
-
-# Security Context
-securityContext:
-  runAsUser: 1000
-  runAsGroup: 1000
-  fsGroup: 1000
-  runAsNonRoot: true
-
-# Pod Security Context
-podSecurityContext:
-  runAsUser: 1000
-  runAsGroup: 1000
-  fsGroup: 1000
-
-# Liveness and Readiness Probes
-livenessProbe:
-  httpGet:
-    path: /api/health
-    port: 3000
-  initialDelaySeconds: 30
-  periodSeconds: 10
-  timeoutSeconds: 5
-  failureThreshold: 3
-
-readinessProbe:
-  httpGet:
-    path: /api/health
-    port: 3000
-  initialDelaySeconds: 5
-  periodSeconds: 5
-  timeoutSeconds: 3
-  failureThreshold: 3
-
-# Database settings
-database:
-  enabled: true
-  type: external
-  external:
-    host: "prod-db.normaldance.app"
-    port: 5432
-    username: "normaldance"
-    password: "${DATABASE_PASSWORD}"
-    database: "normaldance_prod"
-    ssl: true
-  connectionPool:
-    maxConnections: 100
-    minConnections: 10
-    idleTimeout: 300
-    maxLifetime: 1800
-
-# Redis settings
-redis:
-  enabled: true
-  type: external
-  external:
-    host: "prod-redis.normaldance.app"
-    port: 6379
-    password: "${REDIS_PASSWORD}"
-    db: 0
-  connectionPool:
-    maxConnections: 50
-    minConnections: 5
-    idleTimeout: 300
-    maxLifetime: 1800
-
-# Monitoring and Logging
-monitoring:
-  enabled: true
-  prometheus:
-    enabled: true
-    serviceMonitor:
-      enabled: true
-      interval: 30s
-      scrapeTimeout: 10s
-  grafana:
-    enabled: true
-    dashboards:
-      enabled: true
-      annotations: true
-  logging:
-    enabled: true
-    level: info
-    format: json
-    fluentd:
-      enabled: true
-      host: "prod-logging.normaldance.app"
-      port: 24224
-      tag: "normaldance.prod"
-
-# Backup and Recovery
-backup:
-  enabled: true
-  schedule: "0 2 * * *"
-  retention: "30d"
-  databases:
-    - name: "normaldance_prod"
-      schedule: "0 2 * * *"
-      retention: "30d"
-  storage:
-    type: s3
-    bucket: "normaldance-backups"
-    endpoint: "s3.amazonaws.com"
-    region: "us-east-1"
-    accessKey: "${BACKUP_ACCESS_KEY}"
-    secretKey: "${BACKUP_SECRET_KEY}"
-
-# Security
-security:
-  networkPolicy:
-    enabled: true
-    ingress:
-      - from:
-          - podSelector:
-              matchLabels:
-                app: normaldance
-          - namespaceSelector:
-              matchLabels:
-                name: monitoring
-        ports:
-          - protocol: TCP
-            port: 3000
-          - protocol: TCP
-            port: 8080
-    egress:
-      - to:
-          - namespaceSelector:
-              matchLabels:
-                name: databases
-        ports:
-          - protocol: TCP
-            port: 5432
-      - to:
-          - namespaceSelector:
-              matchLabels:
-                name: redis
-        ports:
-          - protocol: TCP
-            port: 6379
-      - to:
-          - ipBlock:
-              cidr: 0.0.0.0/0
-        ports:
-          - protocol: TCP
-            port: 443
-          - protocol: TCP
-            port: 80
-
-# Service Mesh (optional)
-serviceMesh:
-  enabled: true
-  istio:
-    enabled: true
-    gateway:
-      enabled: true
-      ingress: true
-    telemetry:
-      enabled: true
-      metrics: true
-      tracing: true
-      logging: true
-
-# Feature flags
-featureFlags:
-  enabled: true
-  rollout:
-    new-player: 100
-    dark-mode: 100
-    social-features: 100
-    nft-marketplace: 100
-    staking: 100
-    analytics: 100
-    recommendations: 100
-
-# Performance optimizations
-performance:
-  caching:
-    enabled: true
-    redis: true
-    cdn: true
-    browser: true
-  compression:
-    enabled: true
-    gzip: true
-    brotli: true
-  minify:
-    enabled: true
-    css: true
-    js: true
-    html: true
-
-# Analytics and Monitoring
-analytics:
-  enabled: true
-  providers:
-    - google-analytics
-    - mixpanel
-    - amplitude
-  tracking:
-    page-views: true
-    events: true
-    user-interactions: true
-    performance: true
-
-# CDN Configuration
-cdn:
-  enabled: true
-  provider: "cloudflare"
-  config:
-    domain: "cdn.normaldance.app"
-    api-key: "${CLOUDFLARE_API_KEY}"
-    zone-id: "${CLOUDFLARE_ZONE_ID}"
-  caching:
-    static-assets: "1y"
-    api-responses: "1h"
-    user-content: "30d"
-
-# Rate Limiting
-rateLimit:
-  enabled: true
-  general:
-    limit: 100
-    window: "1m"
-  api:
-    limit: 1000
-    window: "1m"
-  auth:
-    limit: 5
-    window: "1m"
-  upload:
-    limit: 10
-    window: "1h"
-
-# Content Delivery
-contentDelivery:
-  enabled: true
-  providers:
-    - ipfs
-    - filecoin
-    - aws-s3
-  redundancy:
-    enabled: true
-    min-replicas: 3
-    max-replicas: 5
-  caching:
-    enabled: true
-    ttl: "24h"
-    compression: true
-
-# Web3 Integration
-web3:
-  enabled: true
-  solana:
-    cluster: "mainnet-beta"
-    rpc-url: "${SOLANA_RPC_URL}"
-    network: "mainnet"
-  wallet:
-    enabled: true
-    providers:
-      - phantom
-      - solflare
-      - ledger
-  nft:
-    enabled: true
-    marketplace: true
-    royalties: true
-    metadata: true
-
-# Payment Processing
-payments:
-  enabled: true
-  providers:
-    - stripe
-    - paypal
-  currencies:
-    - USD
-    - EUR
-    - BTC
-    - ETH
-  features:
-    subscriptions: true
-    one-time: true
-    recurring: true
-    refunds: true
-
-# Email Service
-email:
-  enabled: true
-  provider: "sendgrid"
-  config:
-    api-key: "${SENDGRID_API_KEY}"
-    from: "noreply@normaldance.app"
-  templates:
-    welcome: "welcome-email"
-    verification: "verification-email"
-    password-reset: "password-reset-email"
-    notification: "notification-email"
-
-# Push Notifications
-pushNotifications:
-  enabled: true
-  providers:
-    - firebase
-    - onesignal
-  config:
-    firebase:
-      service-account: "${FIREBASE_SERVICE_ACCOUNT}"
-    onesignal:
-      app-id: "${ONESIGNAL_APP_ID}"
-      api-key: "${ONESIGNAL_API_KEY}"
-  topics:
-    - new-tracks
-    - artist-updates
-    - system-notifications
-
-# Search and Discovery
-search:
-  enabled: true
-  provider: "elasticsearch"
-  config:
-    hosts: ["search.normaldance.app:9200"]
-    username: "${SEARCH_USERNAME}"
-    password: "${SEARCH_PASSWORD}"
-  indexing:
-    enabled: true
-    schedule: "0 */6 * * *"
-    batch-size: 1000
-  features:
-    full-text: true
-    faceted: true
-    autocomplete: true
-    filters: true
-
-# Recommendations
-recommendations:
-  enabled: true
-  algorithm: "hybrid"
-  features:
-    collaborative: true
-    content-based: true
-    hybrid: true
-  real-time: true
-  cache:
-    enabled: true
-    ttl: "1h"
-    size: "1000"
-
-# Social Features
-social:
-  enabled: true
-  features:
-    follows: true
-    likes: true
-    comments: true
-    shares: true
-    playlists: true
-    charts: true
-  moderation:
-    enabled: true
-    auto-moderation: true
-    reporting: true
-    filters: true
-
-# Artist Tools
-artist:
-  enabled: true
-  features:
-    analytics: true
-    distribution: true
-    monetization: true
-    promotion: true
-    collaboration: true
-  tools:
-    dashboard: true
-    insights: true
-    earnings: true
-    promotions: true
-
-# User Management
-users:
-  enabled: true
-  features:
-    profiles: true
-    roles: true
-    permissions: true
-    verification: true
-    onboarding: true
-  security:
-    two-factor: true
-    email-verification: true
-    password-policy: true
-    session-management: true
-
-# Content Management
-content:
-  enabled: true
-  features:
-    moderation: true
-    categorization: true
-    tagging: true
-    metadata: true
-    quality: true
-  storage:
-    enabled: true
-    providers:
-      - s3
-      - ipfs
-    backup: true
-    versioning: true
-
-# API Management
-api:
-  enabled: true
-  features:
-    rate-limiting: true
-    authentication: true
-    authorization: true
-    versioning: true
-    documentation: true
-    monitoring: true
-  gateway:
-    enabled: true
-    provider: "kong"
-    config:
-      admin-url: "api-gateway.normaldance.app"
-      plugins:
-        - rate-limiting
-        - authentication
-        - cors
-        - logging
-
-# Mobile App Integration
-mobile:
-  enabled: true
-  features:
-    push-notifications: true
-    offline-mode: true
-    background-sync: true
-    biometric-auth: true
-  config:
-    app-version: "1.0.0"
-    min-version: "1.0.0"
-    max-version: "2.0.0"
-    update-check: true
-    auto-update: true
-
-# Third-party Integrations
-integrations:
-  enabled: true
-  providers:
-    spotify: true
-    apple-music: true
-    youtube: true
-    soundcloud: true
-    bandcamp: true
-  features:
-    import: true
-    export: true
-    sync: true
-    cross-posting: true
-
-# Legal and Compliance
-legal:
-  enabled: true
-  features:
-    terms-of-service: true
-    privacy-policy: true
-    cookie-policy: true
-    gdpr: true
-    ccpa: true
-  compliance:
-    data-retention: true
-    data-minimization: true
-    audit-logs: true
-    reporting: true
-
-# Business Intelligence
-bi:
-  enabled: true
-  features:
-    dashboards: true
-    reports: true
-    analytics: true
-    forecasting: true
-  data:
-    sources:
-      - user-behavior
-      - financial
-      - content
-      - social
-    processing:
-      real-time: true
-      batch: true
-      streaming: true
+env:
+  NODE_ENV: production
+  SOLANA_RPC_URL: "https://api.mainnet-beta.solana.com"
+  IPFS_GATEWAY_URL: "https://ipfs.io/ipfs/"

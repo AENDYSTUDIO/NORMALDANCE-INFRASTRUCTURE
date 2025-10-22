@@ -1,21 +1,14 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { z } from 'zod'
+import { nftBurnSchema } from '@/lib/schemas'
 import { handleApiError } from '@/lib/errors/errorHandler'
-
-// Validation schema for burning NFT
-const burnSchema = z.object({
-  nftId: z.string().min(1),
-  ownerAddress: z.string().min(1),
-  quantity: z.number().min(1).default(1),
-})
 
 // POST /api/nft/burn - Burn NFT (permanently remove from circulation)
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { nftId, ownerAddress, quantity } = burnSchema.parse(body)
+    const { nftId, ownerAddress, quantity } = nftBurnSchema.parse(body)
 
     // Find the NFT
     const nft = await db.nft.findUnique({

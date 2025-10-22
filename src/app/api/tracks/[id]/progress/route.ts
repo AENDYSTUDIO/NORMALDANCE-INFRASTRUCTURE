@@ -313,6 +313,6 @@ async function triggerProgressCompletion(trackId: string, userId: string) {
     })
 
   } catch (error) {
-    console.error('Error triggering progress completion:', error)
+    handleApiError(error)
   }
 }

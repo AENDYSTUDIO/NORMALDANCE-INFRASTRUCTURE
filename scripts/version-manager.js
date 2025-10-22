@@ -25,9 +25,9 @@
  *   release             - Create release
  */
 
-const { execSync } = require("child_process");
-const fs = require("fs").promises;
-const path = require("path");
+import { execSync  } from 'child_process';;
+import fs from 'fs';.promises;
+import path from 'path';;
 
 class VersionManager {
   constructor() {

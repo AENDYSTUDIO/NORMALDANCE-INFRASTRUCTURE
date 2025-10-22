@@ -337,7 +337,7 @@ export class NotificationSystem extends EventEmitter {
       unread: userNotifications.filter(n => n.status === NotificationStatus.UNREAD).length,
       read: userNotifications.filter(n => n.status === NotificationStatus.READ).length,
       archived: userNotifications.filter(n => n.status === NotificationStatus.ARCHIVED).length,
-      byType: {} as { [key in NotificationType]?: number }
+      byType: Record<string, unknown> as { [key in NotificationType]?: number }
     }
 
     // Подсчет по типам

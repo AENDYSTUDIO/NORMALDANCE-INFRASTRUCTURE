@@ -7,8 +7,8 @@
  * node scripts/test-cleanup.js
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';;
+import path from 'path';;
 
 // Тестовые данные для preview деплоев
 const testDeployments = [
@@ -216,7 +216,7 @@ async function runTests() {
   try {
     // Тест 1: Dry run с настройками по умолчанию
     console.log('📋 Test 1: Dry run with default settings');
-    const Cleaner = require('./cleanup-preview-deployments-enhanced.js');
+    import Cleaner from './cleanup-preview-deployments-enhanced.js';;
     const cleaner1 = new Cleaner({
       deployments: testDeployments,
       dryRun: true,

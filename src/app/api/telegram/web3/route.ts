@@ -1,6 +1,15 @@
 import { db } from "@/lib/db";
 import { verifyJWT } from "@/lib/jwt";
 import { NextResponse } from "next/server";
+import { handleApiError } from "@/lib/errors/errorHandler";
+import {
+  telegramConnectWalletSchema,
+  telegramTransferTokensSchema,
+  telegramStakeTokensSchema,
+  telegramUnstakeTokensSchema,
+  telegramSwapTokensSchema,
+  telegramMintNFTSchema,
+} from "@/lib/schemas";
 
 // GET /api/telegram/web3 - Возвращает информацию о Web3-интеграции для Telegram Mini App
 export async function GET(request: NextRequest) {
@@ -44,13 +53,8 @@ export async function GET(request: NextRequest) {
       },
     };
 
-    return NextResponse.json(web3Info);
   } catch (error) {
-    console.error("Error in Telegram Web3 API:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }
 
@@ -108,318 +112,294 @@ export async function POST(request: NextRequest) {
         );
     }
   } catch (error) {
-    console.error("Error in Telegram Web3 API:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }
 
 // Обработчики для различных Web3-функций
 
-async function handleConnectWallet(user: { id: string; telegramId: number }, body: { walletAddress: string; walletType: string }) {
-  const { walletAddress } = body;
+async function handleConnectWallet(user: { id: string; telegramId: number }, body: unknown) {
+  try {
+    const { walletAddress } = telegramConnectWalletSchema.parse(body);
 
-  if (!walletAddress) {
-    return NextResponse.json(
-      { error: "Wallet address required" },
-      { status: 400 }
-    );
-  }
-
-  // Обновляем адрес кошелька пользователя
-  await db.user.update({
-    where: { id: user.id },
-    data: { walletAddress },
-  });
-
-  return NextResponse.json({
-    success: true,
-    message: "Wallet connected successfully",
-    walletAddress,
-  });
-}
-
-async function handleTransferTokens(user: { id: string; telegramId: number }, body: { recipient: string; amount: number; token: string }) {
-  const { recipientAddress, tokenType, amount } = body;
-
-  if (!recipientAddress || !tokenType || !amount) {
-    return NextResponse.json(
-      {
-        error: "Recipient address, token type, and amount required",
-      },
-      { status: 400 }
-    );
-  }
-
-  // Проверяем баланс пользователя
-  let userBalance = 0;
-  let balanceField = "";
-
-  if (tokenType === "SOL") {
-    userBalance = user.solBalance;
-    balanceField = "solBalance";
-  } else if (tokenType === "NDT") {
-    userBalance = user.ndtBalance;
-    balanceField = "ndtBalance";
-  } else {
-    return NextResponse.json(
-      { error: "Unsupported token type" },
-      { status: 400 }
-    );
-  }
-
-  if (userBalance < amount) {
-    return NextResponse.json(
-      { error: "Insufficient balance" },
-      { status: 400 }
-    );
-  }
-
-  // В реальном приложении здесь будет выполнена транзакция через Solana Web3 SDK
-  // Пока просто обновляем балансы в базе данных
-  await db.user.update({
-    where: { id: user.id },
-    data: { [balanceField]: { decrement: amount } },
-  });
-
-  // Если получатель существует в системе, обновляем его баланс
-  const recipient = await db.user.findUnique({
-    where: { walletAddress: recipientAddress },
-  });
-
-  if (recipient) {
+    // Обновляем адрес кошелька пользователя
     await db.user.update({
-      where: { id: recipient.id },
-      data: { [balanceField]: { increment: amount } },
+      where: { id: user.id },
+      data: { walletAddress },
     });
+
+    return NextResponse.json({
+      success: true,
+      message: "Wallet connected successfully",
+      walletAddress,
+    });
+  } catch (error) {
+    return handleApiError(error);
   }
-
-  // Создаем запись о транзакции
-  await db.transaction.create({
-    data: {
-      type: "WEB3_TRANSFER",
-      fromUserId: user.id,
-      toWalletAddress: recipientAddress,
-      amount,
-      currency: tokenType,
-      status: "completed",
-      description: `Transfer ${amount} ${tokenType} to ${recipientAddress}`,
-    },
-  });
-
-  return NextResponse.json({
-    success: true,
-    message: `Successfully transferred ${amount} ${tokenType}`,
-    transactionId: `web3_transfer_${Date.now()}`,
-  });
 }
 
-async function handleStakeTokens(user: { id: string; telegramId: number }, body: { amount: number; duration: number }) {
-  const { amount } = body;
+async function handleTransferTokens(user: { id: string; telegramId: number; solBalance: number; ndtBalance: number; }, body: unknown) {
+  try {
+    const { recipientAddress, tokenType, amount } = telegramTransferTokensSchema.parse(body);
 
-  if (!amount || amount <= 0) {
-    return NextResponse.json({ error: "Amount required" }, { status: 400 });
-  }
+    // Проверяем баланс пользователя
+    let userBalance = 0;
+    let balanceField = "";
 
-  // Проверяем баланс NDT
-  if (user.ndtBalance < amount) {
-    return NextResponse.json(
-      { error: "Insufficient NDT balance" },
-      { status: 400 }
-    );
-  }
+    if (tokenType === "SOL") {
+      userBalance = user.solBalance;
+      balanceField = "solBalance";
+    } else if (tokenType === "NDT") {
+      userBalance = user.ndtBalance;
+      balanceField = "ndtBalance";
+    } else {
+      return NextResponse.json(
+        { error: "Unsupported token type" },
+        { status: 400 }
+      );
+    }
 
-  // Обновляем балансы
-  await db.user.update({
-    where: { id: user.id },
-    data: {
-      ndtBalance: { decrement: amount },
-      stakedNdt: { increment: amount },
-    },
-  });
+    if (userBalance < amount) {
+      return NextResponse.json(
+        { error: "Insufficient balance" },
+        { status: 400 }
+      );
+    }
 
-  // Создаем запись о стейкинге
-  const stake = await db.stake.create({
-    data: {
-      userId: user.id,
-      amount,
-      type: "NDT",
-      startDate: new Date(),
-      endDate: new Date(Date.now() + 30 * 24 * 60 * 1000), // 30 дней
-      rewards: 0,
-      status: "active",
-    },
-  });
+    // В реальном приложении здесь будет выполнена транзакция через Solana Web3 SDK
+    // Пока просто обновляем балансы в базе данных
+    await db.user.update({
+      where: { id: user.id },
+      data: { [balanceField]: { decrement: amount } },
+    });
 
-  return NextResponse.json({
-    success: true,
-    message: `Successfully staked ${amount} NDT`,
-    stakeId: stake.id,
-  });
-}
+    // Если получатель существует в системе, обновляем его баланс
+    const recipient = await db.user.findUnique({
+      where: { walletAddress: recipientAddress },
+    });
 
-async function handleUnstakeTokens(user: { id: string; telegramId: number }, body: { stakeId: string }) {
-  const { amount } = body;
+    if (recipient) {
+      await db.user.update({
+        where: { id: recipient.id },
+        data: { [balanceField]: { increment: amount } },
+      });
+    }
 
-  if (!amount || amount <= 0) {
-    return NextResponse.json({ error: "Amount required" }, { status: 400 });
-  }
-
-  // Проверяем застейканное количество
-  if (user.stakedNdt < amount) {
-    return NextResponse.json(
-      { error: "Insufficient staked tokens" },
-      { status: 400 }
-    );
-  }
-
-  // Обновляем балансы
-  await db.user.update({
-    where: { id: user.id },
-    data: {
-      ndtBalance: { increment: amount },
-      stakedNdt: { decrement: amount },
-    },
-  });
-
-  // Обновляем запись о стейкинге
-  await db.stake.updateMany({
-    where: {
-      userId: user.id,
-      status: "active",
-    },
-    data: {
-      amount: { decrement: amount },
-      status: amount > user.stakedNdt ? "inactive" : "active",
-    },
-  });
-
-  return NextResponse.json({
-    success: true,
-    message: `Successfully unstaked ${amount} NDT`,
-  });
-}
-
-async function handleSwapTokens(user: { id: string; telegramId: number }, body: { fromToken: string; toToken: string; amount: number; slippage: number }) {
-  const { fromToken, toToken, amount } = body;
-
-  if (!fromToken || !toToken || !amount) {
-    return NextResponse.json(
-      {
-        error: "From token, to token, and amount required",
+    // Создаем запись о транзакции
+    await db.transaction.create({
+      data: {
+        type: "WEB3_TRANSFER",
+        fromUserId: user.id,
+        toWalletAddress: recipientAddress,
+        amount,
+        currency: tokenType,
+        status: "completed",
+        description: `Transfer ${amount} ${tokenType} to ${recipientAddress}`,
       },
-      { status: 400 }
-    );
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `Successfully transferred ${amount} ${tokenType}`,
+      transactionId: `web3_transfer_${Date.now()}`,
+    });
+  } catch (error) {
+    return handleApiError(error);
   }
-
-  // Проверяем баланс исходного токена
-  let userBalance = 0;
-  let fromBalanceField = "";
-  let toBalanceField = "";
-
-  if (fromToken === "SOL" && toToken === "NDT") {
-    userBalance = user.solBalance;
-    fromBalanceField = "solBalance";
-    toBalanceField = "ndtBalance";
-  } else if (fromToken === "NDT" && toToken === "SOL") {
-    userBalance = user.ndtBalance;
-    fromBalanceField = "ndtBalance";
-    toBalanceField = "solBalance";
-  } else {
-    return NextResponse.json(
-      { error: "Unsupported token swap" },
-      { status: 400 }
-    );
-  }
-
-  if (userBalance < amount) {
-    return NextResponse.json(
-      { error: "Insufficient balance" },
-      { status: 400 }
-    );
-  }
-
-  // Рассчитываем количество токенов для обмена (упрощенный расчет)
-  // В реальном приложении здесь будет взаимодействие с DEX
-  const rate = 0.1; // 1 NDT = 0.1 SOL (пример)
-  const receivedAmount = fromToken === "SOL" ? amount / rate : amount * rate;
-
-  // Обновляем балансы
-  await db.user.update({
-    where: { id: user.id },
-    data: {
-      [fromBalanceField]: { decrement: amount },
-      [toBalanceField]: { increment: receivedAmount },
-    },
-  });
-
-  // Создаем запись о свопе
-  await db.transaction.create({
-    data: {
-      type: "TOKEN_SWAP",
-      fromUserId: user.id,
-      amount: amount,
-      currency: fromToken,
-      receivedAmount: receivedAmount,
-      receivedCurrency: toToken,
-      status: "completed",
-      description: `Swap ${amount} ${fromToken} to ${receivedAmount} ${toToken}`,
-    },
-  });
-
-  return NextResponse.json({
-    success: true,
-    message: `Successfully swapped ${amount} ${fromToken} to ${receivedAmount} ${toToken}`,
-    transactionId: `swap_${Date.now()}`,
-  });
 }
 
-async function handleGetNFTs(user: { id: string; telegramId: number }, body: Record<string, unknown>) {
-  // Возвращаем NFT пользователя
-  const userNFTs = await db.nft.findMany({
-    where: { ownerId: user.id },
-    include: {
-      creator: true,
-    },
-  });
+async function handleStakeTokens(user: { id: string; telegramId: number; ndtBalance: number; }, body: unknown) {
+  try {
+    const { amount, duration } = telegramStakeTokensSchema.parse(body);
 
-  return NextResponse.json({
-    success: true,
-    nfts: userNFTs,
-  });
-}
+    // Проверяем баланс NDT
+    if (user.ndtBalance < amount) {
+      return NextResponse.json(
+        { error: "Insufficient NDT balance" },
+        { status: 400 }
+      );
+    }
 
-async function handleMintNFT(user: { id: string; telegramId: number }, body: { trackId: string; metadata: Record<string, unknown> }) {
-  const { name, description, mediaUrl, attributes } = body;
-
-  if (!name || !mediaUrl) {
-    return NextResponse.json(
-      {
-        error: "Name and media URL required",
+    // Обновляем балансы
+    await db.user.update({
+      where: { id: user.id },
+      data: {
+        ndtBalance: { decrement: amount },
+        stakedNdt: { increment: amount },
       },
-      { status: 40 }
-    );
+    });
+
+    // Создаем запись о стейкинге
+    const stake = await db.stake.create({
+      data: {
+        userId: user.id,
+        amount,
+        type: "NDT",
+        startDate: new Date(),
+        endDate: new Date(Date.now() + duration * 24 * 60 * 60 * 1000),
+        rewards: 0,
+        status: "active",
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `Successfully staked ${amount} NDT`,
+      stakeId: stake.id,
+    });
+  } catch (error) {
+    return handleApiError(error);
   }
+}
 
-  // Создаем новую NFT
-  const newNFT = await db.nft.create({
-    data: {
-      name,
-      description: description || "",
-      mediaUrl,
-      attributes: attributes || {},
-      creatorId: user.id,
-      ownerId: user.id,
-      price: 0, // Mint бесплатно или с минимальной платой
-      status: "active",
-    },
-  });
+async function handleUnstakeTokens(user: { id: string; telegramId: number; stakedNdt: number; }, body: unknown) {
+  try {
+    const { stakeId } = telegramUnstakeTokensSchema.parse(body);
 
-  return NextResponse.json({
-    success: true,
-    message: "NFT minted successfully",
-    nftId: newNFT.id,
-  });
+    const stake = await db.stake.findUnique({
+        where: { id: stakeId, userId: user.id, status: 'active' },
+    });
+
+    if (!stake) {
+        return NextResponse.json({ error: "Active stake not found" }, { status: 404 });
+    }
+
+    // Обновляем балансы
+    await db.user.update({
+      where: { id: user.id },
+      data: {
+        ndtBalance: { increment: stake.amount },
+        stakedNdt: { decrement: stake.amount },
+      },
+    });
+
+    // Обновляем запись о стейкинге
+    await db.stake.update({
+      where: { id: stakeId },
+      data: { status: "unstaked" },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `Successfully unstaked ${stake.amount} NDT`,
+    });
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+async function handleSwapTokens(user: { id: string; telegramId: number; solBalance: number; ndtBalance: number; }, body: unknown) {
+  try {
+    const { fromToken, toToken, amount } = telegramSwapTokensSchema.parse(body);
+
+    // Проверяем баланс исходного токена
+    let userBalance = 0;
+    let fromBalanceField = "";
+    let toBalanceField = "";
+
+    if (fromToken === "SOL" && toToken === "NDT") {
+      userBalance = user.solBalance;
+      fromBalanceField = "solBalance";
+      toBalanceField = "ndtBalance";
+    } else if (fromToken === "NDT" && toToken === "SOL") {
+      userBalance = user.ndtBalance;
+      fromBalanceField = "ndtBalance";
+      toBalanceField = "solBalance";
+    } else {
+      return NextResponse.json(
+        { error: "Unsupported token swap" },
+        { status: 400 }
+      );
+    }
+
+    if (userBalance < amount) {
+      return NextResponse.json(
+        { error: "Insufficient balance" },
+        { status: 400 }
+      );
+    }
+
+    // Рассчитываем количество токенов для обмена (упрощенный расчет)
+    // В реальном приложении здесь будет взаимодействие с DEX
+    const rate = 0.1; // 1 NDT = 0.1 SOL (пример)
+    const receivedAmount = fromToken === "SOL" ? amount / rate : amount * rate;
+
+    // Обновляем балансы
+    await db.user.update({
+      where: { id: user.id },
+      data: {
+        [fromBalanceField]: { decrement: amount },
+        [toBalanceField]: { increment: receivedAmount },
+      },
+    });
+
+    // Создаем запись о свопе
+    await db.transaction.create({
+      data: {
+        type: "TOKEN_SWAP",
+        fromUserId: user.id,
+        amount: amount,
+        currency: fromToken,
+        receivedAmount: receivedAmount,
+        receivedCurrency: toToken,
+        status: "completed",
+        description: `Swap ${amount} ${fromToken} to ${receivedAmount} ${toToken}`,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `Successfully swapped ${amount} ${fromToken} to ${receivedAmount} ${toToken}`,
+      transactionId: `swap_${Date.now()}`,
+    });
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+async function handleGetNFTs(user: { id: string; telegramId: number }, body: unknown) {
+  try {
+    // Возвращаем NFT пользователя
+    const userNFTs = await db.nft.findMany({
+      where: { ownerId: user.id },
+      include: {
+        creator: true,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      nfts: userNFTs,
+    });
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+async function handleMintNFT(user: { id: string; telegramId: number }, body: unknown) {
+  try {
+    const { name, description, mediaUrl, attributes } = telegramMintNFTSchema.parse(body);
+
+    // Создаем новую NFT
+    const newNFT = await db.nft.create({
+      data: {
+        name,
+        description: description || "",
+        mediaUrl,
+        attributes: attributes || {},
+        creatorId: user.id,
+        ownerId: user.id,
+        price: 0, // Mint бесплатно или с минимальной платой
+        status: "active",
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: "NFT minted successfully",
+      nftId: newNFT.id,
+    });
+  } catch (error) {
+    return handleApiError(error);
+  }
 }

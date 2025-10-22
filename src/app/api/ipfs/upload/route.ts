@@ -1,6 +1,8 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { uploadWithReplication, checkFileAvailabilityOnMultipleGateways } from '@/lib/ipfs-enhanced'
+import { ipfsUploadPostSchema, ipfsUploadGetSchema } from '@/lib/schemas'
+import { handleApiError } from '@/lib/errors/errorHandler'
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,24 +10,18 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File
     const metadata = JSON.parse(formData.get('metadata') as string)
 
-    if (!file) {
-      return NextResponse.json({ error: 'File is required' }, { status: 400 })
-    }
+    const { file: validatedFile, metadata: validatedMetadata } = ipfsUploadPostSchema.parse({ file, metadata });
 
-    // Валидация метаданных
-    const requiredFields = ['title', 'artist', 'genre', 'duration', 'releaseDate']
-    for (const field of requiredFields) {
-      if (!metadata[field]) {
-        return NextResponse.json({ error: `Missing required field: ${field}` }, { status: 400 })
-      }
+    if (!validatedFile) {
+      return NextResponse.json({ error: 'File is required' }, { status: 400 })
     }
 
     // Добавляем стандартные поля
     const enhancedMetadata = {
-      ...metadata,
-      fileSize: file.size,
-      mimeType: file.type,
-      isExplicit: metadata.isExplicit || false,
+      ...validatedMetadata,
+      fileSize: validatedFile.size,
+      mimeType: validatedFile.type,
+      isExplicit: validatedMetadata.isExplicit || false,
       timestamp: new Date().toISOString()
     }
 
@@ -41,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Загружаем файл с репликацией
-    const result = await uploadWithReplication(file, enhancedMetadata, options)
+    const result = await uploadWithReplication(validatedFile, enhancedMetadata, options)
 
     return NextResponse.json({
       success: true,
@@ -56,22 +52,15 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('IPFS upload error:', error)
-    return NextResponse.json(
-      { error: 'Failed to upload file to IPFS' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const cid = searchParams.get('cid')
-
-    if (!cid) {
-      return NextResponse.json({ error: 'CID is required' }, { status: 400 })
-    }
+    const query = Object.fromEntries(searchParams.entries())
+    const { cid } = ipfsUploadGetSchema.parse(query)
 
     // Проверяем доступность файла на нескольких шлюзах
     const availability = await checkFileAvailabilityOnMultipleGateways(cid)
@@ -90,10 +79,6 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('IPFS check error:', error)
-    return NextResponse.json(
-      { error: 'Failed to check file availability' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

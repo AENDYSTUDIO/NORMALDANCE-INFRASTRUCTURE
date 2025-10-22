@@ -1,0 +1,42 @@
+{
+  "name": "music-token-contracts",
+  "version": "1.0.0",
+  "description": "Solana smart contracts for Normal Dance music tokens",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "anchor build",
+    "deploy": "anchor deploy",
+    "test": "anchor test",
+    "initialize": "tsx scripts/initialize-token.ts",
+    "mint": "tsx scripts/mint-tokens.ts",
+    "burn": "tsx scripts/burn-tokens.ts",
+    "reward": "tsx scripts/reward-listener.ts"
+  },
+  "dependencies": {
+    "@project-serum/anchor": "^0.26.0",
+    "@solana/spl-token": "^0.3.8",
+    "@solana/web3.js": "^1.87.6",
+    "borsh": "^0.7.0",
+    "bs58": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/bn.js": "^5.1.1",
+    "@types/chai": "^4.3.5",
+    "@types/mocha": "^10.0.1",
+    "chai": "^4.3.7",
+    "mocha": "^10.2.0",
+    "ts-mocha": "^10.0.0",
+    "tsx": "^3.12.7",
+    "typescript": "^5.1.6"
+  },
+  "keywords": [
+    "solana",
+    "anchor",
+    "spl-token",
+    "music",
+    "defi",
+    "blockchain"
+  ],
+  "author": "AENDY STUDIO",
+  "license": "MIT"
+}

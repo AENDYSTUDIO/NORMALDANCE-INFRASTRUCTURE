@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Card, CardContent, Button, Badge, Avatar, AvatarFallback, AvatarImage, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui'
+import { OptimizedImage } from '@/utils/image-optimizer'
 import { 
   Eye, 
   Heart, 
@@ -24,7 +25,7 @@ export function NFTCard({ nft, onBuy, onAddToWatchlist }: NFTCardProps) {
   return (
     <Card className="group hover:shadow-lg transition-shadow">
       <div className="relative">
-        <img
+        <OptimizedImage
           src={nft.imageUrl || '/placeholder-album.jpg'}
           alt={nft.name}
           className="w-full h-48 object-cover rounded-t-lg"

@@ -16,11 +16,11 @@
  *   --help          Show help message
  */
 
-const fs = require('fs').promises;
-const path = require('path');
-const { execSync } = require('child_process');
-const { SecretsTemplateManager } = require('../config/secrets-templates');
-const axios = require('axios');
+import fs from 'fs';.promises;
+import path from 'path';;
+import { execSync  } from 'child_process';;
+import { SecretsTemplateManager  } from '../config/secrets-templates';;
+import axios from 'axios';;
 
 class GitHubSecretsUpdater {
   constructor() {
@@ -265,7 +265,7 @@ class GitHubSecretsUpdater {
   encryptSecretValue(value) {
     // This is a simplified version - in production, you'd use the GitHub API's public key
     // to encrypt the secret value before sending it
-    const crypto = require('crypto');
+    import crypto from 'crypto';;
     const algorithm = 'aes-256-cbc';
     const key = crypto.createHash('sha256').update(process.env.GITHUB_SECRET_KEY || 'default-key').digest('base64').substr(0, 32);
     const iv = crypto.randomBytes(16);
@@ -279,7 +279,7 @@ class GitHubSecretsUpdater {
 
   async promptForConfirmation(message) {
     return new Promise((resolve) => {
-      const readline = require('readline');
+      import readline from 'readline';;
       const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout

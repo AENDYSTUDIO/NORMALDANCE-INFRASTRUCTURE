@@ -7,8 +7,11 @@
 
 import { SignJWT, jwtVerify } from "jose";
 
-const JWT_SECRET =
-  process.env.JWT_SECRET || "fallback_secret_key_for_development";
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
 
 // Ключ для подписи токенов
 const encoder = new TextEncoder();

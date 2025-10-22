@@ -1,0 +1,132 @@
+// Updated MVP Database Schema with Music Token support
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User model - basic artist profile
+model User {
+  id          String   @id @default(cuid())
+  email       String?  @unique
+  username    String?  @unique
+  displayName String?
+  bio         String?
+  avatar      String?
+  wallet      String?  @unique // Solana wallet address
+  isArtist    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  tracks      Track[]
+  nfts        NFT[]
+  listenerRewards ListenerReward[]
+  stakingPositions StakingPosition[]
+
+  @@map("users")
+}
+
+// Track model - basic music track
+model Track {
+  id          String   @id @default(cuid())
+  title       String
+  artist      String
+  genre       String?
+  duration    Int?     // seconds
+  fileUrl     String   // IPFS hash
+  coverUrl    String?  // IPFS hash
+  description String?
+  price       Float?   // SOL price
+  tokenPrice  Float?   // NDT token price
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  artistId    String
+  artist      User     @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  nfts        NFT[]
+  listenerRewards ListenerReward[]
+
+  @@map("tracks")
+}
+
+// NFT model - simple music NFT
+model NFT {
+  id          String   @id @default(cuid())
+  tokenId     String?  @unique // Solana token ID
+  name        String
+  description String?
+  imageUrl    String?  // IPFS hash
+  metadataUrl String?  // IPFS hash
+  price       Float?   // SOL price
+  tokenPrice  Float?   // NDT token price
+  minted      Boolean  @default(false)
+  mintTx      String?  // Solana transaction signature
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  ownerId     String?
+  owner       User?    @relation(fields: [ownerId], references: [id])
+  trackId     String
+  track       Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@map("nfts")
+}
+
+// Listener Reward model - token rewards for listening
+model ListenerReward {
+  id                  String   @id @default(cuid())
+  userWallet          String
+  trackId             String
+  amount              Float    // NDT tokens earned
+  listenDuration      Int      // seconds listened
+  transactionSignature String? // Solana tx signature
+  status              String   @default("PENDING") // PENDING, COMPLETED, FAILED
+  userId              String?  // Optional user ID if logged in
+  createdAt           DateTime @default(now())
+
+  // Relations
+  user                User?    @relation(fields: [userId], references: [id])
+  track               Track    @relation(fields: [trackId], references: [id])
+
+  @@unique([userWallet, trackId, createdAt])
+  @@map("listener_rewards")
+}
+
+// Staking Position model - token staking for rewards
+model StakingPosition {
+  id                  String   @id @default(cuid())
+  userWallet          String
+  amount              Float    // NDT tokens staked
+  durationDays        Int      // staking period
+  expectedRewards     Float    // expected NDT rewards
+  actualRewards       Float?   // actual rewards received
+  startDate           DateTime
+  endDate             DateTime
+  status              String   @default("ACTIVE") // ACTIVE, COMPLETED, CANCELLED
+  transactionSignature String? // Solana tx signature
+  unstakeTx           String?  // unstake transaction
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  user                User?    @relation(fields: [userId], references: [id])
+
+  @@map("staking_positions")
+}
+
+// Simple session model for auth
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  
+  @@map("sessions")
+}

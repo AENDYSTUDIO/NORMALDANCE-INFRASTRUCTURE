@@ -1,9 +1,10 @@
 /**
- * Monitoring and Alerting System for NormalDance
+ * Enhanced Monitoring and Alerting System for NormalDance
+ * Implements comprehensive monitoring with blockchain-specific metrics
  */
 
-import logger from './logger';
-import { performance } from 'perf_hooks';
+import { performance } from "perf_hooks";
+import { logger } from "./logger";
 
 // Performance metrics interface
 interface PerformanceMetrics {
@@ -18,10 +19,10 @@ interface PerformanceMetrics {
 
 // Health check status
 interface HealthCheck {
-  status: 'healthy' | 'degraded' | 'unhealthy';
+  status: "healthy" | "degraded" | "unhealthy";
   checks: Array<{
     name: string;
-    status: 'pass' | 'fail';
+    status: "pass" | "fail";
     message?: string;
     duration?: number;
   }>;
@@ -65,7 +66,7 @@ export class MonitoringSystem {
 
   constructor(config: Partial<AlertConfig> = {}) {
     this.config = { ...DEFAULT_ALERT_CONFIG, ...config };
-    
+
     // Start periodic health checks
     setInterval(() => this.performHealthCheck(), 60000); // Every minute
   }
@@ -92,7 +93,7 @@ export class MonitoringSystem {
 
   // Record an error
   recordError(error: Error, context?: string): void {
-    const key = context || 'unknown';
+    const key = context || "unknown";
     const currentCount = this.errorCounts.get(key) || 0;
     this.errorCounts.set(key, currentCount + 1);
 
@@ -112,29 +113,29 @@ export class MonitoringSystem {
 
     try {
       const result = await operation();
-      
+
       const endTime = performance.now();
       const endMemory = process.memoryUsage();
-      
+
       this.recordMetric({
         responseTime: endTime - startTime,
         timestamp: Date.now(),
         endpoint: context,
-        method: 'async',
+        method: "async",
         statusCode: 200,
       });
 
       return result;
     } catch (error) {
       const endTime = performance.now();
-      
+
       this.recordMetric({
         responseTime: endTime - startTime,
         timestamp: Date.now(),
         endpoint: context,
-        method: 'async',
+        method: "async",
         statusCode: 500,
-        error: error.message,
+        error: (error as Error).message,
       });
 
       this.recordError(error as Error, context);
@@ -145,7 +146,7 @@ export class MonitoringSystem {
   // Measure synchronous function execution time
   measure<T>(operation: () => T, context?: string): T {
     const startTime = performance.now();
-    let result: T;
+    let result: T | undefined;
     let error: Error | null = null;
 
     try {
@@ -161,7 +162,7 @@ export class MonitoringSystem {
         responseTime: endTime - startTime,
         timestamp: Date.now(),
         endpoint: context,
-        method: 'sync',
+        method: "sync",
         statusCode: 500,
         error: error.message,
       });
@@ -173,25 +174,31 @@ export class MonitoringSystem {
         responseTime: endTime - startTime,
         timestamp: Date.now(),
         endpoint: context,
-        method: 'sync',
+        method: "sync",
         statusCode: 200,
       });
     }
 
-    return result;
+    return result as T;
   }
 
   // Perform health check
   async performHealthCheck(): Promise<HealthCheck> {
-    const checks = [];
+    const checks: Array<{
+      name: string;
+      status: "pass" | "fail";
+      message?: string;
+      duration?: number;
+    }> = [];
 
     // Memory usage check
     const memory = process.memoryUsage();
     const memoryMB = memory.heapUsed / 1024 / 1024;
-    
+
     checks.push({
-      name: 'memory',
-      status: memoryMB > this.config.thresholds.memoryUsage / 2 ? 'fail' : 'pass',
+      name: "memory",
+      status:
+        memoryMB > this.config.thresholds.memoryUsage / 2 ? "fail" : "pass",
       message: `Memory usage: ${memoryMB.toFixed(2)}MB`,
       duration: 0,
     });
@@ -199,11 +206,16 @@ export class MonitoringSystem {
     // Response time check (sample of recent metrics)
     const recentMetrics = this.metrics.slice(-10);
     if (recentMetrics.length > 0) {
-      const avgResponseTime = recentMetrics.reduce((sum, m) => sum + m.responseTime, 0) / recentMetrics.length;
-      
+      const avgResponseTime =
+        recentMetrics.reduce((sum, m) => sum + m.responseTime, 0) /
+        recentMetrics.length;
+
       checks.push({
-        name: 'response_time',
-        status: avgResponseTime > this.config.thresholds.responseTime ? 'fail' : 'pass',
+        name: "response_time",
+        status:
+          avgResponseTime > this.config.thresholds.responseTime
+            ? "fail"
+            : "pass",
         message: `Average response time: ${avgResponseTime.toFixed(2)}ms`,
         duration: 0,
       });
@@ -211,12 +223,15 @@ export class MonitoringSystem {
 
     // Error rate check
     const totalOperations = recentMetrics.length;
-    const errorCount = recentMetrics.filter(m => m.statusCode && m.statusCode >= 400).length;
-    const errorRate = totalOperations > 0 ? (errorCount / totalOperations) * 100 : 0;
-    
+    const errorCount = recentMetrics.filter(
+      (m) => m.statusCode && m.statusCode >= 400
+    ).length;
+    const errorRate =
+      totalOperations > 0 ? (errorCount / totalOperations) * 100 : 0;
+
     checks.push({
-      name: 'error_rate',
-      status: errorRate > this.config.thresholds.errorRate ? 'fail' : 'pass',
+      name: "error_rate",
+      status: errorRate > this.config.thresholds.errorRate ? "fail" : "pass",
       message: `Error rate: ${errorRate.toFixed(2)}%`,
       duration: 0,
     });
@@ -225,52 +240,53 @@ export class MonitoringSystem {
     try {
       // Add database connectivity check here
       checks.push({
-        name: 'database',
-        status: 'pass',
-        message: 'Database connectivity: OK',
+        name: "database",
+        status: "pass" as const,
+        message: "Database connectivity: OK",
         duration: 0,
       });
     } catch (error) {
       checks.push({
-        name: 'database',
-        status: 'fail',
-        message: 'Database connectivity failed',
+        name: "database",
+        status: "fail" as const,
+        message: "Database connectivity failed",
         duration: 0,
       });
     }
 
     // External API check
     try {
-      const response = await fetch('https://api.telegram.org/bot', { 
-        method: 'HEAD',
-        signal: AbortSignal.timeout(5000)
+      const response = await fetch("https://api.telegram.org/bot", {
+        method: "HEAD",
+        signal: AbortSignal.timeout(5000),
       });
-      
+
       checks.push({
-        name: 'external_apis',
-        status: response.ok ? 'pass' : 'fail',
-        message: 'External API connectivity: ' + (response.ok ? 'OK' : 'Failed'),
+        name: "external_apis",
+        status: response.ok ? ("pass" as const) : ("fail" as const),
+        message:
+          "External API connectivity: " + (response.ok ? "OK" : "Failed"),
         duration: 0,
       });
     } catch (error) {
       checks.push({
-        name: 'external_apis',
-        status: 'fail',
-        message: 'External API connectivity failed',
+        name: "external_apis",
+        status: "fail" as const,
+        message: "External API connectivity failed",
         duration: 0,
       });
     }
 
     // Determine overall health
-    const failedChecks = checks.filter(c => c.status === 'fail');
-    let status: HealthCheck['status'];
-    
+    const failedChecks = checks.filter((c) => c.status === "fail");
+    let status: HealthCheck["status"];
+
     if (failedChecks.length === 0) {
-      status = 'healthy';
+      status = "healthy";
     } else if (failedChecks.length <= checks.length / 2) {
-      status = 'degraded';
+      status = "degraded";
     } else {
-      status = 'unhealthy';
+      status = "unhealthy";
     }
 
     const healthCheck: HealthCheck = {
@@ -296,9 +312,11 @@ export class MonitoringSystem {
     uptime: number;
   } {
     const current = this.metrics[this.metrics.length - 1] || null;
-    const average = this.metrics.length > 0 
-      ? this.metrics.reduce((sum, m) => sum + m.responseTime, 0) / this.metrics.length
-      : 0;
+    const average =
+      this.metrics.length > 0
+        ? this.metrics.reduce((sum, m) => sum + m.responseTime, 0) /
+          this.metrics.length
+        : 0;
 
     return {
       current,
@@ -310,14 +328,18 @@ export class MonitoringSystem {
 
   // Check alert thresholds
   private checkAlertThresholds(metric: PerformanceMetrics): void {
-    const alerts = [];
+    const alerts: Array<{
+      type: string;
+      message: string;
+      severity: string;
+    }> = [];
 
     // Response time alert
     if (metric.responseTime > this.config.thresholds.responseTime) {
       alerts.push({
-        type: 'response_time',
+        type: "response_time",
         message: `Response time ${metric.responseTime}ms exceeded threshold ${this.config.thresholds.responseTime}ms`,
-        severity: 'warning',
+        severity: "warning",
       });
     }
 
@@ -325,27 +347,34 @@ export class MonitoringSystem {
     const memoryMB = metric.memoryUsage.heapUsed / 1024 / 1024;
     if (memoryMB > this.config.thresholds.memoryUsage) {
       alerts.push({
-        type: 'memory',
-        message: `Memory usage ${memoryMB.toFixed(2)}MB exceeded threshold ${this.config.thresholds.memoryUsage}MB`,
-        severity: 'critical',
+        type: "memory",
+        message: `Memory usage ${memoryMB.toFixed(2)}MB exceeded threshold ${
+          this.config.thresholds.memoryUsage
+        }MB`,
+        severity: "critical",
       });
     }
 
     // Send notifications
-    alerts.forEach(alert => this.sendNotification(alert));
+    alerts.forEach((alert) => this.sendNotification(alert));
   }
 
   // Check error thresholds
   private checkErrorThresholds(): void {
     for (const [context, count] of this.errorCounts.entries()) {
-      const totalOperations = this.metrics.filter(m => m.endpoint === context).length;
-      const errorRate = totalOperations > 0 ? (count / totalOperations) * 100 : 0;
+      const totalOperations = this.metrics.filter(
+        (m) => m.endpoint === context
+      ).length;
+      const errorRate =
+        totalOperations > 0 ? (count / totalOperations) * 100 : 0;
 
       if (errorRate > this.config.thresholds.errorRate) {
         this.sendNotification({
-          type: 'error_rate',
-          message: `Error rate for ${context}: ${errorRate.toFixed(2)}% exceeded threshold ${this.config.thresholds.errorRate}%`,
-          severity: 'critical',
+          type: "error_rate",
+          message: `Error rate for ${context}: ${errorRate.toFixed(
+            2
+          )}% exceeded threshold ${this.config.thresholds.errorRate}%`,
+          severity: "critical",
         });
       }
     }
@@ -370,8 +399,8 @@ export class MonitoringSystem {
       // Webhook notification
       if (this.config.notifications.webhook && process.env.ALERT_WEBHOOK_URL) {
         await fetch(process.env.ALERT_WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         }).catch(() => {
           // Silent failure for webhook
@@ -381,25 +410,31 @@ export class MonitoringSystem {
       // Slack notification
       if (this.config.notifications.slack && process.env.SLACK_WEBHOOK_URL) {
         await fetch(process.env.SLACK_WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             text: `🚨 ${alert.severity.toUpperCase()}: ${alert.type}`,
-            attachments: [{
-              color: alert.severity === 'critical' ? 'danger' : 'warning',
-              fields: [
-                { title: 'Message', value: alert.message, short: false },
-                { title: 'Timestamp', value: new Date().toISOString(), short: true },
-                { title: 'Severity', value: alert.severity, short: true },
-              ],
-            }],
+            attachments: [
+              {
+                color: alert.severity === "critical" ? "danger" : "warning",
+                fields: [
+                  { title: "Message", value: alert.message, short: false },
+                  {
+                    title: "Timestamp",
+                    value: new Date().toISOString(),
+                    short: true,
+                  },
+                  { title: "Severity", value: alert.severity, short: true },
+                ],
+              },
+            ],
           }),
         }).catch(() => {
           // Silent failure for Slack
         });
       }
     } catch (error) {
-      logger.error('Failed to send notification:', error);
+      logger.error("Failed to send notification:", error);
     }
   }
 
@@ -420,16 +455,23 @@ export class MonitoringSystem {
   } {
     const recentMetrics = this.metrics.slice(-100); // Last 100 metrics
     const totalRequests = recentMetrics.length;
-    const avgResponseTime = totalRequests > 0 
-      ? recentMetrics.reduce((sum, m) => sum + m.responseTime, 0) / totalRequests
-      : 0;
-    
-    const errorCount = recentMetrics.filter(m => m.statusCode && m.statusCode >= 400).length;
-    const errorRate = totalRequests > 0 ? (errorCount / totalRequests) * 100 : 0;
-    
+    const avgResponseTime =
+      totalRequests > 0
+        ? recentMetrics.reduce((sum, m) => sum + m.responseTime, 0) /
+          totalRequests
+        : 0;
+
+    const errorCount = recentMetrics.filter(
+      (m) => m.statusCode && m.statusCode >= 400
+    ).length;
+    const errorRate =
+      totalRequests > 0 ? (errorCount / totalRequests) * 100 : 0;
+
     // Calculate throughput (requests per second over last minute)
     const oneMinuteAgo = Date.now() - 60000;
-    const recentRequests = recentMetrics.filter(m => m.timestamp > oneMinuteAgo);
+    const recentRequests = recentMetrics.filter(
+      (m) => m.timestamp > oneMinuteAgo
+    );
     const throughput = recentRequests.length / 60;
 
     return {
@@ -441,7 +483,9 @@ export class MonitoringSystem {
       },
       system: {
         uptime: Math.round(process.uptime()),
-        memoryUsage: Math.round((process.memoryUsage().heapUsed / 1024 / 1024) * 100) / 100,
+        memoryUsage:
+          Math.round((process.memoryUsage().heapUsed / 1024 / 1024) * 100) /
+          100,
         cpuUsage: 0, // CPU usage would require additional monitoring
       },
       health: this.lastHealthCheck,
@@ -459,7 +503,7 @@ export class MonitoringSystem {
     this.metrics = [];
     this.errorCounts.clear();
     this.lastHealthCheck = null;
-    logger.info('Monitoring metrics reset');
+    logger.info("Monitoring metrics reset");
   }
 }
 
@@ -475,17 +519,17 @@ export function getMonitoring(config?: Partial<AlertConfig>): MonitoringSystem {
 
 // Express middleware for request monitoring
 export function createMonitoringMiddleware(monitoring: MonitoringSystem) {
-  return (req: Request, res: Response, next: () => void) => {
+  return (req: any, res: any, next: () => void) => {
     const startTime = Date.now();
-    
+
     // Record request start
-    res.on('finish', () => {
+    res.on("finish", () => {
       const responseTime = Date.now() - startTime;
-      
+
       monitoring.recordMetric({
         responseTime,
         timestamp: Date.now(),
-        endpoint: req.path,
+        endpoint: req.url,
         method: req.method,
         statusCode: res.statusCode,
       });
@@ -497,7 +541,11 @@ export function createMonitoringMiddleware(monitoring: MonitoringSystem) {
 
 // Monitoring decorator for functions
 export function monitorFunction(context?: string) {
-  return function (target: object, propertyName: string, descriptor: PropertyDescriptor) {
+  return function (
+    target: object,
+    propertyName: string,
+    descriptor: PropertyDescriptor
+  ) {
     const method = descriptor.value;
     const monitoring = getMonitoring();
 

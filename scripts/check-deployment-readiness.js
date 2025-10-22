@@ -5,8 +5,8 @@
  * Проверяет наличие всех необходимых файлов, конфигураций и зависимостей
  */
 
-const fs = require("fs");
-const path = require("path");
+import fs from 'fs';
+import path from 'path';
 
 // Цвета для консоли
 const colors = {

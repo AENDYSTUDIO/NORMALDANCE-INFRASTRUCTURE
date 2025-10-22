@@ -77,7 +77,7 @@ export class AdaptiveEngine {
     adaptiveSettings: AdaptiveSettings
   ): DifficultyLevel {
     // Базовый уровень из профиля пользователя
-    let baseLevel = userProfile.currentLevel;
+    const baseLevel = userProfile.currentLevel;
 
     // Если нет результатов тестов, возвращаем базовый уровень
     if (testResults.length === 0) {

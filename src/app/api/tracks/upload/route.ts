@@ -3,20 +3,11 @@ import { randomUUID } from "crypto";
 import { writeFile } from "fs/promises";
 import { NextResponse } from "next/server";
 import { join } from "path";
-import { z } from "zod";
+import { trackSchema } from "@/lib/schemas";
 import { handleApiError } from "@/lib/errors/errorHandler";
 import type { NextRequest } from "next/server";
 
-// Validation schema for track upload
-const uploadSchema = z.object({
-  title: z.string().min(1).max(100),
-  artistName: z.string().min(1).max(50),
-  genre: z.string().min(1).max(30),
-  duration: z.number().min(1),
-  description: z.string().optional(),
-  price: z.number().min(0).optional(),
-  isExplicit: z.boolean().default(false),
-});
+
 
 // Helper function to validate JWT token
 async function validateToken(token: string): Promise<string | null> {
@@ -125,18 +116,7 @@ export async function POST(request: NextRequest) {
 
     // Validate track metadata
     const metadata = JSON.parse((formData.get("metadata") as string) || "{}");
-    const validatedData = uploadSchema.parse(metadata);
-
-    // Sanitize metadata inputs
-    const sanitizedMetadata = {
-      ...validatedData,
-      title: validatedData.title.trim().substring(0, 100),
-      artistName: validatedData.artistName.trim().substring(0, 50),
-      genre: validatedData.genre.trim().substring(0, 30),
-      description: validatedData.description
-        ? validatedData.description.trim().substring(0, 500)
-        : undefined,
-    };
+    const validatedData = trackSchema.omit({ ipfsHash: true }).parse(metadata);
 
     // Generate unique filename with secure naming
     const fileExtension = file.name.split(".").pop()?.toLowerCase() || "mp3";
@@ -169,21 +149,10 @@ export async function POST(request: NextRequest) {
     // Create track record with correct field names based on Prisma schema
     const track = await db.track.create({
       data: {
-        ...sanitizedMetadata,
+        ...validatedData,
         artistId: artistId,
         ipfsHash: `ipfs_${Date.now()}`, // This would be actual IPFS hash in production
-        metadata: JSON.stringify({
-          duration: sanitizedMetadata.duration,
-          title: sanitizedMetadata.title,
-          artistName: sanitizedMetadata.artistName,
-          genre: sanitizedMetadata.genre,
-          description: sanitizedMetadata.description,
-          isExplicit: sanitizedMetadata.isExplicit,
-          price: sanitizedMetadata.price,
-        }),
         isPublished: true,
-        // Добавим поле с путем к файлу, если оно требуется в схеме
-        // убираем filePath, т.к. оно не существует в схеме
       },
       include: {
         artist: {
@@ -225,18 +194,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validation failed", details: error.errors },
-        { status: 400 }
-      );
-    }
-
-    console.error("Error uploading track:", error);
-    return NextResponse.json(
-      { error: "Failed to upload track" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }
 

@@ -4,9 +4,11 @@ import { authOptions } from '@/lib/auth'
 import { advancedAnalyticsSystem } from '@/lib/advanced-analytics'
 import { volatilityProtectionSystem } from '@/lib/volatility-protection'
 import { smartLimitOrderSystem } from '@/lib/smart-limit-orders'
+import { dashboardGetSchema } from '@/lib/schemas'
+import { handleApiError } from '@/lib/errors/errorHandler'
 
 // GET /api/analytics/dashboard - Get comprehensive dashboard data
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = (await getServerSession(authOptions)) as any
     
@@ -17,13 +19,17 @@ export async function GET() {
       )
     }
 
+    const { searchParams } = new URL(request.url)
+    const query = Object.fromEntries(searchParams.entries())
+    const { timeframe, metric } = dashboardGetSchema.parse(query)
+
     // Получаем данные от всех систем
     const [
       analyticsData,
       protectionStats,
       orderStats
     ] = await Promise.all([
-      advancedAnalyticsSystem.getFullAnalytics(),
+      advancedAnalyticsSystem.getFullAnalytics(timeframe, metric), // Pass timeframe and metric
       volatilityProtectionSystem.getProtectionStats(),
       smartLimitOrderSystem.getOrderStats(session.user.id)
     ])
@@ -70,10 +76,6 @@ export async function GET() {
     return NextResponse.json(dashboardData)
 
   } catch (error) {
-    console.error('Error fetching dashboard data:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch dashboard data' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

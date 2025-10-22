@@ -206,3 +206,6 @@ backups/NORMALDANCE-backup-20251015-143103.zip
 backups/NORMALDANCE-backup15.10.zip
 NormalDanceChain.zip
 gitlab-ssh-setup.md
+
+.gemini/
+gha-creds-*.json

@@ -63,7 +63,7 @@ export class NFTContextProvider {
         price: 2.0,
         currency: 'SOL',
         rarity: 'common',
-        metadata: {}
+        metadata: Record<string, unknown>
       }
     ];
   }
@@ -77,7 +77,7 @@ export class NFTContextProvider {
         price: 0,
         currency: 'SOL',
         rarity: 'owned',
-        metadata: {}
+        metadata: Record<string, unknown>
       }
     ];
   }

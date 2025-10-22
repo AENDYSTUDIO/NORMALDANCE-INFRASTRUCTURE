@@ -3,7 +3,7 @@
  * Manages NFT minting, trading, and staking
  */
 
-import { Web3Transaction, Web3Service } from './web3-service';
+// Циклический импорт удален;
 
 // Export default service
 export const web3Service = getWeb3Service();
