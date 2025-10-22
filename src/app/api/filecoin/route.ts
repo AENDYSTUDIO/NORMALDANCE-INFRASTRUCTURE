@@ -1,23 +1,18 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { filecoinService } from '@/lib/filecoin-service'
+import { filecoinPostSchema, filecoinGetSchema, filecoinDeleteSchema } from '@/lib/schemas'
+import { handleApiError } from '@/lib/errors/errorHandler'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { action, ipfsCid, options } = body
-
-    if (!action || !ipfsCid) {
-      return NextResponse.json(
-        { error: 'Action and IPFS CID are required' },
-        { status: 400 }
-      )
-    }
+    const { action, ipfsCid, options } = filecoinPostSchema.parse(body)
 
     switch (action) {
       case 'create-deal':
         // Создание Filecoin сделки
-        const deal = await filecoinService.createDeal(ipfsCid, options)
+        const deal = await filecoinService.createDeal(ipfsCid!, options)
         return NextResponse.json({
           success: true,
           data: deal
@@ -25,17 +20,9 @@ export async function POST(request: NextRequest) {
 
       case 'calculate-cost':
         // Расчет стоимости хранения
-        const { sizeInBytes, durationInDays } = options
-        if (!sizeInBytes || !durationInDays) {
-          return NextResponse.json(
-            { error: 'Size in bytes and duration in days are required' },
-            { status: 400 }
-          )
-        }
-
         const cost = await filecoinService.calculateStorageCost(
-          sizeInBytes,
-          durationInDays
+          options!.sizeInBytes!,
+          options!.durationInDays!
         )
         return NextResponse.json({
           success: true,
@@ -44,13 +31,14 @@ export async function POST(request: NextRequest) {
 
       case 'check-availability':
         // Проверка доступности файла
-        const availability = await filecoinService.checkFileAvailability(ipfsCid)
+        const availability = await filecoinService.checkFileAvailability(ipfsCid!)
         return NextResponse.json({
           success: true,
           data: availability
         })
 
       default:
+        // This case should ideally not be reached due to Zod enum validation
         return NextResponse.json(
           { error: 'Invalid action' },
           { status: 400 }
@@ -58,18 +46,15 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Filecoin API error:', error)
-    return NextResponse.json(
-      { error: 'Failed to process Filecoin request' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const dealId = searchParams.get('dealId')
+    const query = Object.fromEntries(searchParams.entries())
+    const { dealId, ipfsCid } = filecoinGetSchema.parse(query)
 
     if (dealId) {
       // Получение информации о конкретной сделке
@@ -85,7 +70,15 @@ export async function GET(request: NextRequest) {
         success: true,
         data: deal
       })
-    } else {
+    } else if (ipfsCid) {
+      // Получение информации о сделках по IPFS CID
+      const deals = await filecoinService.getDealsByIpfsCid(ipfsCid)
+      return NextResponse.json({
+        success: true,
+        data: deals
+      })
+    }
+    else {
       // Получение списка активных сделок
       const deals = await filecoinService.listActiveDeals()
       return NextResponse.json({
@@ -95,25 +88,15 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Filecoin GET error:', error)
-    return NextResponse.json(
-      { error: 'Failed to get Filecoin data' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const dealId = searchParams.get('dealId')
-
-    if (!dealId) {
-      return NextResponse.json(
-        { error: 'Deal ID is required' },
-        { status: 400 }
-      )
-    }
+    const query = Object.fromEntries(searchParams.entries())
+    const { dealId } = filecoinDeleteSchema.parse(query)
 
     // Отмена сделки
     const success = await filecoinService.cancelDeal(dealId)
@@ -131,10 +114,6 @@ export async function DELETE(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Filecoin DELETE error:', error)
-    return NextResponse.json(
-      { error: 'Failed to cancel Filecoin deal' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

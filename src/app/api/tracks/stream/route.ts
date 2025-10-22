@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { readFileSync, existsSync, createReadStream } from 'fs'
 import { join } from 'path'
+import { trackStreamQuerySchema, trackStreamPostSchema } from '@/lib/schemas'
+import { handleApiError } from '@/lib/errors/errorHandler'
 
 // GET /api/tracks/stream - Stream audio track
 export async function GET(
@@ -10,14 +12,9 @@ export async function GET(
 ) {
   try {
     const { searchParams } = new URL(request.url)
-    const id = searchParams.get('id')
-    
-    if (!id) {
-      return NextResponse.json(
-        { error: 'Track ID is required' },
-        { status: 400 }
-      )
-    }
+    const query = Object.fromEntries(searchParams.entries())
+    const { id } = trackStreamQuerySchema.parse(query)
+
     const track = await db.track.findUnique({
       where: { id },
       select: {
@@ -75,11 +72,7 @@ export async function GET(
       headers,
     })
   } catch (error) {
-    console.error('Error streaming track:', error)
-    return NextResponse.json(
-      { error: 'Failed to stream track' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -89,15 +82,7 @@ export async function POST(
 ) {
   try {
     const body = await request.json()
-    const { id } = body
-    
-    if (!id) {
-      return NextResponse.json(
-        { error: 'Track ID is required' },
-        { status: 400 }
-      )
-    }
-    const { userId, duration, completed, position } = body
+    const { id, userId, duration, completed, position } = trackStreamPostSchema.parse(body)
 
     // Find the track
     const track = await db.track.findUnique({
@@ -136,7 +121,7 @@ export async function POST(
       })
 
       // Award listening reward
-      if (completed && duration > 30) { // Only reward if listened for more than 30 seconds
+      if (completed && duration && duration > 30) { // Only reward if listened for more than 30 seconds
         await db.reward.create({
           data: {
             userId,
@@ -160,11 +145,7 @@ export async function POST(
       playCount: track.playCount + 1,
     })
   } catch (error) {
-    console.error('Error recording play:', error)
-    return NextResponse.json(
-      { error: 'Failed to record play' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -174,14 +155,9 @@ export async function HEAD(
 ) {
   try {
     const { searchParams } = new URL(request.url)
-    const id = searchParams.get('id')
-    
-    if (!id) {
-      return NextResponse.json(
-        { error: 'Track ID is required' },
-        { status: 400 }
-      )
-    }
+    const query = Object.fromEntries(searchParams.entries())
+    const { id } = trackStreamQuerySchema.parse(query)
+
     const track = await db.track.findUnique({
       where: { id },
       select: {
@@ -227,10 +203,6 @@ export async function HEAD(
       headers,
     })
   } catch (error) {
-    console.error('Error getting track info:', error)
-    return NextResponse.json(
-      { error: 'Failed to get track info' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

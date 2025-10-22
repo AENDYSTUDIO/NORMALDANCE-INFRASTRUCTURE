@@ -2,8 +2,9 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { isAdmin } from '@/lib/rbac'
-import { z } from 'zod'
+
 import { handleApiError } from '@/lib/errors/errorHandler'
+import { nftUpdateSchema } from '@/lib/schemas'
 
 // GET /api/nft/[id] - Get a specific NFT
 export async function GET(
@@ -57,26 +58,11 @@ export async function PUT(
     }
     const { id } = await params
     const body = await request.json()
-    
-    // Only allow updating certain fields
-    const updateData = {
-      ...(body.title && { title: body.title }),
-      ...(body.description && { description: body.description }),
-      ...(body.artistName && { artistName: body.artistName }),
-      ...(body.genre && { genre: body.genre }),
-      ...(body.imageUrl && { imageUrl: body.imageUrl }),
-      ...(body.audioUrl && { audioUrl: body.audioUrl }),
-      ...(body.metadata !== undefined && { metadata: body.metadata }),
-      ...(body.price !== undefined && { price: body.price }),
-      ...(body.royaltyPercentage !== undefined && { royaltyPercentage: body.royaltyPercentage }),
-      ...(body.supply !== undefined && { supply: body.supply }),
-      ...(body.isExplicit !== undefined && { isExplicit: body.isExplicit }),
-      ...(body.isPublished !== undefined && { isPublished: body.isPublished }),
-    }
+    const validatedData = nftUpdateSchema.parse(body)
 
     const nft = await db.nft.update({
       where: { id },
-      data: updateData,
+      data: validatedData,
       include: {
         artist: {
           select: {

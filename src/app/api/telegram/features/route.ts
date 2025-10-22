@@ -2,6 +2,17 @@ import { db } from "@/lib/db";
 import { verifyJWT } from "@/lib/jwt";
 import { telegramIntegration2025 } from "@/lib/telegram-integration-2025";
 import { NextResponse } from "next/server";
+import { handleApiError } from "@/lib/errors/errorHandler";
+import {
+  telegramMusicFeaturePlaySchema,
+  telegramMusicFeatureSearchSchema,
+  telegramNftFeatureBuySchema,
+  telegramNftFeatureSellSchema,
+  telegramStakingFeatureStakeSchema,
+  telegramStakingFeatureUnstakeSchema,
+  telegramPaymentsFeatureSendSchema,
+  telegramNotificationsFeatureSettingsSchema,
+} from "@/lib/schemas";
 
 // GET /api/telegram/features - Возвращает список доступных функций платформы для Telegram Mini App
 export async function GET(request: NextRequest): Promise<NextResponse> {
@@ -83,13 +94,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       },
     };
 
-    return NextResponse.json(features);
   } catch (error) {
-    console.error("Error in Telegram features API:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }
 
@@ -142,35 +148,32 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         return NextResponse.json({ error: "Unknown feature" }, { status: 400 });
     }
   } catch (error) {
-    console.error("Error in Telegram features API:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }
 
 // Обработчики для различных функций
 
-async function handleMusicFeature(user: { id: string; telegramId: number }, body: { action: string; [key: string]: unknown }) {
-  const { action, trackId, playlistId } = body;
+async function handleMusicFeature(user: { id: string; telegramId: number }, body: unknown) {
+  try {
+    const { action } = z.object({ action: z.string() }).parse(body); // Validate action first
 
-  switch (action) {
-    case "list":
-      // Возвращаем список треков
-      const tracks = await db.track.findMany({
-        where: { status: "published" },
-        take: 20,
-        include: {
-          artist: true,
-          album: true,
-        },
-      });
-      return NextResponse.json({ tracks });
+    switch (action) {
+      case "list":
+        // Возвращаем список треков
+        const tracks = await db.track.findMany({
+          where: { status: "published" },
+          take: 20,
+          include: {
+            artist: true,
+            album: true,
+          },
+        });
+        return NextResponse.json({ tracks });
 
-    case "play":
-      // Логируем воспроизведение трека
-      if (trackId) {
+      case "play":
+        const { trackId } = telegramMusicFeaturePlaySchema.parse(body);
+        // Логируем воспроизведение трека
         await db.playHistory.create({
           data: {
             userId: user.id,
@@ -189,18 +192,16 @@ async function handleMusicFeature(user: { id: string; telegramId: number }, body
         });
 
         return NextResponse.json({ track });
-      }
-      return NextResponse.json({ error: "Track ID required" }, { status: 400 });
 
-    case "search":
-      // Поиск треков
-      if (body.query) {
-        const tracks = await db.track.findMany({
+      case "search":
+        const { query } = telegramMusicFeatureSearchSchema.parse(body);
+        // Поиск треков
+        const searchTracks = await db.track.findMany({
           where: {
             OR: [
-              { title: { contains: body.query, mode: "insensitive" } },
+              { title: { contains: query, mode: "insensitive" } },
               {
-                artist: { name: { contains: body.query, mode: "insensitive" } },
+                artist: { name: { contains: query, mode: "insensitive" } },
               },
             ],
           },
@@ -209,42 +210,44 @@ async function handleMusicFeature(user: { id: string; telegramId: number }, body
           },
           take: 20,
         });
-        return NextResponse.json({ tracks });
-      }
-      return NextResponse.json({ error: "Query required" }, { status: 400 });
+        return NextResponse.json({ tracks: searchTracks });
 
-    default:
-      return NextResponse.json(
-        { error: "Unknown music action" },
-        { status: 400 }
-      );
+      default:
+        return NextResponse.json(
+          { error: "Unknown music action" },
+          { status: 400 }
+        );
+    }
+  } catch (error) {
+    return handleApiError(error);
   }
 }
 
-async function handleNFTFeature(user: { id: string; telegramId: number }, body: { action: string; [key: string]: unknown }) {
-  const { action, nftId, amount } = body;
+async function handleNFTFeature(user: { id: string; telegramId: number }, body: unknown) {
+  try {
+    const { action } = z.object({ action: z.string() }).parse(body); // Validate action first
 
-  switch (action) {
-    case "list":
-      // Возвращаем список NFT
-      const nfts = await db.nft.findMany({
-        where: { status: "active" },
-        take: 20,
-        include: {
-          creator: true,
-        },
-      });
-      return NextResponse.json({ nfts });
+    switch (action) {
+      case "list":
+        // Возвращаем список NFT
+        const nfts = await db.nft.findMany({
+          where: { status: "active" },
+          take: 20,
+          include: {
+            creator: true,
+          },
+        });
+        return NextResponse.json({ nfts });
 
-    case "buy":
-      // Покупка NFT
-      if (nftId && amount) {
+      case "buy":
+        const { nftId: buyNftId, amount: buyAmount } = telegramNftFeatureBuySchema.parse(body);
+        // Покупка NFT
         // Проверяем, что NFT существует и доступен для покупки
-        const nft = await db.nft.findUnique({
-          where: { id: nftId },
+        const nftToBuy = await db.nft.findUnique({
+          where: { id: buyNftId },
         });
 
-        if (!nft || nft.status !== "active" || nft.price !== amount) {
+        if (!nftToBuy || nftToBuy.status !== "active" || nftToBuy.price !== buyAmount) {
           return NextResponse.json(
             { error: "NFT not available for purchase" },
             { status: 400 }
@@ -256,11 +259,11 @@ async function handleNFTFeature(user: { id: string; telegramId: number }, body: 
           data: {
             type: "NFT_PURCHASE",
             fromUserId: user.id,
-            toUserId: nft.creatorId,
-            amount: amount,
+            toUserId: nftToBuy.creatorId,
+            amount: buyAmount,
             currency: "SOL",
             status: "pending",
-            nftId: nftId,
+            nftId: buyNftId,
           },
         });
 
@@ -273,7 +276,7 @@ async function handleNFTFeature(user: { id: string; telegramId: number }, body: 
 
         // Обновляем владельца NFT
         await db.nft.update({
-          where: { id: nftId },
+          where: { id: buyNftId },
           data: {
             ownerId: user.id,
             status: "owned",
@@ -285,21 +288,16 @@ async function handleNFTFeature(user: { id: string; telegramId: number }, body: 
           transactionId: transaction.id,
           message: "NFT purchased successfully",
         });
-      }
-      return NextResponse.json(
-        { error: "NFT ID and amount required" },
-        { status: 400 }
-      );
 
-    case "sell":
-      // Продажа NFT
-      if (nftId && amount) {
+      case "sell":
+        const { nftId: sellNftId, amount: sellAmount } = telegramNftFeatureSellSchema.parse(body);
+        // Продажа NFT
         // Проверяем, что пользователь является владельцем NFT
-        const nft = await db.nft.findUnique({
-          where: { id: nftId },
+        const nftToSell = await db.nft.findUnique({
+          where: { id: sellNftId },
         });
 
-        if (!nft || nft.ownerId !== user.id) {
+        if (!nftToSell || nftToSell.ownerId !== user.id) {
           return NextResponse.json(
             { error: "You do not own this NFT" },
             { status: 400 }
@@ -308,10 +306,10 @@ async function handleNFTFeature(user: { id: string; telegramId: number }, body: 
 
         // Обновляем статус NFT на продажу
         await db.nft.update({
-          where: { id: nftId },
+          where: { id: sellNftId },
           data: {
             status: "active",
-            price: amount,
+            price: sellAmount,
           },
         });
 
@@ -319,39 +317,38 @@ async function handleNFTFeature(user: { id: string; telegramId: number }, body: 
           success: true,
           message: "NFT listed for sale",
         });
-      }
-      return NextResponse.json(
-        { error: "NFT ID and amount required" },
-        { status: 400 }
-      );
 
-    default:
-      return NextResponse.json(
-        { error: "Unknown NFT action" },
-        { status: 400 }
-      );
+      default:
+        return NextResponse.json(
+          { error: "Unknown NFT action" },
+          { status: 400 }
+        );
+    }
+  } catch (error) {
+    return handleApiError(error);
   }
 }
 
-async function handleStakingFeature(user: { id: string; telegramId: number }, body: { action: string; [key: string]: unknown }) {
-  const { action, amount } = body;
+async function handleStakingFeature(user: { id: string; telegramId: number; ndtBalance: number; }, body: unknown) {
+  try {
+    const { action } = z.object({ action: z.string() }).parse(body); // Validate action first
 
-  switch (action) {
-    case "info":
-      // Возвращаем информацию о стейкинге пользователя
-      const stakeInfo = await db.stake.findFirst({
-        where: { userId: user.id },
-      });
+    switch (action) {
+      case "info":
+        // Возвращаем информацию о стейкинге пользователя
+        const stakeInfo = await db.stake.findFirst({
+          where: { userId: user.id },
+        });
 
-      return NextResponse.json({
-        stakeInfo: stakeInfo || { amount: 0, rewards: 0, duration: 0 },
-      });
+        return NextResponse.json({
+          stakeInfo: stakeInfo || { amount: 0, rewards: 0, duration: 0 },
+        });
 
-    case "stake":
-      // Стейкинг токенов
-      if (amount && amount > 0) {
+      case "stake":
+        const { amount: stakeAmount } = telegramStakingFeatureStakeSchema.parse(body);
+        // Стейкинг токенов
         // Проверяем баланс пользователя
-        if (user.ndtBalance < amount) {
+        if (user.ndtBalance < stakeAmount) {
           return NextResponse.json(
             { error: "Insufficient NDT balance" },
             { status: 400 }
@@ -362,7 +359,7 @@ async function handleStakingFeature(user: { id: string; telegramId: number }, bo
         const stake = await db.stake.create({
           data: {
             userId: user.id,
-            amount: amount,
+            amount: stakeAmount,
             startDate: new Date(),
             endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 100), // 30 дней
             rewards: 0,
@@ -372,7 +369,7 @@ async function handleStakingFeature(user: { id: string; telegramId: number }, bo
         // Обновляем баланс пользователя
         await db.user.update({
           where: { id: user.id },
-          data: { ndtBalance: { decrement: amount } },
+          data: { ndtBalance: { decrement: stakeAmount } },
         });
 
         return NextResponse.json({
@@ -380,118 +377,125 @@ async function handleStakingFeature(user: { id: string; telegramId: number }, bo
           stakeId: stake.id,
           message: "Tokens staked successfully",
         });
-      }
-      return NextResponse.json({ error: "Amount required" }, { status: 400 });
 
-    case "unstake":
-      // Отмена стейкинга
-      const existingStake = await db.stake.findFirst({
-        where: { userId: user.id, status: "active" },
-      });
+      case "unstake":
+        const { stakeId } = telegramStakingFeatureUnstakeSchema.parse(body);
+        // Отмена стейкинга
+        const existingStake = await db.stake.findUnique({
+          where: { id: stakeId, userId: user.id, status: "active" },
+        });
 
-      if (!existingStake) {
+        if (!existingStake) {
+          return NextResponse.json(
+            { error: "No active stake found" },
+            { status: 400 }
+          );
+        }
+
+        // Обновляем статус стейкинга
+        await db.stake.update({
+          where: { id: existingStake.id },
+          data: { status: "unstaked" },
+        });
+
+        // Возвращаем токены пользователю
+        await db.user.update({
+          where: { id: user.id },
+          data: { ndtBalance: { increment: existingStake.amount } },
+        });
+
+        return NextResponse.json({
+          success: true,
+          message: "Tokens unstaked successfully",
+        });
+
+      default:
         return NextResponse.json(
-          { error: "No active stake found" },
+          { error: "Unknown staking action" },
           { status: 400 }
         );
-      }
-
-      // Обновляем статус стейкинга
-      await db.stake.update({
-        where: { id: existingStake.id },
-        data: { status: "unstaked" },
-      });
-
-      // Возвращаем токены пользователю
-      await db.user.update({
-        where: { id: user.id },
-        data: { ndtBalance: { increment: existingStake.amount } },
-      });
-
-      return NextResponse.json({
-        success: true,
-        message: "Tokens unstaked successfully",
-      });
-
-    default:
-      return NextResponse.json(
-        { error: "Unknown staking action" },
-        { status: 400 }
-      );
+    }
+  } catch (error) {
+    return handleApiError(error);
   }
 }
 
-async function handleAnalyticsFeature(user: { id: string; telegramId: number }, body: { action: string; period?: string }) {
-  const { action } = body;
+async function handleAnalyticsFeature(user: { id: string; telegramId: number; createdAt: Date; }, body: unknown) {
+  try {
+    const { action } = z.object({ action: z.string() }).parse(body); // Validate action first
 
-  switch (action) {
-    case "overview":
-      // Возвращаем общую аналитику
-      const totalListens = await db.playHistory.count({
-        where: { userId: user.id },
-      });
+    switch (action) {
+      case "overview":
+        // Возвращаем общую аналитику
+        const totalListens = await db.playHistory.count({
+          where: { userId: user.id },
+        });
 
-      const totalStaked = await db.stake.aggregate({
-        where: { userId: user.id },
-        _sum: { amount: true },
-      });
+        const totalStaked = await db.stake.aggregate({
+          where: { userId: user.id },
+          _sum: { amount: true },
+        });
 
-      const totalNFTs = await db.nft.count({
-        where: { ownerId: user.id },
-      });
+        const totalNFTs = await db.nft.count({
+          where: { ownerId: user.id },
+        });
 
-      return NextResponse.json({
-        overview: {
-          totalListens,
-          totalStaked: totalStaked._sum.amount || 0,
-          totalNFTs,
-          joinDate: user.createdAt,
-        },
-      });
+        return NextResponse.json({
+          overview: {
+            totalListens,
+            totalStaked: totalStaked._sum.amount || 0,
+            totalNFTs,
+            joinDate: user.createdAt,
+          },
+        });
 
-    case "user-stats":
-      // Возвращаем статистику пользователя
-      const listenStats = await db.playHistory.groupBy({
-        by: ["trackId"],
-        where: { userId: user.id },
-        _count: true,
-        orderBy: { _count: "desc" },
-        take: 5,
-      });
+      case "user-stats":
+        // Возвращаем статистику пользователя
+        const listenStats = await db.playHistory.groupBy({
+          by: ["trackId"],
+          where: { userId: user.id },
+          _count: true,
+          orderBy: { _count: "desc" },
+          take: 5,
+        });
 
-      // Получаем информацию о треках
-      const favoriteTracks = await Promise.all(
-        listenStats.map(async (stat: { trackId: string; count: number; duration: number }) => {
-          const track = await db.track.findUnique({
-            where: { id: stat.trackId },
-            include: { artist: true },
-          });
-          return { track, count: stat._count };
-        })
-      );
+        // Получаем информацию о треках
+        const favoriteTracks = await Promise.all(
+          listenStats.map(async (stat: { trackId: string; count: number; duration: number }) => {
+            const track = await db.track.findUnique({
+              where: { id: stat.trackId },
+              include: { artist: true },
+            });
+            return { track, count: stat._count };
+          })
+        );
 
-      return NextResponse.json({
-        userStats: {
-          favoriteTracks,
-          listenHistory: listenStats,
-        },
-      });
+        return NextResponse.json({
+          userStats: {
+            favoriteTracks,
+            listenHistory: listenStats,
+          },
+        });
 
-    default:
-      return NextResponse.json(
-        { error: "Unknown analytics action" },
-        { status: 400 }
-      );
+      default:
+        return NextResponse.json(
+          { error: "Unknown analytics action" },
+          { status: 400 }
+        );
+    }
+  } catch (error) {
+    return handleApiError(error);
   }
 }
 
-async function handlePaymentsFeature(user: { id: string; telegramId: number }, body: { action: string; [key: string]: unknown }) {
-  const { action, recipientId, amount, message } = body;
+async function handlePaymentsFeature(user: { id: string; telegramId: number; balance: number; name: string; }, body: unknown) {
+  try {
+    const { action } = z.object({ action: z.string() }).parse(body); // Validate action first
 
-  switch (action) {
-    case "send":
-      // Отправка платежа
-      if (recipientId && amount && amount > 0) {
+    switch (action) {
+      case "send":
+        const { recipientId, amount, message } = telegramPaymentsFeatureSendSchema.parse(body);
+        // Отправка платежа
         // Проверяем баланс пользователя
         if (user.balance < amount) {
           return NextResponse.json(
@@ -544,74 +548,73 @@ async function handlePaymentsFeature(user: { id: string; telegramId: number }, b
           transactionId: transaction.id,
           message: "Payment sent successfully",
         });
-      }
-      return NextResponse.json(
-        { error: "Recipient ID and amount required" },
-        { status: 400 }
-      );
 
-    case "receive":
-      // Получение платежа (возвращаем историю платежей)
-      const receivedPayments = await db.transaction.findMany({
-        where: {
-          toUserId: user.id,
-          type: "TRANSFER",
-          status: "completed",
-        },
-        orderBy: { createdAt: "desc" },
-        take: 10,
-      });
+      case "receive":
+        // Получение платежа (возвращаем историю платежей)
+        const receivedPayments = await db.transaction.findMany({
+          where: { toUserId: user.id, type: "TRANSFER", status: "completed" },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+        });
 
-      return NextResponse.json({ receivedPayments });
+        return NextResponse.json({ receivedPayments });
 
-    case "history":
-      // История платежей пользователя
-      const paymentHistory = await db.transaction.findMany({
-        where: {
-          OR: [{ fromUserId: user.id }, { toUserId: user.id }],
-        },
-        orderBy: { createdAt: "desc" },
-        take: 20,
-      });
+      case "history":
+        // История платежей пользователя
+        const paymentHistory = await db.transaction.findMany({
+          where: {
+            OR: [{ fromUserId: user.id }, { toUserId: user.id }],
+          },
+          orderBy: { createdAt: "desc" },
+          take: 20,
+        });
 
-      return NextResponse.json({ paymentHistory });
+        return NextResponse.json({ paymentHistory });
 
-    default:
-      return NextResponse.json(
-        { error: "Unknown payments action" },
-        { status: 400 }
-      );
+      default:
+        return NextResponse.json(
+          { error: "Unknown payments action" },
+          { status: 400 }
+        );
+    }
+  } catch (error) {
+    return handleApiError(error);
   }
 }
 
-async function handleNotificationsFeature(user: { id: string; telegramId: number }, body: { action: string; settings?: Record<string, boolean> }) {
-  const { action } = body;
+async function handleNotificationsFeature(user: { id: string; telegramId: number; emailNotifications: boolean; pushNotifications: boolean; }, body: unknown) {
+  try {
+    const { action } = z.object({ action: z.string() }).parse(body); // Validate action first
 
-  switch (action) {
-    case "list":
-      // Возвращаем список уведомлений пользователя
-      const notifications = await db.notification.findMany({
-        where: { userId: user.id },
-        orderBy: { createdAt: "desc" },
-        take: 20,
-      });
+    switch (action) {
+      case "list":
+        // Возвращаем список уведомлений пользователя
+        const notifications = await db.notification.findMany({
+          where: { userId: user.id },
+          orderBy: { createdAt: "desc" },
+          take: 20,
+        });
 
-      return NextResponse.json({ notifications });
+        return NextResponse.json({ notifications });
 
-    case "settings":
-      // Возвращаем настройки уведомлений
-      return NextResponse.json({
-        settings: {
-          emailNotifications: user.emailNotifications || false,
-          pushNotifications: user.pushNotifications || true,
-          telegramNotifications: true, // всегда включено для Telegram Mini App
-        },
-      });
+      case "settings":
+        const { settings } = telegramNotificationsFeatureSettingsSchema.parse(body);
+        // Возвращаем настройки уведомлений
+        return NextResponse.json({
+          settings: {
+            emailNotifications: settings.emailNotifications || user.emailNotifications || false,
+            pushNotifications: settings.pushNotifications || user.pushNotifications || true,
+            telegramNotifications: true, // всегда включено для Telegram Mini App
+          },
+        });
 
-    default:
-      return NextResponse.json(
-        { error: "Unknown notifications action" },
-        { status: 400 }
-      );
+      default:
+        return NextResponse.json(
+          { error: "Unknown notifications action" },
+          { status: 400 }
+        );
+    }
+  } catch (error) {
+    return handleApiError(error);
   }
 }

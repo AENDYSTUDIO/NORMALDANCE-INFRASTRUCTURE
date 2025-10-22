@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
+import { dexLiquidityPostSchema, dexLiquidityDeleteSchema } from '@/lib/schemas'
+import { handleApiError } from '@/lib/errors/errorHandler'
 
 // POST /api/dex/liquidity - Add liquidity to pool
 export async function POST(request: NextRequest) {
@@ -17,14 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { tonAmount, ndtAmount } = body
-
-    if (!tonAmount || !ndtAmount || tonAmount <= 0 || ndtAmount <= 0) {
-      return NextResponse.json(
-        { error: 'Invalid liquidity amounts' },
-        { status: 400 }
-      )
-    }
+    const { tonAmount, ndtAmount } = dexLiquidityPostSchema.parse(body)
 
     // Get or create liquidity pool
     let pool = await db.liquidityPool.findFirst({
@@ -36,9 +31,9 @@ export async function POST(request: NextRequest) {
       pool = await db.liquidityPool.create({
         data: {
           pair: 'TON-NDT',
-          tonReserve: tonAmount,
-          ndtReserve: ndtAmount,
-          totalLiquidity: tonAmount + ndtAmount,
+          tonReserve: tonAmount || 0, // Use 0 if undefined
+          ndtReserve: ndtAmount || 0, // Use 0 if undefined
+          totalLiquidity: (tonAmount || 0) + (ndtAmount || 0),
           totalFees: 0
         }
       })
@@ -60,14 +55,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (user.tonBalance < tonAmount) {
+    if (tonAmount && user.tonBalance < tonAmount) {
       return NextResponse.json(
         { error: 'Insufficient TON balance' },
         { status: 400 }
       )
     }
 
-    if (user.balance < ndtAmount) {
+    if (ndtAmount && user.balance < ndtAmount) {
       return NextResponse.json(
         { error: 'Insufficient NDT balance' },
         { status: 400 }
@@ -78,11 +73,11 @@ export async function POST(request: NextRequest) {
     let lpTokens: number
     if (pool.tonReserve === 0 && pool.ndtReserve === 0) {
       // First liquidity provision
-      lpTokens = Math.sqrt(tonAmount * ndtAmount)
+      lpTokens = Math.sqrt((tonAmount || 0) * (ndtAmount || 0))
     } else {
       // Calculate based on existing reserves
-      const tonRatio = tonAmount / pool.tonReserve
-      const ndtRatio = ndtAmount / pool.ndtReserve
+      const tonRatio = (tonAmount || 0) / pool.tonReserve
+      const ndtRatio = (ndtAmount || 0) / pool.ndtReserve
       const minRatio = Math.min(tonRatio, ndtRatio)
       lpTokens = minRatio * pool.totalLiquidity
     }
@@ -93,8 +88,8 @@ export async function POST(request: NextRequest) {
       await tx.user.update({
         where: { id: session.user.id },
         data: { 
-          tonBalance: { decrement: tonAmount },
-          balance: { decrement: ndtAmount }
+          tonBalance: { decrement: tonAmount || 0 },
+          balance: { decrement: ndtAmount || 0 }
         }
       })
 
@@ -102,8 +97,8 @@ export async function POST(request: NextRequest) {
       await tx.liquidityPool.update({
         where: { id: pool.id },
         data: {
-          tonReserve: { increment: tonAmount },
-          ndtReserve: { increment: ndtAmount },
+          tonReserve: { increment: tonAmount || 0 },
+          ndtReserve: { increment: ndtAmount || 0 },
           totalLiquidity: { increment: lpTokens }
         }
       })
@@ -120,8 +115,8 @@ export async function POST(request: NextRequest) {
         await tx.liquidityPosition.update({
           where: { id: existingPosition.id },
           data: {
-            tonAmount: { increment: tonAmount },
-            ndtAmount: { increment: ndtAmount },
+            tonAmount: { increment: tonAmount || 0 },
+            ndtAmount: { increment: ndtAmount || 0 },
             lpTokens: { increment: lpTokens }
           }
         })
@@ -130,8 +125,8 @@ export async function POST(request: NextRequest) {
           data: {
             userId: session.user.id,
             poolId: pool.id,
-            tonAmount,
-            ndtAmount,
+            tonAmount: tonAmount || 0,
+            ndtAmount: ndtAmount || 0,
             lpTokens
           }
         })
@@ -143,8 +138,8 @@ export async function POST(request: NextRequest) {
           userId: session.user.id,
           poolId: pool.id,
           type: 'ADD',
-          tonAmount,
-          ndtAmount,
+          tonAmount: tonAmount || 0,
+          ndtAmount: ndtAmount || 0,
           lpTokens,
           status: 'COMPLETED'
         }
@@ -166,11 +161,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error adding liquidity:', error)
-    return NextResponse.json(
-      { error: 'Failed to add liquidity' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -187,14 +178,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { lpTokens } = body
-
-    if (!lpTokens || lpTokens <= 0) {
-      return NextResponse.json(
-        { error: 'Invalid LP token amount' },
-        { status: 400 }
-      )
-    }
+    const { lpTokens } = dexLiquidityDeleteSchema.parse(body)
 
     // Get user's liquidity position
     const position = await db.liquidityPosition.findFirst({
@@ -279,11 +263,7 @@ export async function DELETE(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error removing liquidity:', error)
-    return NextResponse.json(
-      { error: 'Failed to remove liquidity' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -322,10 +302,6 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error getting liquidity positions:', error)
-    return NextResponse.json(
-      { error: 'Failed to get liquidity positions' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

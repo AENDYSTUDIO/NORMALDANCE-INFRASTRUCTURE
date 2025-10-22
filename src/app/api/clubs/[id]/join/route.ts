@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { handleApiError } from "@/lib/errors/errorHandler";
 import { getServerSession } from "next-auth/next";
 import { NextResponse } from "next/server";
+import { clubJoinPostSchema } from "@/lib/schemas";
+import { clubJoinPostSchema } from "@/lib/schemas";
 
 // POST /api/clubs/[id]/join - Join a club
 export async function POST(

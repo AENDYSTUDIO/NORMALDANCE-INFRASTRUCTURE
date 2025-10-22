@@ -4,6 +4,7 @@ import { handleApiError } from "@/lib/errors/errorHandler";
 import type { Session } from "next-auth";
 import { getServerSession } from "next-auth/next";
 import { NextResponse } from "next/server";
+import { clubLeavePostSchema } from "@/lib/schemas";
 
 // POST /api/clubs/leave - Leave current club
 export async function POST() {

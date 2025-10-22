@@ -4,102 +4,125 @@ global:
 
 rule_files:
   - "alert_rules.yml"
-  - "performance_alerts.yml"
 
 alerting:
   alertmanagers:
     - static_configs:
         - targets:
-            - alertmanager:9093
+          - alertmanager:9093
 
 scrape_configs:
-  # Main application metrics
-  - job_name: "normaldance-app"
+  # Application metrics
+  - job_name: 'normaldance-app'
     static_configs:
-      - targets: ["app:3000"]
-    metrics_path: "/metrics"
-    scrape_interval: 15s
-    scrape_timeout: 10s
-
-  # API service metrics
-  - job_name: "normaldance-api"
-    static_configs:
-      - targets: ["api:8080"]
-    metrics_path: "/metrics"
-    scrape_interval: 15s
-    scrape_timeout: 10s
-
-  # WebSocket service metrics
-  - job_name: "normaldance-websocket"
-    static_configs:
-      - targets: ["websocket:3001"]
-    metrics_path: "/metrics"
-    scrape_interval: 15s
-    scrape_timeout: 10s
-
-  # Database metrics
-  - job_name: "postgres"
-    static_configs:
-      - targets: ["postgres:5432"]
-    metrics_path: "/metrics"
-    scrape_interval: 30s
-    scrape_timeout: 10s
-
-  # Redis metrics
-  - job_name: "redis"
-    static_configs:
-      - targets: ["redis:6379"]
-    metrics_path: "/metrics"
-    scrape_interval: 30s
-    scrape_timeout: 10s
-
-  # Nginx metrics
-  - job_name: "nginx"
-    static_configs:
-      - targets: ["nginx:80"]
-    metrics_path: "/metrics"
-    scrape_interval: 30s
-    scrape_timeout: 10s
-
-  # Node.js application metrics
-  - job_name: "nodejs"
-    static_configs:
-      - targets: ["app:3000"]
-    metrics_path: "/metrics"
-    scrape_interval: 15s
-    scrape_timeout: 10s
-
-  # Docker metrics
-  - job_name: "docker"
-    static_configs:
-      - targets: ["cadvisor:8080"]
-    metrics_path: "/metrics"
-    scrape_interval: 30s
-    scrape_timeout: 10s
-
-  # Kubernetes metrics
-  - job_name: "kubernetes-pods"
-    kubernetes_sd_configs:
-      - role: pod
+      - targets: ['frontend:3000', 'backend:8080']
+    scrape_interval: 10s
+    metrics_path: '/metrics'
     relabel_configs:
-      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
-        action: keep
-        regex: true
-      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
-        action: replace
-        target_label: __metrics_path__
-        regex: (.+)
-      - source_labels:
-          [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
-        action: replace
-        regex: ([^:]+)(?::\d+)?;(\d+)
-        replacement: $1:$2
-        target_label: __address__
-      - action: labelmap
-        regex: __meta_kubernetes_pod_label_(.+)
-      - source_labels: [__meta_kubernetes_namespace]
-        action: replace
-        target_label: kubernetes_namespace
-      - source_labels: [__meta_kubernetes_pod_name]
-        action: replace
-        target_label: kubernetes_pod_name
+      - source_labels: [__address__]
+        target_label: instance
+        regex: '([^:]+)(?::\d+)?'
+        replacement: '${1}'
+
+  # Infrastructure monitoring
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+    scrape_interval: 30s
+
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+
+  - job_name: 'ipfs'
+    static_configs:
+      - targets: ['ipfs:8080']
+    scrape_interval: 30s
+    metrics_path: '/debug/metrics/prometheus'
+
+  # Node exporter for system metrics
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 30s
+
+  # Nginx monitoring
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx:80']
+    scrape_interval: 30s
+    metrics_path: '/stub_status'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: nginx
+        replacement: 'nginx'
+
+  # Docker containers
+  - job_name: 'docker'
+    static_configs:
+      - targets: ['docker-host:9323']
+    scrape_interval: 30s
+
+  # Kubernetes API server (if running in k8s)
+  - job_name: 'kubernetes-apiservers'
+    kubernetes_sd_configs:
+    - role: endpoints
+    scheme: https
+    tls_config:
+      ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    relabel_configs:
+    - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+      action: keep
+      regex: default;kubernetes;https
+
+  - job_name: 'kubernetes-nodes'
+    kubernetes_sd_configs:
+    - role: node
+    scheme: https
+    tls_config:
+      ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    relabel_configs:
+    - action: labelmap
+      regex: __meta_kubernetes_node_label_(.+)
+    - target_label: __address__
+      replacement: kubernetes.default.svc:443
+    - source_labels: [__meta_kubernetes_node_name]
+      regex: (.+)
+      target_label: __metrics_path__
+      replacement: /api/v1/nodes/${1}/proxy/metrics
+
+  - job_name: 'kubernetes-pods'
+    kubernetes_sd_configs:
+    - role: pod
+    relabel_configs:
+    - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+      action: keep
+      regex: true
+    - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+      action: replace
+      target_label: __metrics_path__
+      regex: (.+)
+    - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+      action: replace
+      regex: ([^:]+)(?::\d+)?;(\d+)
+      replacement: $1:$2
+      target_label: __address__
+    - action: labelmap
+      regex: __meta_kubernetes_pod_label_(.+)
+    - source_labels: [__meta_kubernetes_namespace]
+      action: replace
+      target_label: kubernetes_namespace
+    - source_labels: [__meta_kubernetes_pod_name]
+      action: replace
+      target_label: kubernetes_pod_name
+
+  # External services (Solana RPC, IPFS gateways, etc.)
+  - job_name: 'external-services'
+    static_configs:
+      - targets: ['solana-rpc:8899', 'ipfs-gateway:8080']
+    scrape_interval: 60s
+    metrics_path: '/metrics'

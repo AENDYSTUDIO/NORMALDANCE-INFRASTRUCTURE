@@ -57,24 +57,11 @@ export async function PUT(
     const { id } = await params
     const body = await request.json()
     
-    // Validate with trackUpdateSchema
-    const validated = trackUpdateSchema.parse(body)
-    
-    // Only allow updating certain fields
-    const updateData = {
-      ...(body.title && { title: body.title }),
-      ...(body.artistName && { artistName: body.artistName }),
-      ...(body.genre && { genre: body.genre }),
-      ...(body.duration !== undefined && { duration: body.duration }),
-      ...(body.metadata !== undefined && { metadata: body.metadata }),
-      ...(body.price !== undefined && { price: body.price }),
-      ...(body.isExplicit !== undefined && { isExplicit: body.isExplicit }),
-      ...(body.isPublished !== undefined && { isPublished: body.isPublished }),
-    }
+    const validatedData = trackUpdateSchema.parse(body)
 
     const track = await db.track.update({
       where: { id },
-      data: updateData,
+      data: validatedData,
       include: {
         artist: {
           select: {
@@ -89,11 +76,7 @@ export async function PUT(
 
     return NextResponse.json(track)
   } catch (error) {
-    console.error('Error updating track:', error)
-    return NextResponse.json(
-      { error: 'Failed to update track' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 

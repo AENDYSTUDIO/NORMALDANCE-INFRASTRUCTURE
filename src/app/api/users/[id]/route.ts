@@ -1,6 +1,8 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { userUpdateSchema } from '@/lib/schemas'
+import { handleApiError } from '@/lib/errors/errorHandler'
 
 // GET /api/users/[id] - Get a specific user
 export async function GET(
@@ -65,11 +67,7 @@ export async function GET(
 
     return NextResponse.json(user)
   } catch (error) {
-    console.error('Error fetching user:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch user' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -81,20 +79,11 @@ export async function PUT(
   try {
     const { id } = await params
     const body = await request.json()
-    
-    // Only allow updating certain fields
-    const updateData = {
-      ...(body.displayName && { displayName: body.displayName }),
-      ...(body.bio !== undefined && { bio: body.bio }),
-      ...(body.avatar !== undefined && { avatar: body.avatar }),
-      ...(body.banner !== undefined && { banner: body.banner }),
-      ...(body.wallet !== undefined && { wallet: body.wallet }),
-      ...(body.isArtist !== undefined && { isArtist: body.isArtist }),
-    }
+    const validatedData = userUpdateSchema.parse(body)
 
     const user = await db.user.update({
       where: { id },
-      data: updateData,
+      data: validatedData,
       select: {
         id: true,
         email: true,
@@ -113,11 +102,7 @@ export async function PUT(
 
     return NextResponse.json(user)
   } catch (error) {
-    console.error('Error updating user:', error)
-    return NextResponse.json(
-      { error: 'Failed to update user' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -135,10 +120,6 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'User deleted successfully' })
   } catch (error) {
-    console.error('Error deleting user:', error)
-    return NextResponse.json(
-      { error: 'Failed to delete user' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

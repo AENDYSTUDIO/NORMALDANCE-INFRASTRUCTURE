@@ -1,23 +1,14 @@
 import { SolanaPayService } from '@/lib/solana-pay';
 import { NextResponse } from 'next/server';
+import { solanaWebhookPostSchema } from '@/lib/schemas';
+import { handleApiError } from '@/lib/errors/errorHandler';
 
 export async function POST(request: Request) {
   try {
     // Parse the request body
     const body = await request.json();
     
-    const { signature, recipient, amount } = body;
-    
-    // Validate required fields
-    if (!signature || !recipient || !amount) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          message: 'Missing required fields: signature, recipient, or amount' 
-        },
-        { status: 400 }
-      );
-    }
+    const { signature, recipient, amount } = solanaWebhookPostSchema.parse(body);
     
     // Validate the payment using Solana Pay service
     const solanaPayService = new SolanaPayService(
@@ -59,14 +50,6 @@ export async function POST(request: Request) {
       );
     }
   } catch (error) {
-    console.error('Solana Pay webhook error:', error);
-    
-    return NextResponse.json(
-      { 
-        success: false, 
-        message: 'Internal server error' 
-      },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }
