@@ -75,19 +75,7 @@ const nextConfig: NextConfig = {
           // 🔐 Content Security Policy (blocks XSS, clickjacking, code injection)
           {
             key: "Content-Security-Policy",
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'wasm-unsafe-eval' https://telegram.org https://vercel.live",
-              "style-src 'self' 'unsafe-inline'", // TailwindCSS requires inline styles
-              "img-src 'self' data: blob: https://*.ipfs.io https://*.ipfs.dweb.link https://ipfs.io https://gateway.pinata.cloud https://cloudflare-ipfs.com",
-              "connect-src 'self' https://api.mainnet-beta.solana.com https://ton.org https://tonapi.io wss://api.mainnet-beta.solana.com https://*.sentry.io",
-              "font-src 'self' data:",
-              "object-src 'none'",
-              "base-uri 'self'",
-              "form-action 'self'",
-              "frame-ancestors 'none'", // Prevents clickjacking
-              "upgrade-insecure-requests",
-            ].join("; "),
+            value: require("./config/csp").getCspHeader(),
           },
           // 🔐 X-Frame-Options (fallback for older browsers)
           {
