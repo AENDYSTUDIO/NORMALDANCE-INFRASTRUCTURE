@@ -1,0 +1,100 @@
+# Dynamic configuration for Traefik v2
+http:
+  routers:
+    frontend:
+      rule: "Host(`frontend.example.com`)"
+      service: frontend
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - security-headers
+
+    api:
+      rule: "Host(`api.example.com`)"
+      service: backend
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - security-headers
+        - rate-limit
+        - backend-loadbalancer
+
+    prometheus:
+      rule: "Host(`prometheus.example.com`)"
+      service: prometheus
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - security-headers
+
+    grafana:
+      rule: "Host(`grafana.example.com`)"
+      service: grafana
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - security-headers
+
+  services:
+    frontend:
+      loadBalancer:
+        servers:
+          - url: "http://nextjs:3000"
+
+    backend:
+      loadBalancer:
+        servers:
+          - url: "http://backend:4000"
+        healthCheck:
+          path: /health
+          interval: "30s"
+          timeout: "10s"
+
+    prometheus:
+      loadBalancer:
+        servers:
+          - url: "http://prometheus:9090"
+
+    grafana:
+      loadBalancer:
+        servers:
+          - url: "http://grafana:3000"
+
+  middlewares:
+    security-headers:
+      headers:
+        customRequestHeaders:
+          X-Forwarded-Proto: "https"
+        customResponseHeaders:
+          X-Frame-Options: "DENY"
+          X-Content-Type-Options: "nosniff"
+          Referrer-Policy: "strict-origin-when-cross-origin"
+          Permissions-Policy: "geolocation=(), microphone=(), camera=()"
+          Content-Security-Policy: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.example.com"
+        sslRedirect: true
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+
+    rate-limit:
+      rateLimit:
+        burst: 100
+        average: 50
+
+    backend-loadbalancer:
+      loadBalancer:
+        method: wrr
+        sticky:
+          cookie:
+            name: backend-session
+            secure: true
+            httpOnly: true
+            sameSite: strict
