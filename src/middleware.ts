@@ -1,9 +1,21 @@
-import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { checkRateLimit as rateLimiterCheck } from "./middleware/rate-limiter";
+import { DEFAULT_HEADERS_CONFIG } from "./lib/security/ISecurityService";
+import { SecurityManager } from "./lib/security/SecurityManager";
 import { logger } from "./lib/utils/logger";
+import { checkRateLimit as rateLimiterCheck } from "./middleware/rate-limiter";
 
-// Enhanced security middleware for NORMALDANCE
+// Initialize SecurityManager with default configuration
+const securityManager = new SecurityManager({
+  csrf: {
+    cookieName: "nd_csrf",
+    headerName: "x-csrf-token",
+    ttlSeconds: 3600,
+    sameSite: "strict",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+  },
+  headers: DEFAULT_HEADERS_CONFIG,
+});
 
 // Define allowed origins
 const allowedOrigins = [
@@ -27,26 +39,18 @@ function isOriginAllowed(origin: string): boolean {
   });
 }
 
-// Enhanced security headers
-const securityHeaders = {
-  "X-Content-Type-Options": "nosniff",
-  "X-Frame-Options": "DENY",
-  "X-XSS-Protection": "1; mode=block",
-  "Referrer-Policy": "strict-origin-when-cross-origin",
-  "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
-  "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
-};
+// Legacy security headers removed; all security headers are now provided by SecurityManager via config/csp.ts
 
 // Check suspicious patterns in request
 interface SecurityCheck {
-  isSuspicious: boolean
-  reason?: string
+  isSuspicious: boolean;
+  reason?: string;
 }
 
 function checkSuspiciousRequest(request: NextRequest): SecurityCheck {
   const userAgent = request.headers.get("user-agent") || "";
   const url = request.url;
-  
+
   // Check for common bot patterns
   const botPatterns = [
     /bot/i,
@@ -56,19 +60,16 @@ function checkSuspiciousRequest(request: NextRequest): SecurityCheck {
     /curl/i,
     /wget/i,
   ];
-  
-  const isBot = botPatterns.some(pattern => pattern.test(userAgent));
-  
+
+  const isBot = botPatterns.some((pattern) => pattern.test(userAgent));
+
   // Check for suspicious URL patterns
-  const suspiciousPatterns = [
-    /\.\./,
-    /<script/i,
-    /javascript:/i,
-    /data:text/i,
-  ];
-  
-  const isSuspiciousUrl = suspiciousPatterns.some(pattern => pattern.test(url));
-  
+  const suspiciousPatterns = [/\.\./, /<script/i, /javascript:/i, /data:text/i];
+
+  const isSuspiciousUrl = suspiciousPatterns.some((pattern) =>
+    pattern.test(url)
+  );
+
   return {
     isSuspicious: isBot && isSuspiciousUrl,
     reason: isBot ? "Bot with suspicious patterns detected" : undefined,
@@ -83,10 +84,10 @@ export async function middleware(request: NextRequest) {
   // Check for suspicious requests
   const securityCheck = checkSuspiciousRequest(request);
   if (securityCheck.isSuspicious) {
-    logger.warn(`Suspicious request blocked: ${securityCheck.reason}`, { 
-      ip, 
+    logger.warn(`Suspicious request blocked: ${securityCheck.reason}`, {
+      ip,
       url: url.pathname,
-      userAgent: request.headers.get("user-agent") 
+      userAgent: request.headers.get("user-agent"),
     });
     return new Response("Request blocked", { status: 403 });
   }
@@ -149,8 +150,11 @@ export async function middleware(request: NextRequest) {
   response.headers.set("Access-Control-Allow-Credentials", "true");
   response.headers.set("Access-Control-Max-Age", "86400"); // 24 hours
 
-  // Add security headers
-  Object.entries(securityHeaders).forEach(([key, value]) => {
+  // Get security headers from SecurityManager
+  const { headers } = securityManager.getSecurityHeaders();
+
+  // Add security headers from SecurityManager first
+  Object.entries(headers).forEach(([key, value]) => {
     response.headers.set(key, value);
   });
 
@@ -162,24 +166,7 @@ export async function middleware(request: NextRequest) {
     });
   }
 
-  // Set Content Security Policy for Telegram Mini App
-  // Don't use unsafe-inline or unsafe-eval as required by Telegram
-  response.headers.set(
-    "Content-Security-Policy",
-    "default-src 'self'; " +
-      "script-src 'self' https://telegram.org https://web.telegram.org https://*.telegram.org; " +
-      "style-src 'self' https://fonts.googleapis.com; " +
-      "font-src 'self' https://fonts.gstatic.com; " +
-      "connect-src 'self' https://api.telegram.org https://*.normaldance.com wss://*.normaldance.com; " +
-      "img-src 'self' data: https:; " +
-      "media-src 'self' data: https:; " +
-      "frame-src 'self' https://t.me https://*.t.me; " +
-      "object-src 'none'; " +
-      "base-uri 'self'; " +
-      "form-action 'self';"
-  );
-
-  // For non-OPTIONS requests, return the response with CORS headers and CSP
+  // For non-OPTIONS requests, return the response with all security headers
   return response;
 }
 

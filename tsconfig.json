@@ -18,25 +18,53 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+    "downlevelIteration": true,
+    "forceConsistentCasingInFileNames": true,
     "plugins": [
       {
         "name": "next"
       }
     ],
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@/components/*": ["./src/components/*"],
+      "@/lib/*": ["./src/lib/*"],
+      "@/lib/security/*": ["./src/lib/security/*"],
+      "@/lib/errors/*": ["./src/lib/errors/*"],
+      "@/lib/utils/*": ["./src/lib/utils/*"],
+      "@/hooks/*": ["./src/hooks/*"],
+      "@/types/*": ["./src/types/*"],
+      "@/config/*": ["./config/*"],
+      "@/public/*": ["./public/*"],
+      "@/styles/*": ["./src/styles/*"],
+      "@/services/*": ["./src/services/*"],
+      "@/store/*": ["./src/store/*"],
+      "@/constants/*": ["./src/constants/*"],
+      "@/utils/*": ["./src/utils/*"],
+      "@/tests/*": ["./tests/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "scripts/**/*.ts",
+    "scripts/**/*.js",
+    "tests/**/*.ts",
+    "tests/**/*.js"
+  ],
   "exclude": [
     "node_modules",
-    "tests",
     "mobile-app/**",
-    "src/components/staking/**/*",
-    "src/components/profile/social-integration.tsx",
-    "src/components/dex/dual-currency-system.tsx",
-    "src/components/dex/**/*",
-    "normal-dance-vercel/**",
-    "src/agents/**"
+    "src/agents/**",
+    "out/**",
+    ".next/**",
+    "dist/**",
+    "build/**",
+    "coverage/**",
+    "test-results/**",
+    "playwright-report/**"
   ]
 }

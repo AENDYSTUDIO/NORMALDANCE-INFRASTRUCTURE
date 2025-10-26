@@ -1,11 +1,38 @@
 import { db } from "@/lib/db";
+import { handleApiError } from "@/lib/errors/errorHandler";
+import { DEFAULT_HEADERS_CONFIG } from "@/lib/security/ISecurityService";
+import { SecurityManager } from "@/lib/security/SecurityManager";
 import { randomUUID } from "crypto";
 import { writeFile } from "fs/promises";
 import { NextResponse } from "next/server";
 import { join } from "path";
 import { z } from "zod";
-import { handleApiError } from "@/lib/errors/errorHandler";
-import type { NextRequest } from "next/server";
+
+// Initialize SecurityManager
+const securityManager = new SecurityManager({
+  csrf: {
+    cookieName: "nd_csrf",
+    headerName: "x-csrf-token",
+    ttlSeconds: 3600,
+    sameSite: "strict",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+  },
+  headers: DEFAULT_HEADERS_CONFIG,
+});
+
+// Initialize SecurityManager
+const securityManager = new SecurityManager({
+  csrf: {
+    cookieName: "nd_csrf",
+    headerName: "x-csrf-token",
+    ttlSeconds: 3600,
+    sameSite: "strict",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+  },
+  headers: DEFAULT_HEADERS_CONFIG,
+});
 
 // Validation schema for track upload
 const uploadSchema = z.object({
@@ -41,6 +68,24 @@ async function validateToken(token: string): Promise<string | null> {
 // POST /api/tracks/upload - Upload a new track
 export async function POST(request: NextRequest) {
   try {
+    // Verify CSRF token
+    const csrfToken = request.headers.get("x-csrf-token");
+    const csrfCookie = request.cookies.get("nd_csrf");
+    const sessionId = "session-placeholder"; // In real implementation, get from auth session
+
+    if (
+      !securityManager.verifyCSRF(
+        sessionId,
+        csrfCookie?.value || "",
+        csrfToken || ""
+      )
+    ) {
+      return NextResponse.json(
+        { error: "CSRF token validation failed" },
+        { status: 403 }
+      );
+    }
+
     // Проверяем аутентификацию пользователя через JWT токен
     const authHeader = request.headers.get("authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
