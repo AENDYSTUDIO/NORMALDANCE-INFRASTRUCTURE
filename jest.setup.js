@@ -286,6 +286,8 @@ global.React = {
     return { type, props, children };
   }),
 };
+<<<<<<< HEAD
+=======
 
 // Polyfill TextEncoder and TextDecoder if not available
 if (typeof TextEncoder === "undefined") {
@@ -297,3 +299,4 @@ if (typeof TextDecoder === "undefined") {
   const util = require("util");
   global.TextDecoder = util.TextDecoder;
 }
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337

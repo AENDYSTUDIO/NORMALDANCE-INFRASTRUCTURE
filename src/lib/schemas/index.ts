@@ -42,6 +42,8 @@ export const trackQuerySchema = z.object({
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
 })
 
+<<<<<<< HEAD
+=======
 export const trackStreamQuerySchema = z.object({
   id: z.string().uuid(),
 });
@@ -54,6 +56,7 @@ export const trackStreamPostSchema = z.object({
   position: z.number().int().optional(),
 });
 
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 // ============================================
 // NFT SCHEMAS
 // ============================================
@@ -75,6 +78,11 @@ export const nftMintSchema = z.object({
   price: z.number().min(0).optional(),
 })
 
+<<<<<<< HEAD
+export const nftTransferSchema = z.object({
+  nftId: z.string().uuid(),
+  toAddress: z.string().regex(/^[A-Za-z0-9]{32,44}$/, 'Invalid wallet address'),
+=======
 export const nftUpdateSchema = nftSchema.partial();
 
 export const nftBurnSchema = z.object({
@@ -88,6 +96,7 @@ export const nftTransferSchema = z.object({
   fromAddress: z.string().regex(/^[A-Za-z0-9]{32,44}$/, 'Invalid wallet address'),
   toAddress: z.string().regex(/^[A-Za-z0-9]{32,44}$/, 'Invalid wallet address'),
   quantity: z.number().int().positive().default(1),
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 })
 
 // ============================================
@@ -106,6 +115,8 @@ export const userSchema = z.object({
 
 export const userUpdateSchema = userSchema.partial()
 
+<<<<<<< HEAD
+=======
 export const userRoleSchema = z.object({
   role: z.enum(["LISTENER", "ARTIST", "CURATOR", "ADMIN"]),
 });
@@ -117,6 +128,7 @@ export const userQuerySchema = z.object({
   artist: z.enum(['true', 'false']).optional().transform(val => val === 'true'),
 });
 
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 // ============================================
 // WALLET SCHEMAS
 // ============================================
@@ -155,7 +167,24 @@ export const donationSchema = z.object({
 // TELEGRAM SCHEMAS
 // ============================================
 
+<<<<<<< HEAD
+export const telegramUserSchema = z.object({
+  id: z.number().int().positive(),
+  first_name: z.string(),
+  last_name: z.string().optional(),
+  username: z.string().optional(),
+  language_code: z.string().optional(),
+  is_premium: z.boolean().optional(),
+})
+
+export const telegramStarsPaymentSchema = z.object({
+  amount: z.number().int().positive(),
+  description: z.string().max(200),
+  userId: z.number().int().positive(),
+})
+=======
 export * from './telegram';
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 
 // ============================================
 // PLAYLIST SCHEMAS
@@ -253,6 +282,26 @@ export const playbackPauseSchema = z.object({
 // DEX SCHEMAS
 // ============================================
 
+<<<<<<< HEAD
+export const swapSchema = z.object({
+  from: z.enum(['TON', 'NDT']),
+  to: z.enum(['TON', 'NDT']),
+  inputAmount: z.number().positive('Amount must be positive'),
+  slippage: z.number().min(0).max(50).default(0.5), // percentage
+})
+
+export const liquiditySchema = z.object({
+  type: z.enum(['ADD', 'REMOVE']),
+  tonAmount: z.number().positive().optional(),
+  ndtAmount: z.number().positive().optional(),
+  lpTokens: z.number().positive().optional(),
+})
+
+// ============================================
+// VALIDATION HELPERS
+// ============================================
+
+=======
 export * from './dex';
 
 // ============================================
@@ -305,6 +354,7 @@ export * from './notificationSettings';
 export * from './messages';
 
 
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 export type ValidationResult<T> = 
   | { success: true; data: T }
   | { success: false; error: string; details?: z.ZodError }

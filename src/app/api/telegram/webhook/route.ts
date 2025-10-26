@@ -1,6 +1,9 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { telegramIntegration2025 } from '@/lib/telegram-integration-2025'
+<<<<<<< HEAD
+import type { TelegramMessage, TelegramUser, TelegramCallbackQuery, TelegramInlineQuery, TelegramPreCheckoutQuery } from '@/types/telegram'
+=======
 import { z } from 'zod'
 import { 
   TelegramUpdateSchema, 
@@ -11,6 +14,7 @@ import {
   TelegramPreCheckoutQuerySchema 
 } from '@/lib/schemas'
 import { handleApiError } from '@/lib/errors/errorHandler'
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 import { logger } from '@/lib/utils/logger'
 
 // POST /api/telegram/webhook - Telegram webhook handler
@@ -31,7 +35,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true })
   } catch (error) {
+<<<<<<< HEAD
+    logger.error('Error processing Telegram webhook:', error instanceof Error ? error : new Error(String(error)))
+    return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 })
+=======
     return handleApiError(error)
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
   }
 }
 
@@ -54,7 +63,11 @@ export async function GET(request: NextRequest) {
 /**
  * 📱 Обработка сообщений
  */
+<<<<<<< HEAD
+async function handleMessage(message: TelegramMessage) {
+=======
 async function handleMessage(message: z.infer<typeof TelegramMessageSchema>) {
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
   const chatId = message.chat.id
   const userId = message.from.id
   const text = message.text
@@ -73,7 +86,11 @@ async function handleMessage(message: z.infer<typeof TelegramMessageSchema>) {
 /**
  * 🎯 Обработка команд
  */
+<<<<<<< HEAD
+async function handleCommand(chatId: number, userId: number, command: string, user: TelegramUser) {
+=======
 async function handleCommand(chatId: number, userId: number, command: string, user: z.infer<typeof TelegramUserSchema>) {
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
   switch (command) {
     case '/start':
       await telegramIntegration2025.sendTelegramMessage(chatId, {
@@ -221,7 +238,11 @@ async function handleCommand(chatId: number, userId: number, command: string, us
 /**
  * 💬 Обработка текстовых сообщений
  */
+<<<<<<< HEAD
+async function handleTextMessage(chatId: number, userId: number, text: string, user: TelegramUser) {
+=======
 async function handleTextMessage(chatId: number, userId: number, text: string, user: z.infer<typeof TelegramUserSchema>) {
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
   // Простой анализ сообщения для определения намерений
   const lowerText = text.toLowerCase()
   
@@ -294,7 +315,11 @@ async function handleTextMessage(chatId: number, userId: number, text: string, u
 /**
  * 🔘 Обработка callback query
  */
+<<<<<<< HEAD
+async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
+=======
 async function handleCallbackQuery(callbackQuery: z.infer<typeof TelegramCallbackQuerySchema>) {
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
   const chatId = callbackQuery.message.chat.id
   const userId = callbackQuery.from.id
   const data = callbackQuery.data
@@ -326,7 +351,11 @@ async function handleCallbackQuery(callbackQuery: z.infer<typeof TelegramCallbac
 /**
  * 🔍 Обработка inline query
  */
+<<<<<<< HEAD
+async function handleInlineQuery(inlineQuery: TelegramInlineQuery) {
+=======
 async function handleInlineQuery(inlineQuery: z.infer<typeof TelegramInlineQuerySchema>) {
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
   const queryId = inlineQuery.id
   const query = inlineQuery.query.toLowerCase()
   const userId = inlineQuery.from.id
@@ -391,7 +420,11 @@ async function handleInlineQuery(inlineQuery: z.infer<typeof TelegramInlineQuery
 /**
  * 💳 Обработка pre-checkout query
  */
+<<<<<<< HEAD
+async function handlePreCheckoutQuery(preCheckoutQuery: TelegramPreCheckoutQuery) {
+=======
 async function handlePreCheckoutQuery(preCheckoutQuery: z.infer<typeof TelegramPreCheckoutQuerySchema>) {
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
   const queryId = preCheckoutQuery.id
   const userId = preCheckoutQuery.from.id
   const currency = preCheckoutQuery.currency

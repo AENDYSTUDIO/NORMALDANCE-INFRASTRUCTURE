@@ -57,7 +57,24 @@ export async function PUT(
     const { id } = await params
     const body = await request.json()
     
+<<<<<<< HEAD
+    // Validate with trackUpdateSchema
+    const validated = trackUpdateSchema.parse(body)
+    
+    // Only allow updating certain fields
+    const updateData = {
+      ...(body.title && { title: body.title }),
+      ...(body.artistName && { artistName: body.artistName }),
+      ...(body.genre && { genre: body.genre }),
+      ...(body.duration !== undefined && { duration: body.duration }),
+      ...(body.metadata !== undefined && { metadata: body.metadata }),
+      ...(body.price !== undefined && { price: body.price }),
+      ...(body.isExplicit !== undefined && { isExplicit: body.isExplicit }),
+      ...(body.isPublished !== undefined && { isPublished: body.isPublished }),
+    }
+=======
     const validatedData = trackUpdateSchema.parse(body)
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 
     const track = await db.track.update({
       where: { id },

@@ -7,7 +7,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; img-src 'self' https://ipfs.io https://cloudflare-ipfs.com https://gateway.pinata.cloud data:; connect-src 'self' https://ipfs.io https://cloudflare-ipfs.com https://gateway.pinata.cloud https://o450000000000000.ingest.sentry.io https://api.mixpanel.com https://api.stripe.com; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'"
+          "value": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://telegram.org https://vercel.live; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.ipfs.io https://*.ipfs.dweb.link https://ipfs.io https://gateway.pinata.cloud https://cloudflare-ipfs.com; connect-src 'self' https://api.mainnet-beta.solana.com wss://api.mainnet-beta.solana.com https://ton.org https://tonapi.io https://*.sentry.io; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
         }
       ]
     }

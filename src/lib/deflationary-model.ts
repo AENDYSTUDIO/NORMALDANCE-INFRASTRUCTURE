@@ -1,7 +1,14 @@
+<<<<<<< HEAD
+import { Connection, PublicKey, Transaction } from '@solana/web3.js'
+import { Mint } from '@solana/spl-token'
+import { NDT_MINT_ADDRESS } from '@/constants/solana'
+import { useState, useEffect } from 'react'
+=======
 import { NDT_MINT_ADDRESS } from "@/constants/solana";
 import { Mint } from "@solana/spl-token";
 import { Transaction } from "@solana/web3.js";
 import { useEffect, useState } from "react";
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 
 export interface DeflationaryConfig {
   totalSupply: number;

@@ -75,6 +75,9 @@ const nextConfig: NextConfig = {
           // 🔐 Content Security Policy (blocks XSS, clickjacking, code injection)
           {
             key: "Content-Security-Policy",
+<<<<<<< HEAD
+            value: require("./config/csp").getCspHeader(),
+=======
             value: [
               "default-src 'self'",
               "script-src 'self' 'wasm-unsafe-eval' https://telegram.org https://vercel.live",
@@ -88,6 +91,7 @@ const nextConfig: NextConfig = {
               "frame-ancestors 'none'", // Prevents clickjacking
               "upgrade-insecure-requests",
             ].join("; "),
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
           },
           // 🔐 X-Frame-Options (fallback for older browsers)
           {
@@ -190,6 +194,10 @@ const nextConfig: NextConfig = {
     ];
   },
 
+<<<<<<< HEAD
+  // Конфигурация сборки
+  output: "standalone",
+=======
 import type { NextConfig } from "next";
 
 // Add bundle analyzer if enabled
@@ -384,6 +392,7 @@ const nextConfig: NextConfig = {
 
   // Оптимизация для Vercel - убираем standalone output для лучшей совместимости
   // output: "standalone", // Раскомментировать только если нужно кастомный сервер
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 
   // Оптимизация для Vercel
   trailingSlash: false,
@@ -397,7 +406,11 @@ const nextConfig: NextConfig = {
     position: "bottom-right",
   },
 
+<<<<<<< HEAD
+  // Конфигурация webpack
+=======
   // Конфигурация webpack - оптимизирована для Vercel
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
   webpack: (config, { dev, isServer }) => {
     // Оптимизация для продакшена
     if (!dev && !isServer) {
@@ -430,13 +443,19 @@ const nextConfig: NextConfig = {
       },
     });
 
+<<<<<<< HEAD
+    // Add fallback for node-specific modules
+=======
     // Add fallback for node-specific modules - оптимизировано для Vercel
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
         fs: false,
         net: false,
         tls: false,
+<<<<<<< HEAD
+=======
         crypto: false,
         stream: false,
         http: false,
@@ -447,6 +466,7 @@ const nextConfig: NextConfig = {
         zlib: false,
         path: false,
         util: false,
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
       };
     }
 

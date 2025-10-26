@@ -8,3 +8,8 @@ export {
   Gavel as Auction,
   ThumbsUp as Vote
 } from 'lucide-react'
+<<<<<<< HEAD
+
+
+=======
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337

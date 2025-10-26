@@ -433,6 +433,11 @@ class APICacheManager extends CacheManager {
   /**
    * Кеширование API ответа
    */
+<<<<<<< HEAD
+  async cacheResponse(endpoint: string, params: Record<string, unknown>, data: unknown): Promise<void> {
+    const key = `api:${endpoint}`
+    await this.set('api', endpoint, data, params)
+=======
   async cacheResponse(
     endpoint: string,
     params: Record<string, unknown>,
@@ -440,6 +445,7 @@ class APICacheManager extends CacheManager {
   ): Promise<void> {
     const key = `api:${endpoint}`;
     await this.set("api", endpoint, data, params);
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
   }
 
   /**
@@ -464,11 +470,16 @@ class UserCacheManager extends CacheManager {
   /**
    * Кеширование профиля пользователя
    */
+<<<<<<< HEAD
+  async cacheUserProfile(userId: string, profile: Record<string, unknown>): Promise<void> {
+    await this.set('user', userId, profile)
+=======
   async cacheUserProfile(
     userId: string,
     profile: Record<string, unknown>
   ): Promise<void> {
     await this.set("user", userId, profile);
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
   }
 
   /**
@@ -482,7 +493,11 @@ class UserCacheManager extends CacheManager {
    * Кеширование плейлистов
    */
   async cachePlaylists(userId: string, playlists: unknown[]): Promise<void> {
+<<<<<<< HEAD
+    await this.set('playlists', userId, playlists)
+=======
     await this.set("playlists", userId, playlists);
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
   }
 
   /**
@@ -543,12 +558,21 @@ export const cacheUtils = {
     delay: number,
     cacheKey: string
   ): T {
+<<<<<<< HEAD
+    let timeoutId: NodeJS.Timeout
+    let lastCall = 0
+    
+    return ((...args: Parameters<T>) => {
+      const now = Date.now()
+      
+=======
     let timeoutId: NodeJS.Timeout;
     let lastCall = 0;
 
     return ((...args: Parameters<T>) => {
       const now = Date.now();
 
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
       if (now - lastCall < delay) {
         return Promise.resolve(null);
       }

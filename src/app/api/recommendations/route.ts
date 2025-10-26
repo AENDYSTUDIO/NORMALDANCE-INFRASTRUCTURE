@@ -1,13 +1,44 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getAIRecommendationEngine } from '@/lib/ai-recommendations';
+<<<<<<< HEAD
+=======
 import { recommendationsGetSchema, recommendationsPostSchema } from '@/lib/schemas';
 import { handleApiError } from '@/lib/errors/errorHandler';
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+<<<<<<< HEAD
+    const { userId, count = 10, type = 'all', filters, exclude } = body as {
+      userId?: string;
+      count?: number;
+      type?: 'personal' | 'trending' | 'discovery' | 'social' | 'all';
+      filters?: {
+        genre?: string[];
+        artist?: string[];
+        minRating?: number;
+        minDuration?: number;
+        maxDuration?: number;
+      };
+      exclude?: {
+        liked?: boolean;
+        skipped?: boolean;
+      };
+    };
+
+    if (!userId) {
+      return new Response(JSON.stringify({
+        error: 'userId is required'
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+=======
     const { userId, count, type, filters, exclude } = recommendationsPostSchema.parse(body);
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 
     const engine = getAIRecommendationEngine();
     const recommendations = await engine.getRecommendations(userId, {
@@ -44,6 +75,38 @@ export async function POST(req: NextRequest) {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
+<<<<<<< HEAD
+    console.error('Recommendation error:', error);
+    return new Response(JSON.stringify({
+      error: 'Failed to generate recommendations',
+      message: error.message
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+export async function GET(req: NextRequest, res: NextResponse) {
+  const { search } = req.query as { search?: string };
+
+  if (!search) {
+    return new Response(JSON.stringify({
+      error: 'Search query is required'
+    }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  try {
+    // Implementation would search tracks
+    const results = []; // Search implementation would go here
+
+    return new Response(JSON.stringify({
+      success: true,
+      data: results,
+=======
     return handleApiError(error);
   }
 }
@@ -76,11 +139,23 @@ export async function GET(req: NextRequest) {
         audioFeatures: rec.track.audioFeatures,
         socialFeatures: rec.track.socialFeatures,
       })),
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
+<<<<<<< HEAD
+    console.error('Search error:', error);
+    return new Response(JSON.stringify({
+      error: 'Search failed',
+      message: error.message
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+=======
     return handleApiError(error);
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
   }
 }

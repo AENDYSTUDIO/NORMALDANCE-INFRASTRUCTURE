@@ -8,7 +8,11 @@ import { dashboardGetSchema } from '@/lib/schemas'
 import { handleApiError } from '@/lib/errors/errorHandler'
 
 // GET /api/analytics/dashboard - Get comprehensive dashboard data
+<<<<<<< HEAD
+export async function GET() {
+=======
 export async function GET(request: Request) {
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
   try {
     const session = (await getServerSession(authOptions)) as any
     

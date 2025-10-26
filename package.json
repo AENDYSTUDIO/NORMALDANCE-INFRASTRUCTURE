@@ -1,6 +1,10 @@
 {
   "name": "normaldance",
+<<<<<<< HEAD
+  "version": "0.0.3",
+=======
   "version": "0.2.0",
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
   "description": "Децентрализованная музыкальная платформа",
   "repository": {
     "type": "git",
@@ -60,13 +64,13 @@
     "deploy:guide": "echo 'Откройте DEPLOYMENT_STEP_BY_STEP_COMPLETE.md для полной инструкции по развертыванию'"
   },
   "dependencies": {
-    "@helia/unixfs": "^3.0.0",
+    "@helia/unixfs": "^6.0.1",
     "@libp2p/mplex": "^10.0",
     "@libp2p/tcp": "^9.0.0",
     "@modelcontextprotocol/sdk": "^1.20.1",
     "@next-auth/prisma-adapter": "^1.0.7",
     "@pinata/sdk": "^2.1.0",
-    "@prisma/client": "^5.0.0",
+    "@prisma/client": "^6.17.1",
     "@qdrant/js-client-rest": "^1.15.1",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -95,9 +99,15 @@
     "@radix-ui/react-toggle-group": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@react-spring/three": "^9.7.3",
+<<<<<<< HEAD
+    "@react-three/drei": "^9.92.0",
+    "@react-three/fiber": "^8.15.0",
+    "@sentry/nextjs": "^10.11.0",
+=======
     "@react-three/drei": "^10.7.6",
     "@react-three/fiber": "^8.15.0",
     "@sentry/nextjs": "^10.1.0",
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
     "@socket.io/redis-adapter": "^8.2.1",
     "@solana/pay": "^0.2.6",
     "@solana/spl-token": "^0.4.14",
@@ -133,14 +143,19 @@
     "helia": "^4.2.2",
     "helmet": "^8.0.0",
     "input-otp": "^1.4.2",
+<<<<<<< HEAD
+    "ioredis": "^5.3.2",
+=======
     "ioredis": "^5.8.1",
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
     "isomorphic-dompurify": "^2.16.0",
     "jsonwebtoken": "^9.0.0",
     "logform": "^2.7.0",
     "lucide-react": "^0.544.0",
     "mixpanel-browser": "^2.48.0",
     "multiformats": "^13.1.0",
-    "next": "^15.0.0",
+    "n8n-nodes-dewiar-collection": "^1.1.4",
+    "next": "^15.5.6",
     "next-auth": "^4.24.11",
     "next-themes": "^0.4.6",
     "prisma": "^5.0.0",
@@ -156,7 +171,11 @@
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "sonner": "^2.0.7",
+<<<<<<< HEAD
+    "stripe": "^14.0.0",
+=======
     "stripe": "^14.0",
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-react": "^5.29.5",
     "tailwind-merge": "^3.3.1",
@@ -175,11 +194,15 @@
     "@babel/preset-typescript": "^7.27.1",
     "@next/bundle-analyzer": "^15.0.0",
     "@next/eslint-plugin-next": "^15.5.4",
+<<<<<<< HEAD
+    "@playwright/test": "^1.55.0",
+=======
     "@playwright/test": "^1.5.0",
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
     "@storybook/addon-a11y": "^8.6.14",
     "@storybook/addon-essentials": "^8.6.14",
     "@storybook/addon-interactions": "^8.6.14",
-    "@storybook/nextjs": "^8.6.14",
+    "@storybook/nextjs": "^9.1.13",
     "@storybook/test": "^8.6.14",
     "@tailwindcss/postcss": "^4.1.15",
     "@testing-library/jest-dom": "^6.9.1",
@@ -191,8 +214,13 @@
     "@types/react-dom": "^18.0.0",
     "@typescript-eslint/eslint-plugin": "^8.46.1",
     "@typescript-eslint/parser": "^8.46.1",
+<<<<<<< HEAD
+    "@upstash/ratelimit": "^1.0.0",
+    "@upstash/redis": "^1.0.0",
+=======
     "@upstash/ratelimit": "^1.0",
     "@upstash/redis": "^1.0",
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
     "autoprefixer": "^10.4.21",
     "babel-jest": "^30.2.0",
     "chromatic": "^13.1.4",

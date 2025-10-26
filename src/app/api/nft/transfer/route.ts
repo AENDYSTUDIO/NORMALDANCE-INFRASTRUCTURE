@@ -3,6 +3,17 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { nftTransferSchema } from '@/lib/schemas'
 import { handleApiError } from '@/lib/errors/errorHandler'
+<<<<<<< HEAD
+
+// Extended schema for internal transfer with quantity
+import { z } from 'zod'
+
+const transferSchema = nftTransferSchema.extend({
+  fromAddress: z.string().regex(/^[A-Za-z0-9]{32,44}$/, 'Invalid from address'),
+  quantity: z.number().int().positive().default(1),
+})
+=======
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 
 // POST /api/nft/transfer - Transfer NFT between addresses
 export async function POST(request: NextRequest) {

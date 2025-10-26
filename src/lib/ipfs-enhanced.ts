@@ -1,4 +1,8 @@
+<<<<<<< HEAD
+import { logger } from './logger';
+=======
 import { logger } from "./logger";
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 
 // Интерфейс для IPFS метаданных
 export interface IPFSTrackMetadata {
@@ -13,9 +17,13 @@ export interface IPFSTrackMetadata {
   key?: string;
   isExplicit: boolean;
   fileSize: number;
+<<<<<<< HEAD
+  mimeType: string;
+=======
   format: string;
   sampleRate: number;
   bitDepth: number;
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 }
 
 // Интерфейс для результата загрузки
@@ -175,6 +183,11 @@ async function uploadLargeFileToIPFS(
       };
     }
 
+<<<<<<< HEAD
+    // For larger files, use chunking approach
+    const totalChunks = Math.ceil(file.size / chunkSize);
+    const chunks: Uint8Array[] = [];
+=======
     // For larger files, use chunking approach with parallel processing and progress tracking
     const totalChunks = Math.ceil(file.size / chunkSize);
     const chunks: Uint8Array[] = [];
@@ -182,6 +195,7 @@ async function uploadLargeFileToIPFS(
     logger.info(
       `Starting upload of large file: ${file.name} (${file.size} bytes), splitting into ${totalChunks} chunks`
     );
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 
     // Чанкуем файл
     for (let i = 0; i < totalChunks; i++) {
@@ -198,6 +212,18 @@ async function uploadLargeFileToIPFS(
     const { uploadToIPFS } = await import("./ipfs");
     const chunkCIDs: string[] = [];
 
+<<<<<<< HEAD
+    for (const chunk of chunks) {
+      // Create a Buffer from the Uint8Array
+      const buffer = Buffer.from(chunk);
+      // Convert to File-like object using Blob
+      const blob = new Blob([buffer]);
+      const fileChunk = new File([blob], `chunk_${chunkCIDs.length}`);
+
+      // Загружаем каждый чанк через unified API
+      const chunkResult = await uploadToIPFS(fileChunk);
+      chunkCIDs.push(chunkResult.cid);
+=======
     // Загружаем чанки параллельно с ограничением по количеству одновременных операций
     const maxConcurrentUploads = 3; // Ограничиваем количество параллельных загрузок
     for (let i = 0; i < chunks.length; i += maxConcurrentUploads) {
@@ -229,6 +255,7 @@ async function uploadLargeFileToIPFS(
           i + chunkSlice.length
         }/${totalChunks} chunks)`
       );
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
     }
 
     // Санитизируем метаданные
@@ -239,7 +266,11 @@ async function uploadLargeFileToIPFS(
       description: metadata.description?.replace(/[<>]/g, "") || "",
     };
 
+<<<<<<< HEAD
+    // Создаем манифест для чанков
+=======
     // Создаем манифест для чанков с дополнительной информацией
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
     const manifest = {
       chunks: chunkCIDs,
       totalChunks,
@@ -248,7 +279,10 @@ async function uploadLargeFileToIPFS(
       type: "chunked-audio",
       timestamp: new Date().toISOString(),
       compression: "none",
+<<<<<<< HEAD
+=======
       chunkSize,
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
     };
 
     // Create a blob for the manifest JSON to match the expected type
@@ -260,6 +294,15 @@ async function uploadLargeFileToIPFS(
     // Загружаем манифест
     const manifestResult = await uploadToIPFS(manifestFile);
     const manifestCID = manifestResult.cid;
+<<<<<<< HEAD
+
+    // Пинимаем через unified API
+    try {
+      const { pinFile } = await import("./ipfs");
+      await pinFile(manifestCID);
+      for (const chunkCID of chunkCIDs) {
+        await pinFile(chunkCID);
+=======
 
     logger.info(`Manifest uploaded: ${manifestCID}`);
 
@@ -269,6 +312,7 @@ async function uploadLargeFileToIPFS(
       await pinFileHelia(manifestCID);
       for (const chunkCID of chunkCIDs) {
         await pinFileHelia(chunkCID);
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
       }
       logger.info("File pinned successfully via unified API");
     } catch (pinError) {
@@ -462,6 +506,49 @@ export async function monitorFileHealth(cid: string): Promise<{
 import { apiCache } from "./cache-manager";
 
 // Кэширование результатов для улучшения производительности
+<<<<<<< HEAD
+const cache = new Map<
+  string,
+  {
+    data: unknown;
+    timestamp: number;
+    ttl: number;
+  }
+>();
+
+export function getCachedData(key: string, ttl: number = 300000): unknown | null {
+  const cached = cache.get(key);
+  if (cached && Date.now() - cached.timestamp < ttl) {
+    return cached.data;
+  }
+  return null;
+}
+
+export function setCachedData(
+  key: string,
+  data: unknown,
+  ttl: number = 300000
+): void {
+  cache.set(key, {
+    data,
+    timestamp: Date.now(),
+    ttl,
+  });
+}
+
+// Очистка устаревших кэшированных данных
+export function cleanupCache(): void {
+  const now = Date.now();
+  for (const [key, value] of cache.entries()) {
+    if (now - value.timestamp > value.ttl) {
+      cache.delete(key);
+    }
+  }
+}
+
+// Регулярная очистка кэша
+setInterval(cleanupCache, 60000); // Каждую минуту
+=======
 export async function getCachedData(
   key: string,
   ttl: number = 300000
@@ -484,3 +571,4 @@ export async function cleanupCache(): Promise<void> {
 }
 
 // Регулярная очистка кэша больше не требуется, так как используется TTL в CacheManager
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337

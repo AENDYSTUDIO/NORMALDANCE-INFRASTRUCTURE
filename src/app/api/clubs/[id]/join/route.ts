@@ -3,8 +3,11 @@ import { db } from "@/lib/db";
 import { handleApiError } from "@/lib/errors/errorHandler";
 import { getServerSession } from "next-auth/next";
 import { NextResponse } from "next/server";
+<<<<<<< HEAD
+=======
 import { clubJoinPostSchema } from "@/lib/schemas";
 import { clubJoinPostSchema } from "@/lib/schemas";
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 
 // POST /api/clubs/[id]/join - Join a club
 export async function POST(

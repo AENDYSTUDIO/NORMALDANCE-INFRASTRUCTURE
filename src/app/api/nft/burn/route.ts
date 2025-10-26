@@ -1,8 +1,20 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+<<<<<<< HEAD
+import { z } from 'zod'
+import { handleApiError } from '@/lib/errors/errorHandler'
+
+// Validation schema for burning NFT
+const burnSchema = z.object({
+  nftId: z.string().min(1),
+  ownerAddress: z.string().min(1),
+  quantity: z.number().min(1).default(1),
+})
+=======
 import { nftBurnSchema } from '@/lib/schemas'
 import { handleApiError } from '@/lib/errors/errorHandler'
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 
 // POST /api/nft/burn - Burn NFT (permanently remove from circulation)
 export async function POST(request: NextRequest) {

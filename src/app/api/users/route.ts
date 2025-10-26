@@ -21,8 +21,13 @@ export async function GET(request: NextRequest) {
             { displayName: { contains: search, mode: 'insensitive' as const } },
             { email: { contains: search, mode: 'insensitive' as const } },
           ]
+<<<<<<< HEAD
+        } : Record<string, unknown>,
+        isArtist !== null ? { isArtist } : Record<string, unknown>,
+=======
         } : {},
         isArtist !== undefined ? { isArtist } : {},
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
         { isActive: true }
       ]
     }
