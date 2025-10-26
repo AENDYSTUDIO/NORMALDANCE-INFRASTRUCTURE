@@ -1,14 +1,6 @@
-<<<<<<< HEAD
-import { Connection, PublicKey, Transaction } from '@solana/web3.js'
-import { Mint } from '@solana/spl-token'
-import { NDT_MINT_ADDRESS } from '@/constants/solana'
-import { useState, useEffect } from 'react'
-=======
-import { NDT_MINT_ADDRESS } from "@/constants/solana";
 import { Mint } from "@solana/spl-token";
-import { Transaction } from "@solana/web3.js";
+import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { useEffect, useState } from "react";
->>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 
 export interface DeflationaryConfig {
   totalSupply: number;
@@ -68,7 +60,7 @@ export const DEFALATIONARY_CONFIG: DeflationaryConfig = {
 export class DeflationaryModel {
   private connection: Connection;
   private config: DeflationaryConfig;
-  private mint: Mint;
+  private mint?: Mint;
 
   constructor(
     connection: Connection,
@@ -76,7 +68,8 @@ export class DeflationaryModel {
   ) {
     this.connection = connection;
     this.config = config;
-    this.mint = new Mint({ address: NDT_MINT_ADDRESS });
+    // Mint будет инициализирован позже при необходимости
+    // this.mint = new Mint({ address: NDT_MINT_ADDRESS });
   }
 
   // Рассчитать количество токенов для сжигания

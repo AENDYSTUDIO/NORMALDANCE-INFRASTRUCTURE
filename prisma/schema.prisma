@@ -1,15 +1,11 @@
-// Simplified Prisma schema for development with SQLite
+// This is your main schema file
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-<<<<<<< HEAD
-  provider = "postgresql"
-=======
   provider = "sqlite"
->>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
-  url      = env("DATABASE_URL")
+  url      = "file:./dev.db"
 }
 
 // User model for artists and listeners
@@ -24,7 +20,6 @@ model User {
   wallet      String?     // Web3 wallet address
   level       String      @default("BRONZE") // UserLevel as String
   balance     Float       @default(0) // $NDT token balance
-  tonBalance  Float       @default(0) // TON balance
   isArtist    Boolean     @default(false)
   isActive    Boolean     @default(true)
   role        String      @default("LISTENER") // UserRole as String
@@ -36,6 +31,8 @@ model User {
   playlists   Playlist[]
   likes       Like[]
   comments    Comment[]
+  playHistory PlayHistory[]
+  rewards     Reward[]
   
   @@map("users")
 }
@@ -62,10 +59,6 @@ model Track {
   // Relations
   artistId    String
   artist      User     @relation(fields: [artistId], references: [id], onDelete: Cascade)
-  
-  likes       Like[]
-  comments    Comment[]
-  playlistTracks PlaylistTrack[]
   
   @@map("tracks")
 }
@@ -136,4 +129,34 @@ model Comment {
   track   Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
   
   @@map("comments")
+}
+
+// Play history model for tracking user plays
+model PlayHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  trackId   String
+  duration  Int      // Duration in seconds
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  // Relations
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("play_history")
+}
+
+// Reward model for user rewards
+model Reward {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // Reward type (LISTENING, CONTRIBUTION, etc.)
+  amount    Int      // Reward amount
+  reason    String   // Reason for reward
+  createdAt DateTime @default(now())
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("rewards")
 }

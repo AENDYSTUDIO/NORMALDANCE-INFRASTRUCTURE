@@ -1,353 +1,160 @@
-import { db } from "@/lib/db";
-<<<<<<< HEAD
-import { handleApiError } from "@/lib/errors/errorHandler";
-import { DEFAULT_HEADERS_CONFIG } from "@/lib/security/ISecurityService";
-import { SecurityManager } from "@/lib/security/SecurityManager";
-=======
->>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
-import { randomUUID } from "crypto";
-import { writeFile } from "fs/promises";
+import { IPFSTrackMetadata, uploadWithReplication } from "@/lib/ipfs-enhanced";
+import { validateData } from "@/lib/schemas";
+import { logger } from "@/lib/utils/logger";
 import { NextResponse } from "next/server";
-import { join } from "path";
-<<<<<<< HEAD
 import { z } from "zod";
 
-// Initialize SecurityManager
-const securityManager = new SecurityManager({
-  csrf: {
-    cookieName: "nd_csrf",
-    headerName: "x-csrf-token",
-    ttlSeconds: 3600,
-    sameSite: "strict",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-  },
-  headers: DEFAULT_HEADERS_CONFIG,
-});
-
-// Initialize SecurityManager
-const securityManager = new SecurityManager({
-  csrf: {
-    cookieName: "nd_csrf",
-    headerName: "x-csrf-token",
-    ttlSeconds: 3600,
-    sameSite: "strict",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-  },
-  headers: DEFAULT_HEADERS_CONFIG,
-});
-
-// Validation schema for track upload
+// Schema for file upload
 const uploadSchema = z.object({
+  file: z.instanceof(File),
   title: z.string().min(1).max(100),
   artistName: z.string().min(1).max(50),
   genre: z.string().min(1).max(30),
-  duration: z.number().min(1),
-  description: z.string().optional(),
-  price: z.number().min(0).optional(),
   isExplicit: z.boolean().default(false),
+  metadata: z.record(z.unknown()).optional(),
 });
-=======
-import { trackSchema } from "@/lib/schemas";
-import { handleApiError } from "@/lib/errors/errorHandler";
-import type { NextRequest } from "next/server";
 
-
->>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
-
-// Helper function to validate JWT token
-async function validateToken(token: string): Promise<string | null> {
-  // В реальном приложении здесь будет проверка JWT токена
-  // В целях безопасности реализация зависит от вашей системы аутентификации
-  // Для примера возвращаем фиктивный ID, если токен не пустой
-  if (!token) return null;
-
-  // Здесь должна быть проверка подписи токена и извлечение ID пользователя
-  // например, с использованием библиотеки jsonwebtoken
+export async function POST(request: any) {
   try {
-    // const decoded = jwt.verify(token, process.env.JWT_SECRET!);
-    // return decoded.userId;
-    // Пока возвращаем фиктивный ID для примера
-    return "valid_user_id"; // Замените на реальную проверку токена
-  } catch (error) {
-    console.error("Token validation error:", error);
-    return null;
-  }
-}
-
-// POST /api/tracks/upload - Upload a new track
-export async function POST(request: NextRequest) {
-  try {
-<<<<<<< HEAD
-    // Verify CSRF token
-    const csrfToken = request.headers.get("x-csrf-token");
-    const csrfCookie = request.cookies.get("nd_csrf");
-    const sessionId = "session-placeholder"; // In real implementation, get from auth session
-
-    if (
-      !securityManager.verifyCSRF(
-        sessionId,
-        csrfCookie?.value || "",
-        csrfToken || ""
-      )
-    ) {
-      return NextResponse.json(
-        { error: "CSRF token validation failed" },
-        { status: 403 }
-      );
-    }
-
-=======
->>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
-    // Проверяем аутентификацию пользователя через JWT токен
-    const authHeader = request.headers.get("authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
-
-    const token = authHeader.substring(7);
-    const userId = await validateToken(token);
-    if (!userId) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    // Parse form data
     const formData = await request.formData();
+    const file = formData.get("file") as File;
+    const title = formData.get("title") as string;
+    const artistName = formData.get("artistName") as string;
+    const genre = formData.get("genre") as string;
+    const isExplicit = formData.get("isExplicit") === "true";
+    const metadataString = formData.get("metadata") as string;
 
-    // Get file from form data
-    const file = formData.get("audioFile") as File | null;
-    const imageFile = formData.get("imageFile") as File | null;
+    // Validate input
+    const validationResult = validateData(uploadSchema, {
+      file,
+      title,
+      artistName,
+      genre,
+      isExplicit,
+      metadata: metadataString ? JSON.parse(metadataString) : undefined,
+    });
 
-    if (!file) {
+    if (!validationResult.success) {
       return NextResponse.json(
-        { error: "Audio file is required" },
+        { error: validationResult.error },
         { status: 400 }
       );
     }
 
-    // Проверяем типы файлов
-    const allowedAudioTypes = [
-      "audio/mpeg",
-      "audio/wav",
-      "audio/flac",
-      "audio/aac",
-      "audio/ogg",
-    ];
-    const allowedImageTypes = [
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-      "image/gif",
-    ];
+    // Validate file type and size
+    const allowedTypes = ["audio/mpeg", "audio/mp3", "audio/wav", "audio/ogg"];
+    const maxSize = 50 * 1024 * 1024; // 50MB
 
-    if (!allowedAudioTypes.includes(file.type)) {
+    if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
-        {
-          error:
-            "Invalid audio file type. Only mp3, wav, flac, aac, and ogg are allowed.",
-        },
+        { error: "Invalid file type. Only MP3, WAV, and OGG are allowed." },
         { status: 400 }
       );
     }
 
-    if (imageFile && !allowedImageTypes.includes(imageFile.type)) {
+    if (file.size > maxSize) {
       return NextResponse.json(
-        {
-          error:
-            "Invalid image file type. Only jpeg, png, webp, and gif are allowed.",
-        },
+        { error: "File too large. Maximum size is 50MB." },
         { status: 400 }
       );
     }
 
-    // Проверяем размеры файлов
-    const maxAudioSize = 100 * 1024 * 1024; // 100MB
-    const maxImageSize = 10 * 1024 * 1024; // 10MB
-
-    if (file.size > maxAudioSize) {
-      return NextResponse.json(
-        { error: "Audio file too large. Maximum size is 100MB." },
-        { status: 400 }
-      );
-    }
-
-    if (imageFile && imageFile.size > maxImageSize) {
-      return NextResponse.json(
-        { error: "Image file too large. Maximum size is 10MB." },
-        { status: 400 }
-      );
-    }
-
-    // Validate track metadata
-    const metadata = JSON.parse((formData.get("metadata") as string) || "{}");
-<<<<<<< HEAD
-    const validatedData = uploadSchema.parse(metadata);
-
-    // Sanitize metadata inputs
-    const sanitizedMetadata = {
-      ...validatedData,
-      title: validatedData.title.trim().substring(0, 100),
-      artistName: validatedData.artistName.trim().substring(0, 50),
-      genre: validatedData.genre.trim().substring(0, 30),
-      description: validatedData.description
-        ? validatedData.description.trim().substring(0, 500)
-        : undefined,
+    // Upload to IPFS
+    const metadata: IPFSTrackMetadata = {
+      title: validationResult.data.title,
+      artist: validationResult.data.artistName,
+      genre: validationResult.data.genre,
+      duration: 0, // Will be updated after processing
+      releaseDate: new Date().toISOString(),
+      isExplicit: validationResult.data.isExplicit || false,
+      fileSize: file.size,
+      mimeType: file.type,
+      format: file.type.split("/")[1] || "unknown",
+      sampleRate: 44100, // Default value
+      bitDepth: 16, // Default value
     };
 
-=======
-    const validatedData = trackSchema.omit({ ipfsHash: true }).parse(metadata);
+    const ipfsResult = await uploadWithReplication(file, metadata);
+    const ipfsHash = ipfsResult.cid;
 
->>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
-    // Generate unique filename with secure naming
-    const fileExtension = file.name.split(".").pop()?.toLowerCase() || "mp3";
-    const audioFileName = `${Date.now()}_${randomUUID()}.${fileExtension}`;
-    let imageFileName: string | null = null;
-    if (imageFile) {
-      const imageExtension =
-        imageFile.name.split(".").pop()?.toLowerCase() || "jpg";
-      imageFileName = `${Date.now()}_${randomUUID()}.${imageExtension}`;
-    }
-
-    // Save files to local storage (in production, this would be IPFS/Filecoin)
-    const audioBuffer = Buffer.from(await file.arrayBuffer());
-    const audioPath = join(process.cwd(), "uploads", "audio", audioFileName);
-
-    await writeFile(audioPath, audioBuffer);
-
-    let imagePath: string | null = null;
-    let imageUrl: string | null = null;
-    if (imageFile) {
-      const imageBuffer = Buffer.from(await imageFile.arrayBuffer());
-      imagePath = join(process.cwd(), "uploads", "images", imageFileName!);
-      await writeFile(imagePath, imageBuffer);
-      imageUrl = `/uploads/images/${imageFileName}`;
-    }
-
-    // Use authenticated user's ID instead of default
-    const artistId = userId;
-
-    // Create track record with correct field names based on Prisma schema
-    const track = await db.track.create({
-      data: {
-<<<<<<< HEAD
-        ...sanitizedMetadata,
-        artistId: artistId,
-        ipfsHash: `ipfs_${Date.now()}`, // This would be actual IPFS hash in production
-        metadata: JSON.stringify({
-          duration: sanitizedMetadata.duration,
-          title: sanitizedMetadata.title,
-          artistName: sanitizedMetadata.artistName,
-          genre: sanitizedMetadata.genre,
-          description: sanitizedMetadata.description,
-          isExplicit: sanitizedMetadata.isExplicit,
-          price: sanitizedMetadata.price,
-        }),
-=======
-        ...validatedData,
-        artistId: artistId,
-        ipfsHash: `ipfs_${Date.now()}`, // This would be actual IPFS hash in production
->>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
-        isPublished: true,
-        // Добавим поле с путем к файлу, если оно требуется в схеме
-        // убираем filePath, т.к. оно не существует в схеме
-      },
-      include: {
-        artist: {
-          select: {
-            id: true,
-            username: true,
-            displayName: true,
-            avatar: true,
-          },
-        },
-      },
-    });
-
-    // Award upload reward to artist
-    await db.reward.create({
-      data: {
-        userId: artistId,
-        type: "UPLOAD",
-        amount: 20, // 20 $NDT tokens for upload
-        reason: `Track upload reward: ${track.title}`,
-      },
-    });
-
-    // Update user balance
-    await db.user.update({
-      where: { id: artistId },
-      data: { balance: { increment: 20 } },
-    });
-
-<<<<<<< HEAD
-    return NextResponse.json(
-      {
-        message: "Track uploaded successfully",
-        track,
-        files: {
-          audio: audioFileName,
-          image: imageFileName,
-        },
-      },
-      { status: 201 }
-    );
-  } catch (error) {
-    if (error instanceof z.ZodError) {
+    if (!ipfsHash) {
       return NextResponse.json(
-        { error: "Validation failed", details: error.errors },
-        { status: 400 }
+        { error: "Failed to upload file to IPFS" },
+        { status: 500 }
       );
     }
 
-    console.error("Error uploading track:", error);
+    // Create track record
+    const trackData = {
+      title: validationResult.data.title,
+      artistName: validationResult.data.artistName,
+      genre: validationResult.data.genre,
+      ipfsHash,
+      duration: 0, // Will be updated after processing
+      metadata: validationResult.data.metadata,
+      isExplicit: validationResult.data.isExplicit,
+      isPublished: false,
+    };
+
+    // Save to database (implementation depends on your database setup)
+    // const track = await db.track.create({ data: trackData });
+
+    logger.info("Track uploaded successfully", {
+      ipfsHash,
+      title: trackData.title,
+    });
+
+    return NextResponse.json({
+      success: true,
+      track: trackData,
+      ipfsHash,
+    });
+  } catch (error) {
+    logger.error("Error uploading track:", error);
     return NextResponse.json(
-      { error: "Failed to upload track" },
+      { error: "Internal server error" },
       { status: 500 }
     );
-=======
-    return NextResponse.json(
-      {
-        message: "Track uploaded successfully",
-        track,
-        files: {
-          audio: audioFileName,
-          image: imageFileName,
-        },
-      },
-      { status: 201 }
-    );
-  } catch (error) {
-    return handleApiError(error);
->>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
   }
 }
 
-// GET /api/tracks/upload - Get upload status and progress (for large files)
-export async function GET(request: NextRequest) {
+export async function GET(request: any) {
   try {
     const { searchParams } = new URL(request.url);
-    const uploadId = searchParams.get("uploadId");
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const genre = searchParams.get("genre");
+    const search = searchParams.get("search");
 
-    if (!uploadId) {
-      return NextResponse.json(
-        { error: "Upload ID is required" },
-        { status: 400 }
-      );
-    }
+    // Build query
+    const query: any = {};
+    if (genre) query.genre = genre;
+    if (search) query.search = search;
+    query.page = page;
+    query.limit = limit;
 
-    // In a real implementation, this would check the status of an ongoing upload
-    // For now, return a mock response
+    // Get tracks from database (implementation depends on your database setup)
+    // const tracks = await db.track.findMany({
+    //   where: query,
+    //   include: { artist: true },
+    //   orderBy: { createdAt: 'desc' },
+    //   skip: (page - 1) * limit,
+    //   take: limit,
+    // });
+
     return NextResponse.json({
-      uploadId,
-      status: "completed",
-      progress: 100,
-      message: "Upload completed successfully",
+      tracks: [], // Replace with actual tracks
+      pagination: {
+        page,
+        limit,
+        total: 0, // Replace with actual total
+      },
     });
   } catch (error) {
-    return handleApiError(error);
+    logger.error("Error fetching tracks:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }

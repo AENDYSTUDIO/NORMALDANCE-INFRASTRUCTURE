@@ -1,17 +1,16 @@
-import type { NextRequest } from 'next/server'
-import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { isAdmin } from '@/lib/rbac'
-import { trackUpdateSchema } from '@/lib/schemas'
-import { handleApiError } from '@/lib/errors/errorHandler'
+import { db } from "@/lib/db";
+import { handleApiError } from "@/lib/errors/errorHandler";
+import { isAdmin } from "@/lib/rbac";
+import { trackUpdateSchema } from "@/lib/schemas";
+import { NextResponse } from "next/server";
 
 // GET /api/tracks/[id] - Get a specific track
 export async function GET(
-  request: NextRequest,
+  request: any,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params
+    const { id } = await params;
     const track = await db.track.findUnique({
       where: { id },
       include: {
@@ -21,60 +20,40 @@ export async function GET(
             username: true,
             displayName: true,
             avatar: true,
-          }
+          },
         },
         _count: {
           select: {
             likes: true,
             comments: true,
-          }
-        }
-      }
-    })
+          },
+        },
+      },
+    });
 
     if (!track) {
-      return NextResponse.json(
-        { error: 'Track not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: "Track not found" }, { status: 404 });
     }
 
-    return NextResponse.json(track)
+    return NextResponse.json(track);
   } catch (error) {
-    return handleApiError(error)
+    return handleApiError(error);
   }
 }
 
 // PUT /api/tracks/[id] - Update a track
 export async function PUT(
-  request: NextRequest,
+  request: any,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     if (!(await isAdmin())) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const { id } = await params
-    const body = await request.json()
-    
-<<<<<<< HEAD
-    // Validate with trackUpdateSchema
-    const validated = trackUpdateSchema.parse(body)
-    
-    // Only allow updating certain fields
-    const updateData = {
-      ...(body.title && { title: body.title }),
-      ...(body.artistName && { artistName: body.artistName }),
-      ...(body.genre && { genre: body.genre }),
-      ...(body.duration !== undefined && { duration: body.duration }),
-      ...(body.metadata !== undefined && { metadata: body.metadata }),
-      ...(body.price !== undefined && { price: body.price }),
-      ...(body.isExplicit !== undefined && { isExplicit: body.isExplicit }),
-      ...(body.isPublished !== undefined && { isPublished: body.isPublished }),
-    }
-=======
-    const validatedData = trackUpdateSchema.parse(body)
->>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
+    const { id } = await params;
+    const body = await request.json();
+
+    const validatedData = trackUpdateSchema.parse(body);
 
     const track = await db.track.update({
       where: { id },
@@ -86,56 +65,56 @@ export async function PUT(
             username: true,
             displayName: true,
             avatar: true,
-          }
-        }
-      }
-    })
+          },
+        },
+      },
+    });
 
-    return NextResponse.json(track)
+    return NextResponse.json(track);
   } catch (error) {
-    return handleApiError(error)
+    return handleApiError(error);
   }
 }
 
 // DELETE /api/tracks/[id] - Delete a track
 export async function DELETE(
-  request: NextRequest,
+  request: any,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     if (!(await isAdmin())) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const { id } = await params
+    const { id } = await params;
     await db.track.delete({
-      where: { id }
-    })
+      where: { id },
+    });
 
-    return NextResponse.json({ message: 'Track deleted successfully' })
+    return NextResponse.json({ message: "Track deleted successfully" });
   } catch (error) {
-    console.error('Error deleting track:', error)
+    console.error("Error deleting track:", error);
     return NextResponse.json(
-      { error: 'Failed to delete track' },
+      { error: "Failed to delete track" },
       { status: 500 }
-    )
+    );
   }
 }
 
 // POST /api/tracks/[id]/play - Record a play
 export async function POST(
-  request: NextRequest,
+  request: any,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params
-    const body = await request.json()
-    const { userId, duration, completed } = body
+    const { id } = await params;
+    const body = await request.json();
+    const { userId, duration, completed } = body;
 
     // Increment play count
     await db.track.update({
       where: { id },
-      data: { playCount: { increment: 1 } }
-    })
+      data: { playCount: { increment: 1 } },
+    });
 
     // Record play history if user is provided
     if (userId) {
@@ -145,33 +124,33 @@ export async function POST(
           trackId: id,
           duration: duration || 0,
           completed: completed || false,
-        }
-      })
+        },
+      });
 
       // Award listening reward
       if (completed && duration > 30) {
         await db.reward.create({
           data: {
             userId,
-            type: 'LISTENING',
+            type: "LISTENING",
             amount: 1,
-            reason: `Listening reward for track ${id}`
-          }
-        })
+            reason: `Listening reward for track ${id}`,
+          },
+        });
 
         await db.user.update({
           where: { id: userId },
-          data: { balance: { increment: 1 } }
-        })
+          data: { balance: { increment: 1 } },
+        });
       }
     }
 
-    return NextResponse.json({ message: 'Play recorded successfully' })
+    return NextResponse.json({ message: "Play recorded successfully" });
   } catch (error) {
-    console.error('Error recording play:', error)
+    console.error("Error recording play:", error);
     return NextResponse.json(
-      { error: 'Failed to record play' },
+      { error: "Failed to record play" },
       { status: 500 }
-    )
+    );
   }
 }

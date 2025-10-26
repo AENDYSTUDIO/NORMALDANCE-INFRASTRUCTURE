@@ -7,16 +7,11 @@
 
 import { SignJWT, jwtVerify } from "jose";
 
-<<<<<<< HEAD
-const JWT_SECRET =
-  process.env.JWT_SECRET || "fallback_secret_key_for_development";
-=======
 const JWT_SECRET = process.env.JWT_SECRET;
 
 if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET environment variable is required');
+  throw new Error("JWT_SECRET environment variable is required");
 }
->>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 
 // Ключ для подписи токенов
 const encoder = new TextEncoder();
@@ -25,7 +20,9 @@ const SIGNING_KEY = encoder.encode(JWT_SECRET);
 /**
  * Создает JWT-токен для пользователя
  */
-export async function signJWT(payload: Record<string, unknown>): Promise<string> {
+export async function signJWT(
+  payload: Record<string, unknown>
+): Promise<string> {
   try {
     const iat = Math.floor(Date.now() / 1000); // issued at
     const exp = iat + 7 * 24 * 60 * 60; // 7 дней
