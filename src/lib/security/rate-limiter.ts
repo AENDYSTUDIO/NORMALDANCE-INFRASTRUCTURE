@@ -16,6 +16,7 @@ interface RateLimitEntry {
   resetTime: number;
 }
 
+<<<<<<< HEAD
 // In-memory store for rate limiting
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
@@ -62,6 +63,8 @@ export function isRateLimited(key: string, maxActions: number, windowMs: number)
   return false;
 }
 
+=======
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 class RateLimiter {
   private store = new Map<string, RateLimitEntry>();
   private config: RateLimitConfig;

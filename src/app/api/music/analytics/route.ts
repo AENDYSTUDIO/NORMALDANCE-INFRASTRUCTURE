@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { musicAnalyticsSystem } from '@/lib/music-analytics'
+import { musicAnalyticsGetSchema } from '@/lib/schemas'
+import { handleApiError } from '@/lib/errors/errorHandler'
 
 // GET /api/music/analytics - Get music analytics data
 export async function GET(request: NextRequest) {
@@ -16,6 +18,10 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    const { searchParams } = new URL(request.url)
+    const query = Object.fromEntries(searchParams.entries())
+    const { timeframe, genre, artistId } = musicAnalyticsGetSchema.parse(query)
+
     // Получаем все музыкальные данные
     const [
       marketData,
@@ -25,12 +31,12 @@ export async function GET(request: NextRequest) {
       predictions,
       platformStats
     ] = await Promise.all([
-      musicAnalyticsSystem.getMarketData(),
-      musicAnalyticsSystem.getTopTracks(10),
-      musicAnalyticsSystem.getTopArtists(10),
-      musicAnalyticsSystem.getGenreAnalytics(),
-      musicAnalyticsSystem.getPredictions(),
-      musicAnalyticsSystem.getPlatformStats()
+      musicAnalyticsSystem.getMarketData(timeframe), // Pass timeframe
+      musicAnalyticsSystem.getTopTracks(10, genre, artistId), // Pass genre and artistId
+      musicAnalyticsSystem.getTopArtists(10, genre), // Pass genre
+      musicAnalyticsSystem.getGenreAnalytics(timeframe), // Pass timeframe
+      musicAnalyticsSystem.getPredictions(timeframe), // Pass timeframe
+      musicAnalyticsSystem.getPlatformStats(timeframe) // Pass timeframe
     ])
 
     // Формируем полный ответ
@@ -56,10 +62,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(musicData)
 
   } catch (error) {
-    console.error('Error fetching music analytics:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch music analytics' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

@@ -1,17 +1,17 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { redundancyService } from '@/lib/redundancy-service'
+import { redundancyPostSchema, redundancyGetSchema, redundancyDeleteSchema } from '@/lib/schemas'
+import { handleApiError } from '@/lib/errors/errorHandler'
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const action = searchParams.get('action')
-    const nodeId = searchParams.get('nodeId')
-    const jobId = searchParams.get('jobId')
-    const sourceCid = searchParams.get('sourceCid')
+    const query = Object.fromEntries(searchParams.entries())
+    const { action, nodeId, jobId, sourceCid } = redundancyGetSchema.parse(query)
 
     switch (action) {
-      case 'nodes':
+      case 'get-all-nodes':
         // Получение списка всех узлов
         const allNodes = Array.from(redundancyService['nodes'].values())
         return NextResponse.json({
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
           data: allNodes
         })
 
-      case 'available-nodes':
+      case 'get-available-nodes':
         // Получение доступных узлов
         const availableNodes = redundancyService.getAvailableNodes()
         return NextResponse.json({
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
           data: availableNodes
         })
 
-      case 'statistics':
+      case 'get-statistics':
         // Получение статистики
         const stats = redundancyService.getStatistics()
         return NextResponse.json({
@@ -35,16 +35,9 @@ export async function GET(request: NextRequest) {
           data: stats
         })
 
-      case 'node-health':
+      case 'check-node-health':
         // Проверка здоровья конкретного узла
-        if (!nodeId) {
-          return NextResponse.json(
-            { error: 'Node ID is required' },
-            { status: 400 }
-          )
-        }
-
-        const isHealthy = await redundancyService.checkNodeHealth(nodeId)
+        const isHealthy = await redundancyService.checkNodeHealth(nodeId!) // nodeId is guaranteed by superRefine
         return NextResponse.json({
           success: true,
           data: {
@@ -53,16 +46,9 @@ export async function GET(request: NextRequest) {
           }
         })
 
-      case 'file-replicas':
+      case 'get-file-replicas':
         // Получение реплик файла
-        if (!sourceCid) {
-          return NextResponse.json(
-            { error: 'Source CID is required' },
-            { status: 400 }
-          )
-        }
-
-        const replicas = await redundancyService.getFileReplicas(sourceCid)
+        const replicas = await redundancyService.getFileReplicas(sourceCid!) // sourceCid is guaranteed by superRefine
         return NextResponse.json({
           success: true,
           data: {
@@ -72,16 +58,9 @@ export async function GET(request: NextRequest) {
           }
         })
 
-      case 'job-status':
+      case 'get-replication-status':
         // Получение статуса задания репликации
-        if (!jobId) {
-          return NextResponse.json(
-            { error: 'Job ID is required' },
-            { status: 400 }
-          )
-        }
-
-        const job = redundancyService.getReplicationStatus(jobId)
+        const job = redundancyService.getReplicationStatus(jobId!) // jobId is guaranteed by superRefine
         if (!job) {
           return NextResponse.json(
             { error: 'Job not found' },
@@ -94,7 +73,7 @@ export async function GET(request: NextRequest) {
           data: job
         })
 
-      case 'active-jobs':
+      case 'get-active-jobs':
         // Получение активных заданий
         const activeJobs = redundancyService.getActiveJobs()
         return NextResponse.json({
@@ -103,6 +82,7 @@ export async function GET(request: NextRequest) {
         })
 
       default:
+        // This case should ideally not be reached due to Zod enum validation
         return NextResponse.json(
           { error: 'Invalid action' },
           { status: 400 }
@@ -110,38 +90,27 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Redundancy API error:', error)
-    return NextResponse.json(
-      { error: 'Failed to process redundancy request' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { action, nodeId, sourceCid, options } = body
+    const { action, nodeId, sourceCid, options } = redundancyPostSchema.parse(body)
 
     switch (action) {
       case 'add-node':
         // Добавление нового узла
-        if (!nodeId || !options) {
-          return NextResponse.json(
-            { error: 'Node ID and options are required' },
-            { status: 400 }
-          )
-        }
-
         redundancyService.addNode({
-          id: nodeId,
-          name: options.name || `Node ${nodeId}`,
-          type: options.type || 'ipfs',
-          endpoint: options.endpoint,
+          id: nodeId!, // nodeId is guaranteed by superRefine
+          name: options?.name || `Node ${nodeId}`,
+          type: options?.type || 'ipfs',
+          endpoint: options?.endpoint,
           status: 'online',
-          reliability: options.reliability || 0.8,
+          reliability: options?.reliability || 0.8,
           lastChecked: new Date(),
-          region: options.region
+          region: options?.region
         })
 
         return NextResponse.json({
@@ -151,14 +120,7 @@ export async function POST(request: NextRequest) {
 
       case 'remove-node':
         // Удаление узла
-        if (!nodeId) {
-          return NextResponse.json(
-            { error: 'Node ID is required' },
-            { status: 400 }
-          )
-        }
-
-        const removed = redundancyService.removeNode(nodeId)
+        const removed = redundancyService.removeNode(nodeId!) // nodeId is guaranteed by superRefine
         if (!removed) {
           return NextResponse.json(
             { error: 'Node not found' },
@@ -173,20 +135,13 @@ export async function POST(request: NextRequest) {
 
       case 'replicate-file':
         // Запуск репликации файла
-        if (!sourceCid) {
-          return NextResponse.json(
-            { error: 'Source CID is required' },
-            { status: 400 }
-          )
-        }
-
-        const job = await redundancyService.replicateFile(sourceCid, options)
+        const job = await redundancyService.replicateFile(sourceCid!, options) // sourceCid is guaranteed by superRefine
         return NextResponse.json({
           success: true,
           data: job
         })
 
-      case 'check-all-nodes':
+      case 'check-all-nodes-health':
         // Проверка здоровья всех узлов
         await redundancyService.checkAllNodesHealth()
         return NextResponse.json({
@@ -195,6 +150,7 @@ export async function POST(request: NextRequest) {
         })
 
       default:
+        // This case should ideally not be reached due to Zod enum validation
         return NextResponse.json(
           { error: 'Invalid action' },
           { status: 400 }
@@ -202,26 +158,17 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Redundancy POST error:', error)
-    return NextResponse.json(
-      { error: 'Failed to process redundancy request' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const nodeId = searchParams.get('nodeId')
+    const query = Object.fromEntries(searchParams.entries())
+    const { action, nodeId } = redundancyDeleteSchema.parse(query)
 
-    if (!nodeId) {
-      return NextResponse.json(
-        { error: 'Node ID is required' },
-        { status: 400 }
-      )
-    }
-
+    // Assuming action is always 'remove-node' for DELETE based on schema
     const removed = redundancyService.removeNode(nodeId)
     if (!removed) {
       return NextResponse.json(
@@ -236,10 +183,6 @@ export async function DELETE(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Redundancy DELETE error:', error)
-    return NextResponse.json(
-      { error: 'Failed to remove node' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

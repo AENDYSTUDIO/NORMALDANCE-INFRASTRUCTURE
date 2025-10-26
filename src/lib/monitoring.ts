@@ -1,5 +1,10 @@
 /**
+<<<<<<< HEAD
  * Monitoring and Alerting System for NormalDance
+=======
+ * Enhanced Monitoring and Alerting System for NormalDance
+ * Implements comprehensive monitoring with blockchain-specific metrics
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
  */
 
 import { performance } from "perf_hooks";
@@ -327,7 +332,15 @@ export class MonitoringSystem {
 
   // Check alert thresholds
   private checkAlertThresholds(metric: PerformanceMetrics): void {
+<<<<<<< HEAD
     const alerts = [];
+=======
+    const alerts: Array<{
+      type: string;
+      message: string;
+      severity: string;
+    }> = [];
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 
     // Response time alert
     if (metric.responseTime > this.config.thresholds.responseTime) {

@@ -1,21 +1,26 @@
 apiVersion: v2
 name: normaldance
-description: A Helm chart for NormalDance music platform
+description: NORMAL DANCE Web3 Music Platform
 type: application
 version: 0.1.0
-appVersion: "2.0.0"
+appVersion: "0.1.1"
+keywords:
+  - web3
+  - music
+  - blockchain
+  - solana
 home: https://normaldance.com
 sources:
-  - https://github.com/normaldance/normaldance
-keywords:
-  - music
-  - streaming
-  - blockchain
-  - nft
-  - web3
+  - https://github.com/AENDYSTUDIO/NORMALDANCE-REVOLUTION
 maintainers:
-  - name: NormalDance Team
-    email: team@normaldance.com
-annotations:
-  category: Music Streaming
-  licenses: MIT
+  - name: AENDY STUDIO
+    email: support@normaldance.com
+dependencies:
+  - name: postgresql
+    version: 12.1.9
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+  - name: redis
+    version: 17.3.7
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled

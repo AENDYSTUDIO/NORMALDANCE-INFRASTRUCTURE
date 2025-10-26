@@ -1,8 +1,17 @@
+<<<<<<< HEAD
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions, getSessionUser } from '@/lib/auth'
+=======
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth/next'
+import { authOptions, getSessionUser } from '@/lib/auth'
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 import { db } from '@/lib/db'
+import { userRoleSchema } from '@/lib/schemas'
+import { handleApiError } from '@/lib/errors/errorHandler'
 
 export async function PATCH(
   request: NextRequest,
@@ -10,21 +19,24 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params
+<<<<<<< HEAD
     const session = await getServerSession(authOptions)
     const sessionUser = getSessionUser(session)
 
     // Только администраторы могут изменять роли
     if (sessionUser?.level !== 'ADMIN') {
+=======
+    const session = await getServerSession(authOptions)
+    const sessionUser = getSessionUser(session)
+
+    // Только администраторы могут изменять роли
+    if (sessionUser?.level !== 'ADMIN') {
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { role } = await request.json()
-    
-    // Валидация роли
-    const validRoles = ['LISTENER', 'ARTIST', 'CURATOR', 'ADMIN']
-    if (!validRoles.includes(role)) {
-      return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
-    }
+    const body = await request.json()
+    const { role } = userRoleSchema.parse(body)
 
     // Обновляем роль пользователя
     const updatedUser = await db.user.update({
@@ -42,11 +54,7 @@ export async function PATCH(
     })
 
   } catch (error) {
-    console.error('Role update error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -56,6 +64,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params
+<<<<<<< HEAD
     const session = await getServerSession(authOptions)
     const sessionUser = getSessionUser(session)
 
@@ -65,6 +74,17 @@ export async function GET(
     }
 
     const targetUser = await db.user.findUnique({
+=======
+    const session = await getServerSession(authOptions)
+    const sessionUser = getSessionUser(session)
+
+    // Только администраторы могут просматривать роли
+    if (sessionUser?.level !== 'ADMIN') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const targetUser = await db.user.findUnique({
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
       where: { id },
       select: {
         id: true,
@@ -75,17 +95,21 @@ export async function GET(
       }
     })
 
+<<<<<<< HEAD
     if (!targetUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
     return NextResponse.json({ user: targetUser })
+=======
+    if (!targetUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    return NextResponse.json({ user: targetUser })
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 
   } catch (error) {
-    console.error('Role fetch error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

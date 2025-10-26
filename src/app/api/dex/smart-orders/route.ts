@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { smartLimitOrderSystem } from '@/lib/smart-limit-orders'
+import { dexSmartOrdersPostSchema, dexSmartOrdersGetSchema, dexSmartOrdersDeleteSchema } from '@/lib/schemas'
+import { handleApiError } from '@/lib/errors/errorHandler'
 
 // POST /api/dex/smart-orders - Create smart limit order
 export async function POST(request: NextRequest) {
@@ -25,25 +27,10 @@ export async function POST(request: NextRequest) {
       targetRate,
       triggerCondition,
       executionType,
-      timeDecay = false,
+      timeDecay,
       expiresAt,
-      aiOptimization = {
-        enabled: true,
-        riskTolerance: 'medium',
-        marketAnalysis: true,
-        gasOptimization: true,
-        slippageProtection: true,
-        dynamicAdjustment: true
-      }
-    } = body
-
-    // Validate required fields
-    if (!type || !from || !to || !amount || !targetRate || !triggerCondition || !executionType) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
-    }
+      aiOptimization
+    } = dexSmartOrdersPostSchema.parse(body)
 
     // Create smart limit order
     const order = await smartLimitOrderSystem.createOrder({
@@ -51,8 +38,8 @@ export async function POST(request: NextRequest) {
       type,
       from,
       to,
-      amount: parseFloat(amount),
-      targetRate: parseFloat(targetRate),
+      amount,
+      targetRate,
       triggerCondition,
       executionType,
       timeDecay,
@@ -81,11 +68,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error creating smart limit order:', error)
-    return NextResponse.json(
-      { error: 'Failed to create smart limit order' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -102,8 +85,8 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const status = searchParams.get('status')
-    const type = searchParams.get('type')
+    const query = Object.fromEntries(searchParams.entries())
+    const { status, type } = dexSmartOrdersGetSchema.parse(query)
 
     // Get user orders
     let orders = smartLimitOrderSystem.getUserOrders(session.user.id)
@@ -144,11 +127,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error fetching smart limit orders:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch smart limit orders' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -165,14 +144,8 @@ export async function DELETE(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const orderId = searchParams.get('orderId')
-
-    if (!orderId) {
-      return NextResponse.json(
-        { error: 'Order ID is required' },
-        { status: 400 }
-      )
-    }
+    const query = Object.fromEntries(searchParams.entries())
+    const { orderId } = dexSmartOrdersDeleteSchema.parse(query)
 
     // Cancel the order
     const success = await smartLimitOrderSystem.cancelOrder(orderId, session.user.id)
@@ -190,10 +163,6 @@ export async function DELETE(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error cancelling smart limit order:', error)
-    return NextResponse.json(
-      { error: 'Failed to cancel smart limit order' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

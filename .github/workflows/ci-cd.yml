@@ -11,6 +11,7 @@ env:
   NEXT_TELEMETRY_DISABLED: 1
 
 jobs:
+<<<<<<< HEAD
   # Quick checks that must pass
   quick-checks:
     name: Quick Checks
@@ -112,3 +113,109 @@ jobs:
     steps:
       - name: Success
         run: echo "✅ All checks passed successfully!"
+=======
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run tests
+        run: npm test
+      
+      - name: Run security audit
+        run: npm audit --audit-level high
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [nextjs, backend, ipfs-service, smart-contracts]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/${{ matrix.service }}.Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: '3.12.0'
+      
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: '1.28.0'
+      
+      - name: Configure kubectl
+        run: |
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > kubeconfig
+          export KUBECONFIG=kubeconfig
+      
+      - name: Run database migrations
+        run: |
+          kubectl create job --from=cronjob/normaldance-migration migration-$(date +%s) || true
+          kubectl wait --for=condition=complete --timeout=300s job/migration-$(date +%s)
+      
+      - name: Deploy to Kubernetes
+        run: |
+          helm upgrade --install normaldance ./helm/normaldance \
+            --namespace production \
+            --create-namespace \
+            --set image.tag=${{ github.sha }} \
+            --set backend.image.tag=${{ github.sha }} \
+            --set ipfs.image.tag=${{ github.sha }} \
+            --set contracts.image.tag=${{ github.sha }} \
+            --values ./helm/normaldance/values-production.yaml \
+            --wait --timeout=10m
+      
+      - name: Verify deployment
+        run: |
+          kubectl rollout status deployment/normaldance -n production
+          kubectl get pods -n production
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337

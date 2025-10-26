@@ -1,6 +1,8 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
+import { stripeWebhookPostSchema } from '@/lib/schemas'
+import { handleApiError } from '@/lib/errors/errorHandler'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,6 +25,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret)
+    stripeWebhookPostSchema.parse(event); // Validate the event object
 
     switch (event.type) {
       case 'checkout.session.completed':
@@ -36,8 +39,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ received: true })
   } catch (err) {
-    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
+    return handleApiError(err)
   }
 }
-
-

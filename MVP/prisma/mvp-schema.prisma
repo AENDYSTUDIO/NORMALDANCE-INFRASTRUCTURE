@@ -1,0 +1,85 @@
+// MVP Database Schema - Simplified for music NFT platform
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User model - basic artist profile
+model User {
+  id          String   @id @default(cuid())
+  email       String?  @unique
+  username    String?  @unique
+  displayName String?
+  bio         String?
+  avatar      String?
+  wallet      String?  @unique // Solana wallet address
+  isArtist    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  tracks      Track[]
+  nfts        NFT[]
+
+  @@map("users")
+}
+
+// Track model - basic music track
+model Track {
+  id          String   @id @default(cuid())
+  title       String
+  artist      String
+  genre       String?
+  duration    Int?     // seconds
+  fileUrl     String   // IPFS hash
+  coverUrl    String?  // IPFS hash
+  description String?
+  price       Float?   // SOL price
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  artistId    String
+  artist      User     @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  nfts        NFT[]
+
+  @@map("tracks")
+}
+
+// NFT model - simple music NFT
+model NFT {
+  id          String   @id @default(cuid())
+  tokenId     String?  @unique // Solana token ID
+  name        String
+  description String?
+  imageUrl    String?  // IPFS hash
+  metadataUrl String?  // IPFS hash
+  price       Float?   // SOL price
+  minted      Boolean  @default(false)
+  mintTx      String?  // Solana transaction signature
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  ownerId     String?
+  owner       User?    @relation(fields: [ownerId], references: [id])
+  trackId     String
+  track       Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@map("nfts")
+}
+
+// Simple session model for auth
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  
+  @@map("sessions")
+}

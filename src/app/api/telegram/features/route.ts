@@ -2,6 +2,20 @@ import { db } from "@/lib/db";
 import { verifyJWT } from "@/lib/jwt";
 import { telegramIntegration2025 } from "@/lib/telegram-integration-2025";
 import { NextResponse } from "next/server";
+<<<<<<< HEAD
+=======
+import { handleApiError } from "@/lib/errors/errorHandler";
+import {
+  telegramMusicFeaturePlaySchema,
+  telegramMusicFeatureSearchSchema,
+  telegramNftFeatureBuySchema,
+  telegramNftFeatureSellSchema,
+  telegramStakingFeatureStakeSchema,
+  telegramStakingFeatureUnstakeSchema,
+  telegramPaymentsFeatureSendSchema,
+  telegramNotificationsFeatureSettingsSchema,
+} from "@/lib/schemas";
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 
 // GET /api/telegram/features - Возвращает список доступных функций платформы для Telegram Mini App
 export async function GET(request: NextRequest): Promise<NextResponse> {
@@ -83,6 +97,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       },
     };
 
+<<<<<<< HEAD
     return NextResponse.json(features);
   } catch (error) {
     console.error("Error in Telegram features API:", error);
@@ -90,6 +105,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       { error: "Internal server error" },
       { status: 500 }
     );
+=======
+  } catch (error) {
+    return handleApiError(error);
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
   }
 }
 
@@ -142,16 +161,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         return NextResponse.json({ error: "Unknown feature" }, { status: 400 });
     }
   } catch (error) {
+<<<<<<< HEAD
     console.error("Error in Telegram features API:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
     );
+=======
+    return handleApiError(error);
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
   }
 }
 
 // Обработчики для различных функций
 
+<<<<<<< HEAD
 async function handleMusicFeature(user: { id: string; telegramId: number }, body: { action: string; [key: string]: unknown }) {
   const { action, trackId, playlistId } = body;
 
@@ -171,6 +195,28 @@ async function handleMusicFeature(user: { id: string; telegramId: number }, body
     case "play":
       // Логируем воспроизведение трека
       if (trackId) {
+=======
+async function handleMusicFeature(user: { id: string; telegramId: number }, body: unknown) {
+  try {
+    const { action } = z.object({ action: z.string() }).parse(body); // Validate action first
+
+    switch (action) {
+      case "list":
+        // Возвращаем список треков
+        const tracks = await db.track.findMany({
+          where: { status: "published" },
+          take: 20,
+          include: {
+            artist: true,
+            album: true,
+          },
+        });
+        return NextResponse.json({ tracks });
+
+      case "play":
+        const { trackId } = telegramMusicFeaturePlaySchema.parse(body);
+        // Логируем воспроизведение трека
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
         await db.playHistory.create({
           data: {
             userId: user.id,
@@ -189,6 +235,7 @@ async function handleMusicFeature(user: { id: string; telegramId: number }, body
         });
 
         return NextResponse.json({ track });
+<<<<<<< HEAD
       }
       return NextResponse.json({ error: "Track ID required" }, { status: 400 });
 
@@ -201,6 +248,18 @@ async function handleMusicFeature(user: { id: string; telegramId: number }, body
               { title: { contains: body.query, mode: "insensitive" } },
               {
                 artist: { name: { contains: body.query, mode: "insensitive" } },
+=======
+
+      case "search":
+        const { query } = telegramMusicFeatureSearchSchema.parse(body);
+        // Поиск треков
+        const searchTracks = await db.track.findMany({
+          where: {
+            OR: [
+              { title: { contains: query, mode: "insensitive" } },
+              {
+                artist: { name: { contains: query, mode: "insensitive" } },
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
               },
             ],
           },
@@ -209,6 +268,7 @@ async function handleMusicFeature(user: { id: string; telegramId: number }, body
           },
           take: 20,
         });
+<<<<<<< HEAD
         return NextResponse.json({ tracks });
       }
       return NextResponse.json({ error: "Query required" }, { status: 400 });
@@ -245,6 +305,46 @@ async function handleNFTFeature(user: { id: string; telegramId: number }, body: 
         });
 
         if (!nft || nft.status !== "active" || nft.price !== amount) {
+=======
+        return NextResponse.json({ tracks: searchTracks });
+
+      default:
+        return NextResponse.json(
+          { error: "Unknown music action" },
+          { status: 400 }
+        );
+    }
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+async function handleNFTFeature(user: { id: string; telegramId: number }, body: unknown) {
+  try {
+    const { action } = z.object({ action: z.string() }).parse(body); // Validate action first
+
+    switch (action) {
+      case "list":
+        // Возвращаем список NFT
+        const nfts = await db.nft.findMany({
+          where: { status: "active" },
+          take: 20,
+          include: {
+            creator: true,
+          },
+        });
+        return NextResponse.json({ nfts });
+
+      case "buy":
+        const { nftId: buyNftId, amount: buyAmount } = telegramNftFeatureBuySchema.parse(body);
+        // Покупка NFT
+        // Проверяем, что NFT существует и доступен для покупки
+        const nftToBuy = await db.nft.findUnique({
+          where: { id: buyNftId },
+        });
+
+        if (!nftToBuy || nftToBuy.status !== "active" || nftToBuy.price !== buyAmount) {
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
           return NextResponse.json(
             { error: "NFT not available for purchase" },
             { status: 400 }
@@ -256,11 +356,19 @@ async function handleNFTFeature(user: { id: string; telegramId: number }, body: 
           data: {
             type: "NFT_PURCHASE",
             fromUserId: user.id,
+<<<<<<< HEAD
             toUserId: nft.creatorId,
             amount: amount,
             currency: "SOL",
             status: "pending",
             nftId: nftId,
+=======
+            toUserId: nftToBuy.creatorId,
+            amount: buyAmount,
+            currency: "SOL",
+            status: "pending",
+            nftId: buyNftId,
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
           },
         });
 
@@ -273,7 +381,11 @@ async function handleNFTFeature(user: { id: string; telegramId: number }, body: 
 
         // Обновляем владельца NFT
         await db.nft.update({
+<<<<<<< HEAD
           where: { id: nftId },
+=======
+          where: { id: buyNftId },
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
           data: {
             ownerId: user.id,
             status: "owned",
@@ -285,6 +397,7 @@ async function handleNFTFeature(user: { id: string; telegramId: number }, body: 
           transactionId: transaction.id,
           message: "NFT purchased successfully",
         });
+<<<<<<< HEAD
       }
       return NextResponse.json(
         { error: "NFT ID and amount required" },
@@ -300,6 +413,18 @@ async function handleNFTFeature(user: { id: string; telegramId: number }, body: 
         });
 
         if (!nft || nft.ownerId !== user.id) {
+=======
+
+      case "sell":
+        const { nftId: sellNftId, amount: sellAmount } = telegramNftFeatureSellSchema.parse(body);
+        // Продажа NFT
+        // Проверяем, что пользователь является владельцем NFT
+        const nftToSell = await db.nft.findUnique({
+          where: { id: sellNftId },
+        });
+
+        if (!nftToSell || nftToSell.ownerId !== user.id) {
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
           return NextResponse.json(
             { error: "You do not own this NFT" },
             { status: 400 }
@@ -308,10 +433,17 @@ async function handleNFTFeature(user: { id: string; telegramId: number }, body: 
 
         // Обновляем статус NFT на продажу
         await db.nft.update({
+<<<<<<< HEAD
           where: { id: nftId },
           data: {
             status: "active",
             price: amount,
+=======
+          where: { id: sellNftId },
+          data: {
+            status: "active",
+            price: sellAmount,
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
           },
         });
 
@@ -319,6 +451,7 @@ async function handleNFTFeature(user: { id: string; telegramId: number }, body: 
           success: true,
           message: "NFT listed for sale",
         });
+<<<<<<< HEAD
       }
       return NextResponse.json(
         { error: "NFT ID and amount required" },
@@ -352,6 +485,40 @@ async function handleStakingFeature(user: { id: string; telegramId: number }, bo
       if (amount && amount > 0) {
         // Проверяем баланс пользователя
         if (user.ndtBalance < amount) {
+=======
+
+      default:
+        return NextResponse.json(
+          { error: "Unknown NFT action" },
+          { status: 400 }
+        );
+    }
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+async function handleStakingFeature(user: { id: string; telegramId: number; ndtBalance: number; }, body: unknown) {
+  try {
+    const { action } = z.object({ action: z.string() }).parse(body); // Validate action first
+
+    switch (action) {
+      case "info":
+        // Возвращаем информацию о стейкинге пользователя
+        const stakeInfo = await db.stake.findFirst({
+          where: { userId: user.id },
+        });
+
+        return NextResponse.json({
+          stakeInfo: stakeInfo || { amount: 0, rewards: 0, duration: 0 },
+        });
+
+      case "stake":
+        const { amount: stakeAmount } = telegramStakingFeatureStakeSchema.parse(body);
+        // Стейкинг токенов
+        // Проверяем баланс пользователя
+        if (user.ndtBalance < stakeAmount) {
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
           return NextResponse.json(
             { error: "Insufficient NDT balance" },
             { status: 400 }
@@ -362,7 +529,11 @@ async function handleStakingFeature(user: { id: string; telegramId: number }, bo
         const stake = await db.stake.create({
           data: {
             userId: user.id,
+<<<<<<< HEAD
             amount: amount,
+=======
+            amount: stakeAmount,
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
             startDate: new Date(),
             endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 100), // 30 дней
             rewards: 0,
@@ -372,7 +543,11 @@ async function handleStakingFeature(user: { id: string; telegramId: number }, bo
         // Обновляем баланс пользователя
         await db.user.update({
           where: { id: user.id },
+<<<<<<< HEAD
           data: { ndtBalance: { decrement: amount } },
+=======
+          data: { ndtBalance: { decrement: stakeAmount } },
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
         });
 
         return NextResponse.json({
@@ -380,6 +555,7 @@ async function handleStakingFeature(user: { id: string; telegramId: number }, bo
           stakeId: stake.id,
           message: "Tokens staked successfully",
         });
+<<<<<<< HEAD
       }
       return NextResponse.json({ error: "Amount required" }, { status: 400 });
 
@@ -492,6 +668,127 @@ async function handlePaymentsFeature(user: { id: string; telegramId: number }, b
     case "send":
       // Отправка платежа
       if (recipientId && amount && amount > 0) {
+=======
+
+      case "unstake":
+        const { stakeId } = telegramStakingFeatureUnstakeSchema.parse(body);
+        // Отмена стейкинга
+        const existingStake = await db.stake.findUnique({
+          where: { id: stakeId, userId: user.id, status: "active" },
+        });
+
+        if (!existingStake) {
+          return NextResponse.json(
+            { error: "No active stake found" },
+            { status: 400 }
+          );
+        }
+
+        // Обновляем статус стейкинга
+        await db.stake.update({
+          where: { id: existingStake.id },
+          data: { status: "unstaked" },
+        });
+
+        // Возвращаем токены пользователю
+        await db.user.update({
+          where: { id: user.id },
+          data: { ndtBalance: { increment: existingStake.amount } },
+        });
+
+        return NextResponse.json({
+          success: true,
+          message: "Tokens unstaked successfully",
+        });
+
+      default:
+        return NextResponse.json(
+          { error: "Unknown staking action" },
+          { status: 400 }
+        );
+    }
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+async function handleAnalyticsFeature(user: { id: string; telegramId: number; createdAt: Date; }, body: unknown) {
+  try {
+    const { action } = z.object({ action: z.string() }).parse(body); // Validate action first
+
+    switch (action) {
+      case "overview":
+        // Возвращаем общую аналитику
+        const totalListens = await db.playHistory.count({
+          where: { userId: user.id },
+        });
+
+        const totalStaked = await db.stake.aggregate({
+          where: { userId: user.id },
+          _sum: { amount: true },
+        });
+
+        const totalNFTs = await db.nft.count({
+          where: { ownerId: user.id },
+        });
+
+        return NextResponse.json({
+          overview: {
+            totalListens,
+            totalStaked: totalStaked._sum.amount || 0,
+            totalNFTs,
+            joinDate: user.createdAt,
+          },
+        });
+
+      case "user-stats":
+        // Возвращаем статистику пользователя
+        const listenStats = await db.playHistory.groupBy({
+          by: ["trackId"],
+          where: { userId: user.id },
+          _count: true,
+          orderBy: { _count: "desc" },
+          take: 5,
+        });
+
+        // Получаем информацию о треках
+        const favoriteTracks = await Promise.all(
+          listenStats.map(async (stat: { trackId: string; count: number; duration: number }) => {
+            const track = await db.track.findUnique({
+              where: { id: stat.trackId },
+              include: { artist: true },
+            });
+            return { track, count: stat._count };
+          })
+        );
+
+        return NextResponse.json({
+          userStats: {
+            favoriteTracks,
+            listenHistory: listenStats,
+          },
+        });
+
+      default:
+        return NextResponse.json(
+          { error: "Unknown analytics action" },
+          { status: 400 }
+        );
+    }
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+async function handlePaymentsFeature(user: { id: string; telegramId: number; balance: number; name: string; }, body: unknown) {
+  try {
+    const { action } = z.object({ action: z.string() }).parse(body); // Validate action first
+
+    switch (action) {
+      case "send":
+        const { recipientId, amount, message } = telegramPaymentsFeatureSendSchema.parse(body);
+        // Отправка платежа
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
         // Проверяем баланс пользователя
         if (user.balance < amount) {
           return NextResponse.json(
@@ -544,6 +841,7 @@ async function handlePaymentsFeature(user: { id: string; telegramId: number }, b
           transactionId: transaction.id,
           message: "Payment sent successfully",
         });
+<<<<<<< HEAD
       }
       return NextResponse.json(
         { error: "Recipient ID and amount required" },
@@ -613,5 +911,75 @@ async function handleNotificationsFeature(user: { id: string; telegramId: number
         { error: "Unknown notifications action" },
         { status: 400 }
       );
+=======
+
+      case "receive":
+        // Получение платежа (возвращаем историю платежей)
+        const receivedPayments = await db.transaction.findMany({
+          where: { toUserId: user.id, type: "TRANSFER", status: "completed" },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+        });
+
+        return NextResponse.json({ receivedPayments });
+
+      case "history":
+        // История платежей пользователя
+        const paymentHistory = await db.transaction.findMany({
+          where: {
+            OR: [{ fromUserId: user.id }, { toUserId: user.id }],
+          },
+          orderBy: { createdAt: "desc" },
+          take: 20,
+        });
+
+        return NextResponse.json({ paymentHistory });
+
+      default:
+        return NextResponse.json(
+          { error: "Unknown payments action" },
+          { status: 400 }
+        );
+    }
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+async function handleNotificationsFeature(user: { id: string; telegramId: number; emailNotifications: boolean; pushNotifications: boolean; }, body: unknown) {
+  try {
+    const { action } = z.object({ action: z.string() }).parse(body); // Validate action first
+
+    switch (action) {
+      case "list":
+        // Возвращаем список уведомлений пользователя
+        const notifications = await db.notification.findMany({
+          where: { userId: user.id },
+          orderBy: { createdAt: "desc" },
+          take: 20,
+        });
+
+        return NextResponse.json({ notifications });
+
+      case "settings":
+        const { settings } = telegramNotificationsFeatureSettingsSchema.parse(body);
+        // Возвращаем настройки уведомлений
+        return NextResponse.json({
+          settings: {
+            emailNotifications: settings.emailNotifications || user.emailNotifications || false,
+            pushNotifications: settings.pushNotifications || user.pushNotifications || true,
+            telegramNotifications: true, // всегда включено для Telegram Mini App
+          },
+        });
+
+      default:
+        return NextResponse.json(
+          { error: "Unknown notifications action" },
+          { status: 400 }
+        );
+    }
+  } catch (error) {
+    return handleApiError(error);
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
   }
 }

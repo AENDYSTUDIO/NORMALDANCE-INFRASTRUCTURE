@@ -1,11 +1,15 @@
 import { db } from "@/lib/db";
+<<<<<<< HEAD
 import { handleApiError } from "@/lib/errors/errorHandler";
 import { DEFAULT_HEADERS_CONFIG } from "@/lib/security/ISecurityService";
 import { SecurityManager } from "@/lib/security/SecurityManager";
+=======
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 import { randomUUID } from "crypto";
 import { writeFile } from "fs/promises";
 import { NextResponse } from "next/server";
 import { join } from "path";
+<<<<<<< HEAD
 import { z } from "zod";
 
 // Initialize SecurityManager
@@ -44,6 +48,13 @@ const uploadSchema = z.object({
   price: z.number().min(0).optional(),
   isExplicit: z.boolean().default(false),
 });
+=======
+import { trackSchema } from "@/lib/schemas";
+import { handleApiError } from "@/lib/errors/errorHandler";
+import type { NextRequest } from "next/server";
+
+
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 
 // Helper function to validate JWT token
 async function validateToken(token: string): Promise<string | null> {
@@ -68,6 +79,7 @@ async function validateToken(token: string): Promise<string | null> {
 // POST /api/tracks/upload - Upload a new track
 export async function POST(request: NextRequest) {
   try {
+<<<<<<< HEAD
     // Verify CSRF token
     const csrfToken = request.headers.get("x-csrf-token");
     const csrfCookie = request.cookies.get("nd_csrf");
@@ -86,6 +98,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+=======
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
     // Проверяем аутентификацию пользователя через JWT токен
     const authHeader = request.headers.get("authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -170,6 +184,7 @@ export async function POST(request: NextRequest) {
 
     // Validate track metadata
     const metadata = JSON.parse((formData.get("metadata") as string) || "{}");
+<<<<<<< HEAD
     const validatedData = uploadSchema.parse(metadata);
 
     // Sanitize metadata inputs
@@ -183,6 +198,10 @@ export async function POST(request: NextRequest) {
         : undefined,
     };
 
+=======
+    const validatedData = trackSchema.omit({ ipfsHash: true }).parse(metadata);
+
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
     // Generate unique filename with secure naming
     const fileExtension = file.name.split(".").pop()?.toLowerCase() || "mp3";
     const audioFileName = `${Date.now()}_${randomUUID()}.${fileExtension}`;
@@ -214,6 +233,7 @@ export async function POST(request: NextRequest) {
     // Create track record with correct field names based on Prisma schema
     const track = await db.track.create({
       data: {
+<<<<<<< HEAD
         ...sanitizedMetadata,
         artistId: artistId,
         ipfsHash: `ipfs_${Date.now()}`, // This would be actual IPFS hash in production
@@ -226,6 +246,11 @@ export async function POST(request: NextRequest) {
           isExplicit: sanitizedMetadata.isExplicit,
           price: sanitizedMetadata.price,
         }),
+=======
+        ...validatedData,
+        artistId: artistId,
+        ipfsHash: `ipfs_${Date.now()}`, // This would be actual IPFS hash in production
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
         isPublished: true,
         // Добавим поле с путем к файлу, если оно требуется в схеме
         // убираем filePath, т.к. оно не существует в схеме
@@ -258,6 +283,7 @@ export async function POST(request: NextRequest) {
       data: { balance: { increment: 20 } },
     });
 
+<<<<<<< HEAD
     return NextResponse.json(
       {
         message: "Track uploaded successfully",
@@ -282,6 +308,21 @@ export async function POST(request: NextRequest) {
       { error: "Failed to upload track" },
       { status: 500 }
     );
+=======
+    return NextResponse.json(
+      {
+        message: "Track uploaded successfully",
+        track,
+        files: {
+          audio: audioFileName,
+          image: imageFileName,
+        },
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    return handleApiError(error);
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
   }
 }
 

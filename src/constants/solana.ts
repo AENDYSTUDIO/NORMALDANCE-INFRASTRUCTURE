@@ -1,5 +1,6 @@
 import { PublicKey } from '@solana/web3.js'
 
+<<<<<<< HEAD
 export const NDT_PROGRAM_ID = new PublicKey(
   'NDT111111111111111111111111111111111111111'
 )
@@ -14,4 +15,21 @@ export const TRACKNFT_PROGRAM_ID = new PublicKey(
 
 export const STAKING_PROGRAM_ID = new PublicKey(
   'STAKING111111111111111111111111111111111111111'
+=======
+// Валидные Solana адреса (base58)
+export const NDT_PROGRAM_ID = new PublicKey(
+  process.env.NEXT_PUBLIC_NDT_PROGRAM_ID || '11111111111111111111111111111112'
+)
+
+export const NDT_MINT_ADDRESS = new PublicKey(
+  process.env.NEXT_PUBLIC_NDT_MINT_ADDRESS || '11111111111111111111111111111112'
+)
+
+export const TRACKNFT_PROGRAM_ID = new PublicKey(
+  process.env.NEXT_PUBLIC_TRACKNFT_PROGRAM_ID || '11111111111111111111111111111112'
+)
+
+export const STAKING_PROGRAM_ID = new PublicKey(
+  process.env.NEXT_PUBLIC_STAKING_PROGRAM_ID || '11111111111111111111111111111112'
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 )

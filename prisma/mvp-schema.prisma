@@ -1,0 +1,145 @@
+// Упрощенная схема базы данных для MVP Normal Dance
+// Фокус на ключевой функциональности токеномики
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./mvp.db"
+}
+
+// Пользователи системы
+model User {
+  id        String   @id @default(cuid())
+  address   String   @unique // Solana адрес кошелька
+  username  String?
+  email     String?
+  role      UserRole @default(LISTENER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Связанные записи
+  tracks      Track[]
+  musicTokens MusicToken[]
+  staking     Staking[]
+  rewards     Reward[]
+
+  @@map("users")
+}
+
+// Роли пользователей
+enum UserRole {
+  LISTENER  // слушатель музыки
+  ARTIST    // музыкант
+  CURATOR   // куратор/модератор
+  ADMIN     // администратор
+}
+
+// Музыкальные треки
+model Track {
+  id          String     @id @default(cuid())
+  title       String
+  artist      String
+  description String?
+  audioUrl    String?    // IPFS ссылка на аудио
+  coverUrl    String?    // IPFS ссылка на обложку
+  duration    Int?       // длительность в секундах
+  genre       String?
+  mood        String?
+  isActive    Boolean    @default(true)
+  playCount   Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Связи
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rewards     Reward[]
+
+  @@map("tracks")
+}
+
+// Музыкальные токены пользователей
+model MusicToken {
+  id        String   @id @default(cuid())
+  amount    Float    @default(0) // баланс токенов
+  locked    Float    @default(0) // заблокированные в стейкинге
+  earned    Float    @default(0) // заработанные токены
+  spent     Float    @default(0) // потраченные токены
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Связи
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  staking   Staking?
+
+  @@map("music_tokens")
+}
+
+// Система стейкинга
+model Staking {
+  id          String     @id @default(cuid())
+  amount      Float      // количество токенов в стейкинге
+  apy         Float      @default(15.0) // годовая доходность
+  startDate   DateTime   @default(now())
+  endDate     DateTime?  // дата окончания (если фиксированный период)
+  isActive    Boolean    @default(true)
+  rewards     Float      @default(0) // накопленные награды
+  lastReward DateTime   @default(now())
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Связи
+  userId      String     @unique
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenId     String     @unique
+  musicToken  MusicToken @relation(fields: [tokenId], references: [id], onDelete: Cascade)
+
+  @@map("staking")
+}
+
+// Награды за активность
+model Reward {
+  id          String      @id @default(cuid())
+  type        RewardType  // тип награды
+  amount      Float       // количество токенов
+  description String      // описание награды
+  isClaimed   Boolean     @default(false)
+  claimedAt   DateTime?
+  createdAt   DateTime    @default(now())
+
+  // Связи
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trackId     String?
+  track       Track?      @relation(fields: [trackId], references: [id], onDelete: SetNull)
+
+  @@map("rewards")
+}
+
+// Типы наград
+enum RewardType {
+  LISTENING    // прослушивание музыки
+  UPLOAD       // загрузка трека (для артистов)
+  CURATION     // верификация контента (для кураторов)
+  STAKING      // награды от стейкинга
+  REFERRAL     // реферальная программа
+  BONUS        // бонусные награды
+}
+
+// Аудит лог для отслеживания транзакций токенов
+model TokenAudit {
+  id          String   @id @default(cuid())
+  operation   String   // тип операции (mint, burn, transfer)
+  amount      Float    // количество токенов
+  fromUser    String?  // отправитель (может быть null для mint)
+  toUser      String?  // получатель (может быть null для burn)
+  txHash      String?  // хэш транзакции Solana
+  description String   // описание операции
+  createdAt   DateTime @default(now())
+
+  @@map("token_audit")
+}

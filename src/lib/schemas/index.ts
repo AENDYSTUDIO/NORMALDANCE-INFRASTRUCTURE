@@ -42,6 +42,21 @@ export const trackQuerySchema = z.object({
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
 })
 
+<<<<<<< HEAD
+=======
+export const trackStreamQuerySchema = z.object({
+  id: z.string().uuid(),
+});
+
+export const trackStreamPostSchema = z.object({
+  id: z.string().uuid(),
+  userId: z.string().uuid().optional(),
+  duration: z.number().int().optional(),
+  completed: z.boolean().optional(),
+  position: z.number().int().optional(),
+});
+
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 // ============================================
 // NFT SCHEMAS
 // ============================================
@@ -63,9 +78,25 @@ export const nftMintSchema = z.object({
   price: z.number().min(0).optional(),
 })
 
+<<<<<<< HEAD
 export const nftTransferSchema = z.object({
   nftId: z.string().uuid(),
   toAddress: z.string().regex(/^[A-Za-z0-9]{32,44}$/, 'Invalid wallet address'),
+=======
+export const nftUpdateSchema = nftSchema.partial();
+
+export const nftBurnSchema = z.object({
+  nftId: z.string().uuid(),
+  ownerAddress: z.string().regex(/^[A-Za-z0-9]{32,44}$/, 'Invalid wallet address'),
+  quantity: z.number().int().positive().default(1),
+});
+
+export const nftTransferSchema = z.object({
+  nftId: z.string().uuid(),
+  fromAddress: z.string().regex(/^[A-Za-z0-9]{32,44}$/, 'Invalid wallet address'),
+  toAddress: z.string().regex(/^[A-Za-z0-9]{32,44}$/, 'Invalid wallet address'),
+  quantity: z.number().int().positive().default(1),
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 })
 
 // ============================================
@@ -84,6 +115,20 @@ export const userSchema = z.object({
 
 export const userUpdateSchema = userSchema.partial()
 
+<<<<<<< HEAD
+=======
+export const userRoleSchema = z.object({
+  role: z.enum(["LISTENER", "ARTIST", "CURATOR", "ADMIN"]),
+});
+
+export const userQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(100).default(10),
+  search: z.string().max(100).optional(),
+  artist: z.enum(['true', 'false']).optional().transform(val => val === 'true'),
+});
+
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 // ============================================
 // WALLET SCHEMAS
 // ============================================
@@ -122,6 +167,7 @@ export const donationSchema = z.object({
 // TELEGRAM SCHEMAS
 // ============================================
 
+<<<<<<< HEAD
 export const telegramUserSchema = z.object({
   id: z.number().int().positive(),
   first_name: z.string(),
@@ -136,6 +182,9 @@ export const telegramStarsPaymentSchema = z.object({
   description: z.string().max(200),
   userId: z.number().int().positive(),
 })
+=======
+export * from './telegram';
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 
 // ============================================
 // PLAYLIST SCHEMAS
@@ -233,6 +282,7 @@ export const playbackPauseSchema = z.object({
 // DEX SCHEMAS
 // ============================================
 
+<<<<<<< HEAD
 export const swapSchema = z.object({
   from: z.enum(['TON', 'NDT']),
   to: z.enum(['TON', 'NDT']),
@@ -251,6 +301,60 @@ export const liquiditySchema = z.object({
 // VALIDATION HELPERS
 // ============================================
 
+=======
+export * from './dex';
+
+// ============================================
+// IPFS SCHEMAS
+// ============================================
+
+export * from './ipfs';
+
+// ============================================
+// SOLANA SCHEMAS
+// ============================================
+
+export * from './solana';
+
+// ============================================
+// FILECOIN SCHEMAS
+// ============================================
+
+export * from './filecoin';
+
+// ============================================
+// REDUNDANCY SCHEMAS
+// ============================================
+
+export * from './redundancy';
+
+// ============================================
+// CLUB SCHEMAS
+// ============================================
+
+export * from './club';
+
+// ============================================
+// ANALYTICS SCHEMAS
+// ============================================
+
+export * from './analytics';
+
+// ============================================
+// NOTIFICATIONS SCHEMAS
+// ============================================
+
+export * from './notifications';
+export * from './notificationSettings';
+
+// ============================================
+// MESSAGES SCHEMAS
+// ============================================
+
+export * from './messages';
+
+
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 export type ValidationResult<T> = 
   | { success: true; data: T }
   | { success: false; error: string; details?: z.ZodError }

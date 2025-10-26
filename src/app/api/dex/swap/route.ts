@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
+import { dexSwapPostSchema, dexSwapGetSchema } from '@/lib/schemas'
+import { handleApiError } from '@/lib/errors/errorHandler'
 
 // POST /api/dex/swap - Execute currency swap
 export async function POST(request: NextRequest) {
@@ -17,22 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { from, to, amount, slippage = 0.5 } = body
-
-    if (!from || !to || !amount || from === to) {
-      return NextResponse.json(
-        { error: 'Invalid swap parameters' },
-        { status: 400 }
-      )
-    }
-
-    const swapAmount = parseFloat(amount)
-    if (swapAmount <= 0) {
-      return NextResponse.json(
-        { error: 'Invalid amount' },
-        { status: 400 }
-      )
-    }
+    const { from, to, amount: swapAmount, slippage } = dexSwapPostSchema.parse(body)
 
     // Get current exchange rate from liquidity pool
     const pool = await db.liquidityPool.findFirst({
@@ -210,11 +197,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error executing swap:', error)
-    return NextResponse.json(
-      { error: 'Failed to execute swap' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -231,8 +214,8 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const limit = parseInt(searchParams.get('limit') || '10')
-    const offset = parseInt(searchParams.get('offset') || '0')
+    const query = Object.fromEntries(searchParams.entries())
+    const { limit, offset } = dexSwapGetSchema.parse(query)
 
     const transactions = await db.swapTransaction.findMany({
       where: { userId: session.user.id },
@@ -259,10 +242,6 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error getting swap history:', error)
-    return NextResponse.json(
-      { error: 'Failed to get swap history' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
