@@ -1,10 +1,16 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getAIRecommendationEngine } from '@/lib/ai-recommendations';
+<<<<<<< HEAD
+=======
+import { recommendationsGetSchema, recommendationsPostSchema } from '@/lib/schemas';
+import { handleApiError } from '@/lib/errors/errorHandler';
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+<<<<<<< HEAD
     const { userId, count = 10, type = 'all', filters, exclude } = body as {
       userId?: string;
       count?: number;
@@ -30,6 +36,9 @@ export async function POST(req: NextRequest) {
         headers: { 'Content-Type': 'application/json' },
       });
     }
+=======
+    const { userId, count, type, filters, exclude } = recommendationsPostSchema.parse(body);
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 
     const engine = getAIRecommendationEngine();
     const recommendations = await engine.getRecommendations(userId, {
@@ -66,6 +75,7 @@ export async function POST(req: NextRequest) {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
+<<<<<<< HEAD
     console.error('Recommendation error:', error);
     return new Response(JSON.stringify({
       error: 'Failed to generate recommendations',
@@ -96,11 +106,46 @@ export async function GET(req: NextRequest, res: NextResponse) {
     return new Response(JSON.stringify({
       success: true,
       data: results,
+=======
+    return handleApiError(error);
+  }
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const query = Object.fromEntries(searchParams.entries());
+    const { userId, limit, type } = recommendationsGetSchema.parse(query);
+
+    const engine = getAIRecommendationEngine();
+    const recommendations = await engine.getRecommendations(userId, {
+      count: limit,
+      type,
+    });
+
+    return new Response(JSON.stringify({
+      success: true,
+      data: recommendations.map(rec => ({
+        id: rec.track.id,
+        title: rec.track.title,
+        artist: rec.track.artist,
+        genre: rec.track.genre,
+        subgenre: rec.track.subgenre,
+        duration: rec.track.duration,
+        score: Math.round(rec.score * 100) / 100,
+        confidence: Math.round(rec.confidence * 100),
+        type: rec.type,
+        explanations: rec.explanations,
+        audioFeatures: rec.track.audioFeatures,
+        socialFeatures: rec.track.socialFeatures,
+      })),
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
+<<<<<<< HEAD
     console.error('Search error:', error);
     return new Response(JSON.stringify({
       error: 'Search failed',
@@ -109,5 +154,8 @@ export async function GET(req: NextRequest, res: NextResponse) {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
+=======
+    return handleApiError(error);
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
   }
 }

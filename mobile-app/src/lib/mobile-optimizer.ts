@@ -637,7 +637,7 @@ class MobileOptimizer {
   /**
    * Добавление колбэка для оптимизации
    */
-  onOptimization(type: string, callback: Function): void {
+  onOptimization(type: string, callback: (...args: unknown[]) => unknown): void {
     if (!this.optimizationCallbacks.has(type)) {
       this.optimizationCallbacks.set(type, []);
     }
@@ -647,7 +647,7 @@ class MobileOptimizer {
   /**
    * Удаление колбэка
    */
-  offOptimization(type: string, callback: Function): void {
+  offOptimization(type: string, callback: (...args: unknown[]) => unknown): void {
     const callbacks = this.optimizationCallbacks.get(type);
     if (callbacks) {
       const index = callbacks.indexOf(callback);

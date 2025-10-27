@@ -5,6 +5,8 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { advancedAMM } from '@/lib/advanced-amm'
 import { volatilityProtectionSystem } from '@/lib/volatility-protection'
+import { dexAdvancedSwapPostSchema } from '@/lib/schemas'
+import { handleApiError } from '@/lib/errors/errorHandler'
 
 // POST /api/dex/advanced-swap - Execute advanced swap with hybrid AMM
 export async function POST(request: NextRequest) {
@@ -19,30 +21,15 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { 
-      from, 
-      to, 
-      amount, 
-      slippage = 0.5, 
-      maxPriceImpact = 5,
-      useAdvancedAMM = true,
-      enableVolatilityProtection = true
-    } = body
-
-    if (!from || !to || !amount || from === to) {
-      return NextResponse.json(
-        { error: 'Invalid swap parameters' },
-        { status: 400 }
-      )
-    }
-
-    const swapAmount = parseFloat(amount)
-    if (swapAmount <= 0) {
-      return NextResponse.json(
-        { error: 'Invalid amount' },
-        { status: 400 }
-      )
-    }
+    const {
+      from,
+      to,
+      amount: swapAmount,
+      slippage,
+      maxPriceImpact,
+      useAdvancedAMM,
+      enableVolatilityProtection
+    } = dexAdvancedSwapPostSchema.parse(body)
 
     // Get current liquidity pool
     const pool = await db.liquidityPool.findFirst({
@@ -276,10 +263,6 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error executing advanced swap:', error)
-    return NextResponse.json(
-      { error: 'Failed to execute swap' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

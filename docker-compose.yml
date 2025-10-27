@@ -1,10 +1,10 @@
 version: "3.8"
 
 services:
-  # Основное приложение
-  app:
+  frontend:
     build:
       context: .
+<<<<<<< HEAD
       dockerfile: Dockerfile.dev
     ports:
       - "3000:3000"
@@ -49,11 +49,60 @@ services:
     cpus: "0.5"
     # Устанавливаем пользователя
     user: "1000:1000"
+=======
+      dockerfile: docker/nextjs.Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://normaldance:password@postgres:5432/normaldance
+      - REDIS_URL=redis://redis:6379
+      - BACKEND_URL=http://backend:8080
+      - IPFS_SERVICE_URL=http://ipfs:8080
+    depends_on:
+      - postgres
+      - redis
+      - backend
+      - ipfs
+    networks:
+      - normaldance
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 
-  # База данных PostgreSQL
-  db:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://normaldance:password@postgres:5432/normaldance
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - normaldance
+
+  ipfs:
+    build:
+      context: .
+      dockerfile: docker/ipfs-service.Dockerfile
+    ports:
+      - "8081:8080"
+      - "5001:5001"
+      - "4001:4001"
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ipfs_data:/data/ipfs
+    networks:
+      - normaldance
+
+  postgres:
     image: postgres:15-alpine
     environment:
+<<<<<<< HEAD
       POSTGRES_USER: ${DB_USER:-normaldance}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-secure_password}
       POSTGRES_DB: ${DB_NAME:-normaldance}
@@ -75,14 +124,25 @@ services:
     mem_reservation: 256m
     # Запускаем от непривилегированного пользователя
     user: "999:999"
+=======
+      - POSTGRES_DB=normaldance
+      - POSTGRES_USER=normaldance
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - normaldance
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 
-  # Redis для кэширования и сессий
   redis:
-    image: redis:alpine
+    image: redis:7-alpine
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
+<<<<<<< HEAD
     restart: unless-stopped
     # Добавляем security конфигурации
     security_opt:
@@ -92,7 +152,16 @@ services:
     mem_reservation: 128m
     # Запускаем от непривилегированного пользователя
     user: "999:999"
+=======
+    networks:
+      - normaldance
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 
 volumes:
-  postgres-data:
+  postgres_data:
   redis_data:
+  ipfs_data:
+
+networks:
+  normaldance:
+    driver: bridge

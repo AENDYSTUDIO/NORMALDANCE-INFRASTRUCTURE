@@ -1,7 +1,7 @@
 # Многоэтапная сборка для NormalDance с оптимизацией для Kubernetes
 
 # Этап 1: Установка зависимостей
-FROM node:20-alpine AS deps
+FROM node:25-alpine AS deps
 WORKDIR /app
 
 # Установка системных зависимостей для аудио обработки
@@ -23,7 +23,7 @@ RUN npm ci --only=production
 WORKDIR /app
 
 # Этап 2: Сборка приложения
-FROM node:20-alpine AS builder
+FROM node:25-alpine AS builder
 WORKDIR /app
 
 # Установка системных зависимостей для сборки
@@ -49,7 +49,7 @@ RUN npm run build:android
 WORKDIR /app
 
 # Этап 3: Production среда
-FROM node:20-alpine AS runner
+FROM node:25-alpine AS runner
 WORKDIR /app
 
 # Создание пользователя с фиксированным UID/GID для безопасности
@@ -99,15 +99,15 @@ ENV CACHE_DIR "/app/cache"
 ENV LOG_DIR "/app/logs"
 
 # Health check для Kubernetes
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-    CMD node healthcheck.js || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:3000/api/health || exit 1
 
 # Запуск приложения через dumb-init для корректной обработки сигналов в Kubernetes
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "server.ts"]
 
 # Этап 4: Development среда (опционально)
-FROM node:20-alpine AS dev
+FROM node:25-alpine AS dev
 WORKDIR /app
 
 # Установка системных зависимостей для разработки

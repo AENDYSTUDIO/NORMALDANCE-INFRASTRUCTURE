@@ -1,16 +1,14 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { monitorFileHealth, getFileFromBestGateway } from '@/lib/ipfs-enhanced'
+import { ipfsMonitorGetSchema } from '@/lib/schemas'
+import { handleApiError } from '@/lib/errors/errorHandler'
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const cid = searchParams.get('cid')
-    const action = searchParams.get('action') // 'health' or 'download'
-
-    if (!cid) {
-      return NextResponse.json({ error: 'CID is required' }, { status: 400 })
-    }
+    const query = Object.fromEntries(searchParams.entries())
+    const { cid, action } = ipfsMonitorGetSchema.parse(query)
 
     switch (action) {
       case 'health':
@@ -48,10 +46,7 @@ export async function GET(request: NextRequest) {
             headers
           })
         } catch (error) {
-          return NextResponse.json(
-            { error: 'File not available for download' },
-            { status: 404 }
-          )
+          return handleApiError(error)
         }
 
       default:
@@ -74,11 +69,7 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('IPFS monitor error:', error)
-    return NextResponse.json(
-      { error: 'Failed to monitor file' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 

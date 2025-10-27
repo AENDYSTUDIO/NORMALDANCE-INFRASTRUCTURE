@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useAudioStore } from '@/store/use-audio-store'
 import useNetworkStatus from '@/hooks/useNetworkStatus'
+import { useMobileAudioOptimizer } from '@/utils/mobile-audio-optimizer'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -140,10 +141,11 @@ export function AudioPlayer() {
   } = useAudioStore()
 
   const audioRef = useRef<HTMLAudioElement>(null)
-  const { effectiveType } = useNetworkStatus()
+  const { effectiveType, isMobile } = useNetworkStatus()
+  const audioOptimizer = useMobileAudioOptimizer()
   const [isLiked, setIsLiked] = useState(false)
   const [showQueue, setShowQueue] = useState(false)
-  const [showVisualizer, setShowVisualizer] = useState(true)
+  const [showVisualizer, setShowVisualizer] = useState(!isMobile)
   const [showPlaylistManager, setShowPlaylistManager] = useState(false)
   const [showStats, setShowStats] = useState(false)
   const [showQualitySettings, setShowQualitySettings] = useState(false)
@@ -272,15 +274,36 @@ export function AudioPlayer() {
     }
   }, [volume, isMuted])
 
+  // Предварительная загрузка следующего трека
+  useEffect(() => {
+    if (isMobile && queue.length > 0 && currentQueueIndex < queue.length - 1) {
+      const nextTrack = queue[currentQueueIndex + 1];
+      if (nextTrack && nextTrack.audioUrl) {
+        audioOptimizer.preloadNextTrack(nextTrack.audioUrl);
+      }
+    }
+  }, [currentQueueIndex, queue, isMobile, audioOptimizer]);
+
   useEffect(() => {
     if (audioRef.current) {
       if (isPlaying) {
-        audioRef.current.play().catch(e => console.error("Error playing audio:", e))
+        // Добавляем небольшую задержку для мобильных устройств
+        if (isMobile) {
+          // Оптимизируем аудио элемент для мобильных устройств
+          if (currentTrack && currentTrack.audioUrl) {
+            audioOptimizer.optimizeAudioElement(audioRef.current, currentTrack.audioUrl);
+          }
+          setTimeout(() => {
+            if (audioRef.current) audioRef.current.play().catch(e => console.error("Error playing audio:", e))
+          }, 100)
+        } else {
+          audioRef.current.play().catch(e => console.error("Error playing audio:", e))
+        }
       } else {
         audioRef.current.pause()
       }
     }
-  }, [isPlaying, currentTrack])
+  }, [isPlaying, currentTrack, isMobile, audioOptimizer])
 
   // Обработчики событий
   const handleTimeUpdate = () => {
@@ -386,6 +409,7 @@ export function AudioPlayer() {
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={playNext}
         crossOrigin="anonymous"
+        className="audio-player-element"
       />
       
       {/* Основной плеер */}

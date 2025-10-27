@@ -1,0 +1,99 @@
+name: Canary Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      canary_percentage:
+        description: 'Canary traffic percentage'
+        required: true
+        default: '10'
+        type: choice
+        options:
+          - '10'
+          - '25'
+          - '50'
+          - '100'
+
+jobs:
+  canary-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: '3.12.0'
+      
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: '1.28.0'
+      
+      - name: Configure kubectl
+        run: |
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > kubeconfig
+          export KUBECONFIG=kubeconfig
+      
+      - name: Deploy Canary
+        run: |
+          helm upgrade --install normaldance-canary ./helm/normaldance \
+            --namespace production \
+            --set nameOverride=normaldance-canary \
+            --set image.tag=${{ github.sha }} \
+            --set replicaCount=1 \
+            --set service.type=ClusterIP \
+            --set ingress.enabled=false \
+            --values ./helm/normaldance/values-production.yaml \
+            --wait --timeout=10m
+      
+      - name: Configure Traffic Split
+        run: |
+          kubectl apply -f - <<EOF
+          apiVersion: networking.istio.io/v1beta1
+          kind: VirtualService
+          metadata:
+            name: normaldance-vs
+            namespace: production
+          spec:
+            hosts:
+            - normaldance.com
+            http:
+            - match:
+              - headers:
+                  canary:
+                    exact: "true"
+              route:
+              - destination:
+                  host: normaldance-canary
+                  port:
+                    number: 80
+            - route:
+              - destination:
+                  host: normaldance
+                  port:
+                    number: 80
+                weight: ${{ 100 - inputs.canary_percentage }}
+              - destination:
+                  host: normaldance-canary
+                  port:
+                    number: 80
+                weight: ${{ inputs.canary_percentage }}
+          EOF
+      
+      - name: Monitor Canary
+        run: |
+          echo "Monitoring canary deployment for 5 minutes..."
+          sleep 300
+          
+          # Check error rates
+          ERROR_RATE=$(kubectl exec -n monitoring deployment/prometheus -- \
+            promtool query instant 'rate(http_requests_total{job="normaldance-canary",code=~"5.."}[5m]) / rate(http_requests_total{job="normaldance-canary"}[5m]) * 100')
+          
+          if (( $(echo "$ERROR_RATE > 5" | bc -l) )); then
+            echo "High error rate detected: $ERROR_RATE%. Rolling back..."
+            helm rollback normaldance-canary -n production
+            exit 1
+          fi
+          
+          echo "Canary deployment successful. Error rate: $ERROR_RATE%"

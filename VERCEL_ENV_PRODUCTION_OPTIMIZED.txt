@@ -1,0 +1,129 @@
+# ==============================================
+# 🚀 NORMAL DANCE PRODUCTION ENVIRONMENT
+# ==============================================
+# Критически важные переменные для Vercel развертывания
+
+# ==============================================
+# 🔐 КРИТИЧНЫЕ НАСТРОЙКИ БЕЗОПАСНОСТИ
+# ==============================================
+
+# NextAuth Configuration (ГЕНЕРИРУЙТЕ НОВЫЕ!)
+NEXTAUTH_SECRET=your-secure-nextauth-secret-here-replace-with-generated
+NEXTAUTH_URL=https://normaldance.online
+JWT_SECRET=your-secure-jwt-secret-here-replace-with-generated
+
+# ==============================================
+# 🌐 DOMAIN & ENVIRONMENT
+# ==============================================
+
+NODE_ENV=production
+NEXT_PUBLIC_APP_URL=https://normaldance.online
+NEXT_PUBLIC_VERCEL_URL=https://normaldance.online
+
+# ==============================================
+# 🗄️ DATABASE CONFIGURATION
+# ==============================================
+
+# PostgreSQL (Railway/Neon/Supabase)
+DATABASE_URL=postgresql://username:password@host:5432/database
+
+# Redis для кеширования (Upstash)
+REDIS_URL=rediss://username:password@host:port
+UPSTASH_REDIS_REST_URL=https://your-redis.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your-redis-token
+
+# ==============================================
+# ⛓️ BLOCKCHAIN INTEGRATION
+# ==============================================
+
+# Solana RPC (Mainnet Beta)
+NEXT_PUBLIC_SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
+
+# Программные ID (ЗАМЕНИТЕ НА РЕАЛЬНЫЕ ПОСЛЕ ДЕПЛОЯ!)
+NEXT_PUBLIC_NDT_PROGRAM_ID=your-ndt-program-id
+NEXT_PUBLIC_NDT_MINT_ADDRESS=your-ndt-mint-address
+NEXT_PUBLIC_TRACKNFT_PROGRAM_ID=your-tracknft-program-id
+NEXT_PUBLIC_STAKING_PROGRAM_ID=your-staking-program-id
+
+# Wallet Integration
+NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your-walletconnect-project-id
+
+# ==============================================
+# 📁 IPFS & STORAGE
+# ==============================================
+
+# IPFS через Pinata
+PINATA_JWT=your-pinata-jwt-here
+PINATA_API_KEY=your-pinata-api-key
+PINATA_SECRET_KEY=your-pinata-secret-key
+
+# Публичный шлюз для чтения
+NEXT_PUBLIC_IPFS_GATEWAY=https://gateway.pinata.cloud
+
+# ==============================================
+# 📱 TELEGRAM INTEGRATION
+# ==============================================
+
+TELEGRAM_BOT_TOKEN=your-telegram-bot-token-here
+TELEGRAM_WEB_APP_URL=https://normaldance.online/telegram-app
+TELEGRAM_WEBHOOK_URL=https://normaldance.online/api/telegram/webhook
+
+# ==============================================
+# 📊 MONITORING & ANALYTICS
+# ==============================================
+
+# Vercel Analytics (автоматически включено)
+NEXT_PUBLIC_VERCEL_ANALYTICS_ID=your-vercel-analytics-id
+
+# Sentry для error tracking
+SENTRY_DSN=https://your-sentry-dsn@sentry.io/project-id
+NEXT_PUBLIC_SENTRY_DSN=https://your-public-sentry-dsn@sentry.io/project-id
+
+# ==============================================
+# 🤖 AI INTEGRATION (OPTIONAL)
+# ==============================================
+
+OPENAI_API_KEY=your-openai-api-key
+AI_ENABLED=true
+AI_PROVIDER=openai
+
+# ==============================================
+# 🎵 AUDIO PROCESSING
+# ==============================================
+
+AUDIO_PROCESSING_ENABLED=true
+AUDIO_MAX_FILE_SIZE=104857600
+AUDIO_SUPPORTED_FORMATS=mp3,wav,flac,aac,ogg
+
+# ==============================================
+# ⚙️ PRODUCTION OPTIMIZATIONS
+# ==============================================
+
+# Включить строгий режим безопасности
+NEXT_PUBLIC_STRICT_SECURITY=true
+
+# Включить производительный режим
+NEXT_PUBLIC_PRODUCTION_MODE=true
+
+# Настроить кеширование
+CACHE_TTL=3600
+REDIS_CACHE_TTL=7200
+
+# ==============================================
+# 🔒 SECURITY HEADERS
+# ==============================================
+
+# Content Security Policy
+CSP_HEADER="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https: wss:;"
+
+# ==============================================
+# 📋 CHECKLIST ПЕРЕД ДЕПЛОЕМ
+# ==============================================
+# ✅ Сгенерировать новые секреты для NextAuth и JWT
+# ✅ Настроить реальную базу данных PostgreSQL
+# ✅ Получить токены Pinata для IPFS
+# ✅ Создать бота Telegram и получить токен
+# ✅ Зарегистрироваться в Sentry для мониторинга
+# ✅ Получить WalletConnect Project ID
+# ✅ Настроить кастомный домен в Vercel
+# ✅ Протестировать все переменные локально

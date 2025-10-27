@@ -1,62 +1,55 @@
-# Default values for normaldance.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
 
-replicaCount: 3
+replicaCount: 2
 
 image:
-  repository: ghcr.io/normaldance/app
-  pullPolicy: Always
-  # Overrides the image tag whose default is the chart appVersion.
-  tag: "latest"
+  registry: ghcr.io
+  repository: aendystudio/normaldance
+  tag: ""
+  pullPolicy: IfNotPresent
 
-imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
 serviceAccount:
-  # Specifies whether a service account should be created
   create: true
-  # Annotations to add to the service account
   annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
   name: ""
 
 podAnnotations: {}
+podSecurityContext:
+  fsGroup: 1001
 
-podSecurityContext: {}
-  # fsGroup: 2000
-
-securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
+securityContext:
+  allowPrivilegeEscalation: false
+  runAsNonRoot: true
+  runAsUser: 1001
+  capabilities:
+    drop:
+    - ALL
 
 service:
   type: ClusterIP
   port: 80
   targetPort: 3000
-  name: normaldance-service
 
 ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
   hosts:
-    - host: chart-example.local
+    - host: normaldance.com
       paths:
         - path: /
-          pathType: ImplementationSpecific
-  tls: []
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - chart-example.local
+          pathType: Prefix
+  tls:
+    - secretName: normaldance-tls
+      hosts:
+        - normaldance.com
 
 resources:
   limits:
@@ -67,731 +60,83 @@ resources:
     memory: 256Mi
 
 autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 5
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
   targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
 
 nodeSelector: {}
-
 tolerations: []
-
 affinity: {}
 
-# Database configuration
-database:
+# Backend service configuration
+backend:
   enabled: true
-  type: postgresql
-  host: postgres-service
-  port: 5432
-  name: normaldance
-  user: postgres
-  password: postgres
-  ssl: false
-  sslMode: disable
-  maxConnections: 100
-  maxIdleConnections: 10
-  connectionTimeout: 30
-  maxLifetime: 3600
+  replicaCount: 2
+  image:
+    repository: aendystudio/normaldance-backend
+    tag: ""
+  service:
+    port: 8080
+  resources:
+    limits:
+      cpu: 300m
+      memory: 256Mi
+    requests:
+      cpu: 150m
+      memory: 128Mi
 
-# Redis configuration
+# IPFS service configuration
+ipfs:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: aendystudio/normaldance-ipfs
+    tag: ""
+  service:
+    port: 8080
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Smart contracts service
+contracts:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: aendystudio/normaldance-contracts
+    tag: ""
+  service:
+    port: 8545
+
+# Database configuration
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: ""
+    username: normaldance
+    password: ""
+    database: normaldance
+  primary:
+    persistence:
+      enabled: true
+      size: 8Gi
+
 redis:
   enabled: true
-  host: redis-service
-  port: 6379
-  password: ""
-  db: 0
-  maxRetries: 3
-  dialTimeout: 5
-  readTimeout: 3
-  writeTimeout: 3
-  poolSize: 10
-  minIdleConns: 5
-
-# JWT configuration
-jwt:
-  secret: "your-super-secret-jwt-key-change-this-in-production"
-  expires: "7d"
-  refreshExpires: "30d"
-  issuer: "normaldance"
-  audience: "normaldance-users"
-
-# Web3 configuration
-web3:
-  network: "devnet"
-  solanaRpcUrl: "https://api.devnet.solana.com"
-  ndtProgramId: "NDT111111111111111111111111111111111111111"
-  tracknftProgramId: "TRACKNFT111111111111111111111111111111111111111"
-  stakingProgramId: "STAKING111111111111111111111111111111111111111"
-
-# File storage configuration
-storage:
-  ipfs:
+  auth:
     enabled: true
-    gateway: "https://ipfs.io/ipfs"
-    apiUrl: "https://api.ipfs.io"
-  filecoin:
-    enabled: true
-    apiUrl: "https://api.filecoin.io"
-  local:
-    enabled: false
-    path: "/app/uploads"
-  s3:
-    enabled: false
-    bucket: "normaldance-uploads"
-    region: "us-east-1"
-    accessKey: ""
-    secretKey: ""
-    endpoint: ""
-    forcePathStyle: false
+    password: ""
 
-# Email configuration
-email:
-  enabled: true
-  host: "smtp.gmail.com"
-  port: 587
-  secure: false
-  user: "your-email@gmail.com"
-  pass: "your-email-password"
-  from: "noreply@normaldance.com"
-  maxSize: 10485760  # 10MB
-  maxAttachmentSize: 5242880  # 5MB
-
-# Stripe configuration
-stripe:
-  enabled: true
-  secretKey: "sk_test_your_stripe_secret_key"
-  webhookSecret: "whsec_your_webhook_secret"
-  currency: "USD"
-  minAmount: 1
-  maxAmount: 10000
-
-# Analytics configuration
-analytics:
-  enabled: true
-  googleAnalyticsId: "UA-XXXXXXXXX-X"
-  mixpanelToken: "your_mixpanel-token"
-  sentryDsn: "https://your-sentry-dsn"
-  logLevel: "info"
-
-# Feature flags
-featureFlags:
-  enabled: true
-  betaFeatures: false
-  analytics: true
-  emailNotifications: true
-  pushNotifications: true
-  socialLogin: true
-  nftMinting: true
-  staking: true
-  audioMastering: false
-  crossPlatformSync: true
-
-# Rate limiting
-rateLimit:
-  enabled: true
-  requests: 100
-  window: 60000  # 1 minute
-
-# CORS configuration
-cors:
-  enabled: true
-  origin: "https://normaldance.com,https://www.normaldance.com"
-  methods: "GET,POST,PUT,DELETE,OPTIONS"
-  headers: "Content-Type,Authorization"
-  credentials: true
-
-# WebSocket configuration
-websocket:
-  enabled: true
-  port: 3001
-  maxConnections: 10000
-  heartbeatInterval: 30000
-  pingTimeout: 60000
-  maxMessageSize: 1048576  # 1MB
-
-# Audio configuration
-audio:
-  maxSize: 104857600  # 100MB
-  allowedFormats: "mp3,wav,flac,aac,ogg"
-  quality: "high"
-  bitrate: 320
-  sampleRate: 44100
-
-# Cache configuration
-cache:
-  enabled: true
-  ttl: 3600  # 1 hour
-  maxSize: 1000
-  evictPolicy: "lru"
-
-# Upload configuration
-upload:
-  maxSize: 104857600  # 100MB
-  allowedTypes: "audio,image,video"
-  concurrentLimit: 5
-
-# Search configuration
-search:
-  enabled: true
-  engine: "elasticsearch"
-  index: "normaldance"
-  shards: 3
-  replicas: 1
-
-# Social configuration
-social:
-  enabled: true
-  facebook:
-    enabled: false
-    appId: "your-facebook-app-id"
-    secret: "your-facebook-secret"
-  google:
-    enabled: false
-    clientId: "your-google-client-id"
-    secret: "your-google-secret"
-  twitter:
-    enabled: false
-    apiKey: "your-twitter-api-key"
-    apiSecret: "your-twitter-api-secret"
-
-# CDN configuration
-cdn:
-  enabled: true
-  url: "https://cdn.normaldance.com"
-  cacheTtl: 86400  # 24 hours
-
-# Payment configuration
-payment:
-  enabled: true
-  provider: "stripe"
-  currency: "USD"
-  minAmount: 1
-  maxAmount: 10000
-
-# NFT configuration
-nft:
-  mintFee: 0.01  # SOL
-  royaltyPercentage: 10  # 10%
-  maxSupply: 1000
-
-# Staking configuration
-staking:
-  minAmount: 100
-  maxAmount: 1000000
-  apy: 15  # 15%
-  lockPeriod: 30  # days
-  rewardToken: "NDT"
-
-# Monitoring configuration
-monitoring:
-  enabled: true
-  interval: 60  # 1 minute
-  retention: 7  # days
-  alertsEnabled: true
-  alertsEmail: "admin@normaldance.com"
-
-# Security configuration
-security:
-  enabled: true
-  rateLimit: 100
-  maxLoginAttempts: 5
-  lockoutDuration: 900  # 15 minutes
-  passwordMinLength: 8
-  passwordRequireUppercase: true
-  passwordRequireLowercase: true
-  passwordRequireNumbers: true
-  passwordRequireSymbols: true
-
-# Backup configuration
-backup:
-  enabled: true
-  interval: 86400  # 24 hours
-  retention: 30  # days
-  storage: "s3"
-  s3:
-    bucket: "normaldance-backups"
-    region: "us-east-1"
-    accessKey: ""
-    secretKey: ""
-
-# Performance configuration
-performance:
-  enabled: true
-  compression: true
-  caching: true
-  cdn: true
-  optimization: true
-
-# Development configuration
-development:
-  debug: false
-  verboseLogging: false
-  testing: false
-
-# Mobile configuration
-mobile:
-  enabled: true
-  pushNotifications: true
-  backgroundSync: true
-  offlineMode: true
-
-# Integration configuration
-integration:
-  spotify:
-    enabled: false
-    clientId: "your-spotify-client-id"
-    secret: "your-spotify-secret"
-  appleMusic:
-    enabled: false
-    key: "your-apple-music-key"
-  youtube:
-    enabled: false
-    apiKey: "your-youtube-api-key"
-
-# AI configuration
-ai:
-  enabled: true
-  model: "gpt-3.5-turbo"
-  maxTokens: 1000
-  temperature: 0.7
-  frequencyPenalty: 0.5
-  presencePenalty: 0.5
-
-# Recommendation configuration
-recommendation:
-  enabled: true
-  algorithm: "collaborative_filtering"
-  cacheTtl: 3600  # 1 hour
-  maxResults: 10
-
-# Search configuration
-search:
-  enabled: true
-  algorithm: "elasticsearch"
-  cacheTtl: 3600  # 1 hour
-  maxResults: 50
-  fuzzySearch: true
-  spellCheck: true
-
-# Social configuration
-social:
-  enabled: true
-  maxFriends: 1000
-  maxFollowers: 5000
-  maxPostsPerDay: 10
-  maxCommentsPerPost: 100
-
-# Content configuration
-content:
-  enabled: true
-  maxUploadSize: 104857600  # 100MB
-  allowedTypes: "audio,image,video,text"
-  moderationEnabled: true
-  automoderationEnabled: true
-
-# User configuration
-user:
-  enabled: true
-  maxProfiles: 5
-  maxPlaylists: 100
-  maxTracks: 1000
-  maxStorage: 1073741824  # 1GB
-
-# Admin configuration
-admin:
-  enabled: true
-  dashboardEnabled: true
-  apiEnabled: true
-  logsEnabled: true
-  monitoringEnabled: true
-
-# API configuration
-api:
-  enabled: true
-  version: "v1"
-  docsEnabled: true
-  rateLimit: 100
-  timeout: 30
-  corsEnabled: true
-  corsOrigin: "*"
-
-# WebSocket configuration
-websocket:
-  enabled: true
-  maxConnections: 10000
-  heartbeatInterval: 30000
-  pingTimeout: 60000
-  maxMessageSize: 1048576  # 1MB
-
-# Cache configuration
-cache:
-  enabled: true
-  type: "redis"
-  ttl: 3600  # 1 hour
-  maxSize: 1000
-  evictPolicy: "lru"
-
-# Queue configuration
-queue:
-  enabled: true
-  type: "redis"
-  maxJobs: 1000
-  timeout: 300
-  retries: 3
-
-# Session configuration
-session:
-  enabled: true
-  type: "redis"
-  secret: "your-session-secret"
-  maxAge: 86400  # 1 day
-  secure: true
-  httpOnly: true
-  sameSite: "strict"
-
-# Security configuration
-security:
-  enabled: true
-  csrfEnabled: true
-  xssEnabled: true
-  sqlInjectionEnabled: true
-  rateLimitEnabled: true
-  maxLoginAttempts: 5
-  lockoutDuration: 900  # 15 minutes
-  passwordMinLength: 8
-  passwordRequireUppercase: true
-  passwordRequireLowercase: true
-  passwordRequireNumbers: true
-  passwordRequireSymbols: true
-
-# Logging configuration
-logging:
-  enabled: true
-  level: "info"
-  format: "json"
-  file: "/var/log/normaldance.log"
-  maxSize: 10485760  # 10MB
-  maxFiles: 5
-  compress: true
-
-# Monitoring configuration
-monitoring:
-  enabled: true
-  type: "prometheus"
-  port: 9090
-  path: "/metrics"
-  healthCheck: "/health"
-  healthCheckInterval: 30
-  healthCheckTimeout: 10
-
-# Backup configuration
-backup:
-  enabled: true
-  type: "s3"
-  interval: 86400  # 24 hours
-  retention: 30  # days
-  s3:
-    bucket: "normaldance-backups"
-    region: "us-east-1"
-    accessKey: ""
-    secretKey: ""
-
-# CDN configuration
-cdn:
-  enabled: true
-  type: "cloudflare"
-  domain: "cdn.normaldance.com"
-  cacheTtl: 86400  # 24 hours
-  purgeCache: true
-
-# Payment configuration
-payment:
-  enabled: true
-  provider: "stripe"
-  currency: "USD"
-  minAmount: 1
-  maxAmount: 10000
-  webhookSecret: "your-webhook-secret"
-
-# Email configuration
-email:
-  enabled: true
-  type: "smtp"
-  host: "smtp.gmail.com"
-  port: 587
-  secure: false
-  user: "your-email@gmail.com"
-  pass: "your-email-password"
-  from: "noreply@normaldance.com"
-  maxSize: 10485760  # 10MB
-  maxAttachmentSize: 5242880  # 5MB
-
-# SMS configuration
-sms:
-  enabled: false
-  type: "twilio"
-  accountSid: "your-twilio-account-sid"
-  authToken: "your-twilio-auth-token"
-  fromNumber: "+1234567890"
-  maxSize: 160
-
-# Push notification configuration
-push:
-  enabled: true
-  type: "firebase"
-  serverKey: "your-firebase-server-key"
-  maxSize: 4096
-
-# Social login configuration
-socialLogin:
-  enabled: true
-  facebook:
-    enabled: true
-  google:
-    enabled: true
-  twitter:
-    enabled: true
-  github:
-    enabled: true
-  linkedin:
-    enabled: true
-
-# Analytics configuration
-analytics:
-  enabled: true
-  type: "google"
-  id: "UA-XXXXXXXXX-X"
-  domain: "normaldance.com"
-  anonymizeIp: true
-  cookieDomain: "normaldance.com"
-
-# Performance configuration
-performance:
-  enabled: true
-  compression: true
-  caching: true
-  cdn: true
-  optimization: true
-  minifyHtml: true
-  minifyCss: true
-  minifyJs: true
-  gzip: true
-  brotli: true
-  cacheControl: "public, max-age=31536000, immutable"
-
-# Security configuration
-security:
-  enabled: true
-  ssl: true
-  hsts: true
-  csp: true
-  xss: true
-  sqlInjection: true
-  csrf: true
-  rateLimit: true
-  maxLoginAttempts: 5
-  lockoutDuration: 900  # 15 minutes
-  passwordMinLength: 8
-  passwordRequireUppercase: true
-  passwordRequireLowercase: true
-  passwordRequireNumbers: true
-  passwordRequireSymbols: true
-
-# Development configuration
-development:
-  debug: false
-  verboseLogging: false
-  testing: false
-  development: false
-  staging: false
-  production: true
-
-# Feature flags
-featureFlag:
-  enabled: true
-  betaFeatures: false
-  analytics: true
-  emailNotifications: true
-  pushNotifications: true
-  socialLogin: true
-  nftMinting: true
-  staking: true
-  audioMastering: false
-  crossPlatformSync: true
-  offlineMode: true
-  backgroundSync: true
-  pushNotifications: true
-  socialFeatures: true
-  contentModeration: true
-  automoderation: true
-  aiRecommendations: true
-  search: true
-  playlists: true
-  comments: true
-  likes: true
-  sharing: true
-  downloads: false
-  streaming: true
-  offlineStreaming: false
-  highQualityAudio: true
-  spotifyIntegration: false
-  appleMusicIntegration: false
-  youtubeIntegration: false
-  dailyMix: true
-  discoverWeekly: true
-  radio: true
-  podcasts: false
-  liveStreaming: false
-  video: false
-  lyrics: true
-  translations: false
-  accessibility: true
-  darkMode: true
-  customTheme: false
-  multiLanguage: false
-  currency: true
-  timezone: true
-  dateFormat: true
-  numberFormat: true
-  measurementSystem: true
-  socialSharing: true
-  embeddablePlayer: true
-  widgets: false
-  api: true
-  webhooks: true
-  sdk: true
-  cli: false
-  adminPanel: true
-  dashboard: true
-  reports: true
-  analytics: true
-  monitoring: true
-  logging: true
-  backup: true
-  restore: true
-  migration: true
-  seeding: true
-  testing: true
-  staging: true
-  production: true
-  development: true
-  debug: false
-  verbose: false
-  profiling: false
-  benchmarking: false
-  optimization: true
-  caching: true
-  compression: true
-  minification: true
-  bundling: true
-  treeShaking: true
-  codeSplitting: true
-  lazyLoading: true
-  preloading: true
-  cdn: true
-  edgeCaching: true
-  distributedCaching: true
-  loadBalancing: true
-  autoScaling: true
-  clustering: true
-  replication: true
-  sharding: true
-  partitioning: true
-  indexing: true
-  optimization: true
-  profiling: false
-  benchmarking: false
-  monitoring: true
-  logging: true
-  alerting: true
-  notifications: true
-  dashboard: true
-  reports: true
-  analytics: true
-  metrics: true
-  tracing: true
-  distributedTracing: true
-  microservices: false
-  serverless: false
-  containerization: true
-  orchestration: true
-  serviceMesh: false
-  apiGateway: true
-  loadBalancer: true
-  cdn: true
-  cache: true
-  database: true
-  messageQueue: true
-  streamProcessing: false
-  eventSourcing: false
-  cqrs: false
-  ddd: false
-  bdd: false
-  tdd: true
-  atdd: false
-  bdd: false
-  ddd: false
-  solid: true
-  cleanCode: true
-  testDrivenDevelopment: true
-  behaviorDrivenDevelopment: false
-  acceptanceTestDrivenDevelopment: false
-  testAutomation: true
-  continuousIntegration: true
-  continuousDelivery: true
-  continuousDeployment: true
-  devops: true
-  agile: true
-  scrum: true
-  kanban: false
-  xp: false
-  waterfall: false
-  spiral: false
-  iterative: true
-  incremental: true
-  rad: false
-  proto: false
-  rup: false
-  up: false
-  evo: false
-  dsdm: false
-  fdd: false
-  asd: false
-  ld: false
-  mdd: false
-  ooad: false
-  tdd: true
-  bdd: false
-  atdd: false
-  ddd: false
-  solid: true
-  cleanCode: true
-  testDrivenDevelopment: true
-  behaviorDrivenDevelopment: false
-  acceptanceTestDrivenDevelopment: false
-  testAutomation: true
-  continuousIntegration: true
-  continuousDelivery: true
-  continuousDeployment: true
-  devops: true
-  agile: true
-  scrum: true
-  kanban: false
-  xp: false
-  waterfall: false
-  spiral: false
-  iterative: true
-  incremental: true
-  rad: false
-  proto: false
-  rup: false
-  up: false
-  evo: false
-  dsdm: false
-  fdd: false
-  asd: false
-  ld: false
-  mdd: false
-  ooad: false
+# Environment variables
+env:
+  NODE_ENV: production
+  DATABASE_URL: ""
+  REDIS_URL: ""
+  SOLANA_RPC_URL: ""
+  IPFS_GATEWAY_URL: ""

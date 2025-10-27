@@ -130,7 +130,7 @@ class CodeEmbeddings {
   }
 
   private extractFunctions(content: string, language: string): string[] {
-    let functions: string[] = [];
+    const functions: string[] = [];
 
     if (language === "typescript" || language === "javascript") {
       // Регулярное выражение для поиска функций в TypeScript/JavaScript
@@ -159,7 +159,7 @@ class CodeEmbeddings {
   }
 
   private extractClasses(content: string, language: string): string[] {
-    let classes: string[] = [];
+    const classes: string[] = [];
 
     if (language === "typescript" || language === "javascript") {
       const classRegex = /export\s+class\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*{/g;

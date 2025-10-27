@@ -80,7 +80,7 @@ export class AnalyticsService {
         totalScore: 0,
         completedTests: 0,
         improvementTrend: 0,
-        skillDevelopment: {},
+        skillDevelopment: Record<string, unknown>,
         knowledgeGapTrends: [],
       };
     }

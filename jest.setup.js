@@ -254,7 +254,7 @@ jest.mock("socket.io-client", () => ({
 
 // Mock zustand
 jest.mock("zustand", () => ({
-  create: jest.fn((fn) => {
+  create: jest.fn(() => {
     const mockStore = {
       getState: jest.fn(),
       setState: jest.fn(),
@@ -286,3 +286,17 @@ global.React = {
     return { type, props, children };
   }),
 };
+<<<<<<< HEAD
+=======
+
+// Polyfill TextEncoder and TextDecoder if not available
+if (typeof TextEncoder === "undefined") {
+  const util = require("util");
+  global.TextEncoder = util.TextEncoder;
+}
+
+if (typeof TextDecoder === "undefined") {
+  const util = require("util");
+  global.TextDecoder = util.TextDecoder;
+}
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337

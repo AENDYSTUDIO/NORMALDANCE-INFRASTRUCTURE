@@ -43,11 +43,11 @@ export async function GET(request: NextRequest) {
             { description: { contains: search, mode: 'insensitive' as const } },
             { artistName: { contains: search, mode: 'insensitive' as const } },
           ]
-        } : {},
-        genre ? { genre: { contains: genre, mode: 'insensitive' as const } } : {},
-        artistId ? { artistId: artistId } : {},
-        minPrice ? { price: { gte: minPrice } } : {},
-        maxPrice ? { price: { lte: maxPrice } } : {},
+        } : Record<string, unknown>,
+        genre ? { genre: { contains: genre, mode: 'insensitive' as const } } : Record<string, unknown>,
+        artistId ? { artistId: artistId } : Record<string, unknown>,
+        minPrice ? { price: { gte: minPrice } } : Record<string, unknown>,
+        maxPrice ? { price: { lte: maxPrice } } : Record<string, unknown>,
         { isPublished: true }
       ]
     }

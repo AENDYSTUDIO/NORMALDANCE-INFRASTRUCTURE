@@ -1,9 +1,8 @@
-{{- if .Values.autoscaling.enabled -}}
+{{- if .Values.autoscaling.enabled }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: {{ include "normaldance.fullname" . }}
-  namespace: {{ .Release.Namespace }}
   labels:
     {{- include "normaldance.labels" . | nindent 4 }}
 spec:
@@ -14,47 +13,20 @@ spec:
   minReplicas: {{ .Values.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.autoscaling.maxReplicas }}
   metrics:
-    {{- if .Values.autoscaling.cpu.utilization }}
+    {{- if .Values.autoscaling.targetCPUUtilizationPercentage }}
     - type: Resource
       resource:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: {{ .Values.autoscaling.cpu.utilization }}
+          averageUtilization: {{ .Values.autoscaling.targetCPUUtilizationPercentage }}
     {{- end }}
-    {{- if .Values.autoscaling.memory.utilization }}
+    {{- if .Values.autoscaling.targetMemoryUtilizationPercentage }}
     - type: Resource
       resource:
         name: memory
         target:
           type: Utilization
-          averageUtilization: {{ .Values.autoscaling.memory.utilization }}
+          averageUtilization: {{ .Values.autoscaling.targetMemoryUtilizationPercentage }}
     {{- end }}
-    {{- if .Values.autoscaling.customMetrics }}
-    {{- toYaml .Values.autoscaling.customMetrics | nindent 4 }}
-    {{- end }}
-  behavior:
-    scaleDown:
-      stabilizationWindowSeconds: {{ .Values.autoscaling.scaleDown.stabilizationWindowSeconds }}
-      policies:
-        - type: Percent
-          value: {{ .Values.autoscaling.scaleDown.policies.percent.value }}
-          periodSeconds: {{ .Values.autoscaling.scaleDown.policies.percent.periodSeconds }}
-        - type: Pods
-          value: {{ .Values.autoscaling.scaleDown.policies.pods.value }}
-          periodSeconds: {{ .Values.autoscaling.scaleDown.policies.pods.periodSeconds }}
-      selectPolicy: {{ .Values.autoscaling.scaleDown.selectPolicy }}
-    scaleUp:
-      stabilizationWindowSeconds: {{ .Values.autoscaling.scaleUp.stabilizationWindowSeconds }}
-      policies:
-        - type: Percent
-          value: {{ .Values.autoscaling.scaleUp.policies.percent.value }}
-          periodSeconds: {{ .Values.autoscaling.scaleUp.policies.percent.periodSeconds }}
-        - type: Pods
-          value: {{ .Values.autoscaling.scaleUp.policies.pods.value }}
-          periodSeconds: {{ .Values.autoscaling.scaleUp.policies.pods.periodSeconds }}
-        - type: External
-          value: {{ .Values.autoscaling.scaleUp.policies.external.value }}
-          periodSeconds: {{ .Values.autoscaling.scaleUp.policies.external.periodSeconds }}
-      selectPolicy: {{ .Values.autoscaling.scaleUp.selectPolicy }}
-{{- end -}}
+{{- end }}

@@ -3,7 +3,7 @@
  * Personalized music recommendations using AI/ML
  */
 
-import logger from "./logger";
+import { logger } from "./logger";
 import { getMonitoring } from "./monitoring";
 
 const monitoring = getMonitoring();
@@ -552,7 +552,7 @@ export class AIRecommendationEngine {
     }
 
     // Filter candidates
-    let candidates = Array.from(this.trackDatabase.values()).filter((track) => {
+    const candidates = Array.from(this.trackDatabase.values()).filter((track) => {
       // Exclude disliked tracks
       if (excludedTracks.has(track.id)) return false;
 
@@ -717,4 +717,3 @@ export function getAIRecommendationEngine(): AIRecommendationEngine {
   }
   return recommendationEngine;
 }
-

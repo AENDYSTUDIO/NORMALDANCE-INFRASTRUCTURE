@@ -1,6 +1,10 @@
 {
   "name": "normaldance",
+<<<<<<< HEAD
   "version": "0.0.3",
+=======
+  "version": "0.2.0",
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
   "description": "Децентрализованная музыкальная платформа",
   "repository": {
     "type": "git",
@@ -60,13 +64,13 @@
     "deploy:guide": "echo 'Откройте DEPLOYMENT_STEP_BY_STEP_COMPLETE.md для полной инструкции по развертыванию'"
   },
   "dependencies": {
-    "@helia/unixfs": "^3.0.0",
+    "@helia/unixfs": "^6.0.1",
     "@libp2p/mplex": "^10.0",
     "@libp2p/tcp": "^9.0.0",
-    "@modelcontextprotocol/sdk": "^0.4.0",
+    "@modelcontextprotocol/sdk": "^1.20.1",
     "@next-auth/prisma-adapter": "^1.0.7",
     "@pinata/sdk": "^2.1.0",
-    "@prisma/client": "^5.0.0",
+    "@prisma/client": "^6.17.1",
     "@qdrant/js-client-rest": "^1.15.1",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -95,9 +99,15 @@
     "@radix-ui/react-toggle-group": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@react-spring/three": "^9.7.3",
+<<<<<<< HEAD
     "@react-three/drei": "^9.92.0",
     "@react-three/fiber": "^8.15.0",
     "@sentry/nextjs": "^10.11.0",
+=======
+    "@react-three/drei": "^10.7.6",
+    "@react-three/fiber": "^8.15.0",
+    "@sentry/nextjs": "^10.1.0",
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
     "@socket.io/redis-adapter": "^8.2.1",
     "@solana/pay": "^0.2.6",
     "@solana/spl-token": "^0.4.14",
@@ -107,6 +117,7 @@
     "@solana/wallet-adapter-react-ui": "^0.9.39",
     "@solana/wallet-adapter-wallets": "^0.19.37",
     "@solana/web3.js": "^1.98.4",
+    "@ton/core": "^0.62.0",
     "@ton/ton": "^15.4.0",
     "@tonconnect/sdk": "^3.3.1",
     "@tonconnect/ui-react": "^2.3.1",
@@ -114,17 +125,17 @@
     "@twa-dev/types": "^8.0.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.0",
-    "@types/node": "^20.0.0",
     "@upstash/vector": "^1.2.2",
     "@vercel/analytics": "^1.5.0",
     "@vercel/speed-insights": "^1.2.0",
-    "ai": "^5.0.29",
+    "ai": "^5.0.76",
     "bcryptjs": "^3.0.2",
     "bignumber.js": "^9.1.2",
     "class-variance-authority": "^0.7.1",
     "cmdk": "^1.1.1",
     "critters": "^0.0.23",
     "date-fns": "^4.1.0",
+    "dotenv": "^17.2.3",
     "embla-carousel-react": "^8.6.0",
     "ethers": "^6.15.0",
     "express-rate-limit": "^7.4.1",
@@ -132,7 +143,11 @@
     "helia": "^4.2.2",
     "helmet": "^8.0.0",
     "input-otp": "^1.4.2",
+<<<<<<< HEAD
     "ioredis": "^5.3.2",
+=======
+    "ioredis": "^5.8.1",
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
     "isomorphic-dompurify": "^2.16.0",
     "jsonwebtoken": "^9.0.0",
     "logform": "^2.7.0",
@@ -140,7 +155,7 @@
     "mixpanel-browser": "^2.48.0",
     "multiformats": "^13.1.0",
     "n8n-nodes-dewiar-collection": "^1.1.4",
-    "next": "^15.0.0",
+    "next": "^15.5.6",
     "next-auth": "^4.24.11",
     "next-themes": "^0.4.6",
     "prisma": "^5.0.0",
@@ -149,16 +164,23 @@
     "react-dom": "^18.0.0",
     "react-hook-form": "^7.62.0",
     "react-resizable-panels": "^3.0.6",
+    "react-window": "^2.2.1",
     "recharts": "^3.2.1",
     "redis": "^4.6.0",
     "siwe": "^3.0.0",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "sonner": "^2.0.7",
+<<<<<<< HEAD
     "stripe": "^14.0.0",
+=======
+    "stripe": "^14.0",
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-react": "^5.29.5",
     "tailwind-merge": "^3.3.1",
     "three": "^0.160.0",
-    "typescript": "^5.0.0",
+    "typescript": "^5.9.3",
     "undici": "^7.16.0",
     "vaul": "^1.1.2",
     "web-vitals": "^5.1.0",
@@ -172,22 +194,33 @@
     "@babel/preset-typescript": "^7.27.1",
     "@next/bundle-analyzer": "^15.0.0",
     "@next/eslint-plugin-next": "^15.5.4",
+<<<<<<< HEAD
     "@playwright/test": "^1.55.0",
+=======
+    "@playwright/test": "^1.5.0",
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
     "@storybook/addon-a11y": "^8.6.14",
     "@storybook/addon-essentials": "^8.6.14",
     "@storybook/addon-interactions": "^8.6.14",
-    "@storybook/nextjs": "^8.6.14",
+    "@storybook/nextjs": "^9.1.13",
     "@storybook/test": "^8.6.14",
-    "@tailwindcss/postcss": "^4.1.13",
+    "@tailwindcss/postcss": "^4.1.15",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
     "@types/jest": "^29.0",
-    "@types/node": "^20.0.0",
+    "@types/node": "^20.19.22",
     "@types/react": "^18.0",
     "@types/react-dom": "^18.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.46.1",
+    "@typescript-eslint/parser": "^8.46.1",
+<<<<<<< HEAD
     "@upstash/ratelimit": "^1.0.0",
     "@upstash/redis": "^1.0.0",
+=======
+    "@upstash/ratelimit": "^1.0",
+    "@upstash/redis": "^1.0",
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
     "autoprefixer": "^10.4.21",
     "babel-jest": "^30.2.0",
     "chromatic": "^13.1.4",
@@ -200,10 +233,11 @@
     "jest": "^29.0.0",
     "jest-environment-jsdom": "^30.2.0",
     "postcss": "^8.5.6",
+    "supabase": "^2.51.0",
     "tailwindcss": "^4.1.13",
     "tailwindcss-animate": "^1.0.7",
     "ts-jest": "^29.4.5",
-    "tsx": "^4.0.0",
+    "tsx": "^4.20.6",
     "typescript-eslint": "^8.45.0"
   },
   "keywords": [
@@ -217,6 +251,12 @@
   "author": "NORMAL DANCE Team",
   "license": "MIT",
   "overrides": {
-    "axios": "^1.7"
+    "axios": "^1.7",
+    "form-data": "^4.0.4",
+    "bigint-buffer": "^1.1.0",
+    "fast-redact": "^3.1.0",
+    "lodash.pick": "^4.4.0",
+    "prismjs": "^1.30.0",
+    "validator": "^13.12.0"
   }
 }

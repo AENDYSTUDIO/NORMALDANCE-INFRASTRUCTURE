@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import * as Sentry from "@sentry/nextjs";
 import {
   WalletAdapterNetwork,
@@ -21,6 +22,75 @@ import {
 
 // Конфигурация сети
 const NETWORK = WalletAdapterNetwork.Devnet;
+=======
+import {
+  NDT_MINT_ADDRESS,
+  NDT_PROGRAM_ID,
+  STAKING_PROGRAM_ID,
+  TRACKNFT_PROGRAM_ID,
+} from "@/constants/solana";
+import {
+  AppError,
+  ExternalServiceError,
+  ValidationError,
+} from "@/lib/errors/AppError";
+import { logger } from "@/lib/utils/logger";
+import * as Sentry from "@sentry/nextjs";
+import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
+import PhantomWalletAdapter from "@solana/wallet-adapter-phantom";
+import { useWallet } from "@solana/wallet-adapter-react";
+import {
+  Connection,
+  // LAMPORTS_PER_SOL,
+  PublicKey,
+  Transaction,
+} from "@solana/web3.js";
+
+// Типы для ошибок кошелька
+export class WalletConnectionError extends AppError {
+  constructor(originalError?: Error, metadata?: Record<string, unknown>) {
+    super("Wallet connection failed", 400, "WALLET_CONNECTION_ERROR", {
+      ...metadata,
+      originalError: originalError?.message,
+    });
+    this.name = "WalletConnectionError";
+  }
+}
+
+export class WalletDisconnectionError extends AppError {
+  constructor(originalError?: Error, metadata?: Record<string, unknown>) {
+    super("Wallet disconnection failed", 400, "WALLET_DISCONNECTION_ERROR", {
+      ...metadata,
+      originalError: originalError?.message,
+    });
+    this.name = "WalletDisconnectionError";
+  }
+}
+
+export class WalletTransactionError extends AppError {
+  constructor(originalError?: Error, metadata?: Record<string, unknown>) {
+    super("Wallet transaction failed", 400, "WALLET_TRANSACTION_ERROR", {
+      ...metadata,
+      originalError: originalError?.message,
+    });
+    this.name = "WalletTransactionError";
+  }
+}
+
+export class WalletSignMessageError extends AppError {
+  constructor(originalError?: Error, metadata?: Record<string, unknown>) {
+    super("Wallet message signing failed", 400, "WALLET_SIGN_MESSAGE_ERROR", {
+      ...metadata,
+      originalError: originalError?.message,
+    });
+    this.name = "WalletSignMessageError";
+  }
+}
+
+// Конфигурация сети
+const NETWORK = WalletAdapterNetwork.Devnet;
+const LAMPORTS_PER_SOL = 1000000000;
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 const RPC_URL =
   process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet.solana.com";
 
@@ -40,18 +110,34 @@ export interface WalletAdapter {
 // Создание подключения к Solana
 export function createConnection(): Connection {
   const timeoutMs = Number(process.env.SOLANA_RPC_TIMEOUT || "8000");
+<<<<<<< HEAD
   
   // Custom fetch with timeout for reliability
   const fetchWithTimeout = (url: RequestInfo, init?: RequestInit): Promise<Response> => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     
+=======
+
+  // Custom fetch with timeout for reliability
+  const fetchWithTimeout = (
+    url: RequestInfo,
+    init?: RequestInit
+  ): Promise<Response> => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
     return fetch(url, {
       ...init,
       signal: controller.signal,
     }).finally(() => clearTimeout(timeoutId));
   };
+<<<<<<< HEAD
   
+=======
+
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
   return new Connection(RPC_URL, {
     commitment: "confirmed",
     fetchMiddleware: fetchWithTimeout,
@@ -66,6 +152,7 @@ export function createPhantomWallet(): PhantomWalletAdapter {
 // Хук для использования кошелька
 export function useSolanaWallet() {
   const wallet = useWallet();
+<<<<<<< HEAD
   const { connection } = useConnection();
 
   const connectWallet = async () => {
@@ -73,18 +160,56 @@ export function useSolanaWallet() {
       if (!wallet.connect)
         throw new Error("Wallet does not support connection");
       await wallet.connect();
+=======
+  const connection = createConnection();
+
+  const connectWallet = async () => {
+    if (!wallet.connected) {
+      if (!wallet.connect) {
+        const error = new ValidationError("Wallet does not support connection");
+        logger.error("Wallet connection error", error);
+        Sentry.captureException(error);
+        throw error;
+      }
+      try {
+        await wallet.connect();
+      } catch (error) {
+        logger.error("Failed to connect wallet", error as Error);
+        Sentry.captureException(error);
+        throw new ExternalServiceError("wallet-connection", error as Error);
+      }
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
     }
   };
 
   const disconnectWallet = async () => {
     if (wallet.connected) {
+<<<<<<< HEAD
       if (!wallet.disconnect)
         throw new Error("Wallet does not support disconnection");
       await wallet.disconnect();
+=======
+      if (!wallet.disconnect) {
+        const error = new ValidationError(
+          "Wallet does not support disconnection"
+        );
+        logger.error("Wallet disconnection error", error);
+        Sentry.captureException(error);
+        throw error;
+      }
+      try {
+        await wallet.disconnect();
+      } catch (error) {
+        logger.error("Failed to disconnect wallet", error as Error);
+        Sentry.captureException(error);
+        throw new ExternalServiceError("wallet-disconnection", error as Error);
+      }
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
     }
   };
 
   const signMessage = async (message: Uint8Array): Promise<Uint8Array> => {
+<<<<<<< HEAD
     if (!wallet.connected) throw new WalletNotConnectedError();
     if (!wallet.signMessage)
       throw new Error("Wallet does not support message signing");
@@ -111,6 +236,56 @@ export function useSolanaWallet() {
       Sentry.captureException(error);
       throw error;
     }
+=======
+    if (!wallet.connected) {
+      const error = new ValidationError("Wallet not connected");
+      logger.error("Wallet not connected for message signing", error);
+      Sentry.captureException(error);
+      throw error;
+    }
+    if (!wallet.signMessage) {
+      const error = new ValidationError(
+        "Wallet does not support message signing"
+      );
+      logger.error("Wallet message signing error", error);
+      Sentry.captureException(error);
+      throw error;
+    }
+
+    try {
+      return await wallet.signMessage(message);
+    } catch (error) {
+      logger.error("Error signing message", error as Error);
+      Sentry.captureException(error);
+      throw new ExternalServiceError("wallet-sign-message", error as Error);
+    }
+  };
+
+  const sendTransaction = async (transaction: Transaction): Promise<string> => {
+    if (!wallet.connected) {
+      const error = new ValidationError("Wallet not connected");
+      logger.error("Wallet not connected for transaction", error);
+      Sentry.captureException(error);
+      throw error;
+    }
+    if (!wallet.sendTransaction) {
+      const error = new ValidationError(
+        "Wallet does not support transaction sending"
+      );
+      logger.error("Wallet transaction sending error", error);
+      Sentry.captureException(error);
+      throw error;
+    }
+
+    try {
+      const signature = await wallet.sendTransaction(transaction, connection);
+      return signature;
+    } catch (error) {
+      logger.error("Error sending transaction", error as Error);
+      Sentry.captureException(error);
+      throw new ExternalServiceError("wallet-send-transaction", error as Error);
+    }
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
   };
 
   const getBalance = async (): Promise<number> => {
@@ -120,8 +295,13 @@ export function useSolanaWallet() {
       const balance = await connection.getBalance(wallet.publicKey);
       return balance / LAMPORTS_PER_SOL;
     } catch (error) {
+<<<<<<< HEAD
       logger.error("Error getting balance", error as Error, { 
         publicKey: wallet.publicKey?.toBase58() 
+=======
+      logger.error("Error getting balance", error as Error, {
+        publicKey: wallet.publicKey?.toBase58(),
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
       });
       Sentry.captureException(error);
       return 0;
@@ -166,9 +346,15 @@ export function useSolanaWallet() {
 
       return balance;
     } catch (error) {
+<<<<<<< HEAD
       logger.error("Error getting token balance", error as Error, { 
         mintAddress,
         publicKey: wallet.publicKey?.toBase58() 
+=======
+      logger.error("Error getting token balance", error as Error, {
+        mintAddress,
+        publicKey: wallet.publicKey?.toBase58(),
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
       });
       Sentry.captureException(error);
       return 0;
@@ -186,7 +372,16 @@ export function useSolanaWallet() {
   };
 }
 
+<<<<<<< HEAD
 export { NDT_PROGRAM_ID, NDT_MINT_ADDRESS, TRACKNFT_PROGRAM_ID, STAKING_PROGRAM_ID };
+=======
+export {
+  NDT_MINT_ADDRESS,
+  NDT_PROGRAM_ID,
+  STAKING_PROGRAM_ID,
+  TRACKNFT_PROGRAM_ID,
+};
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 
 // Хелпер для создания транзакции
 export async function createTransaction(
@@ -266,14 +461,14 @@ export interface WalletEvent {
 export class WalletEventEmitter {
   private listeners: Map<string, Function[]> = new Map();
 
-  on(event: string, callback: Function) {
+  on(event: string, callback: (...args: unknown[]) => unknown) {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, []);
     }
     this.listeners.get(event)!.push(callback);
   }
 
-  off(event: string, callback: Function) {
+  off(event: string, callback: (...args: unknown[]) => unknown) {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
       const index = callbacks.indexOf(callback);

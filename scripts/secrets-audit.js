@@ -15,11 +15,11 @@
  * - Интеграция с системами безопасности
  */
 
-const { exec } = require('child_process');
-const { promisify } = require('util');
-const fs = require('fs').promises;
-const path = require('path');
-const crypto = require('crypto');
+import { exec  } from 'child_process';;
+import { promisify  } from 'util';;
+import fs from 'fs';.promises;
+import path from 'path';;
+import crypto from 'crypto';;
 
 const execAsync = promisify(exec);
 

@@ -16,6 +16,55 @@ interface RateLimitEntry {
   resetTime: number;
 }
 
+<<<<<<< HEAD
+// In-memory store for rate limiting
+const rateLimitStore = new Map<string, RateLimitEntry>();
+
+// Cleanup expired entries periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of rateLimitStore.entries()) {
+    if (now > entry.resetTime) {
+      rateLimitStore.delete(key);
+    }
+  }
+}, 60000); // Every minute
+
+/**
+ * Check if an action is rate limited
+ * @param key Unique identifier for the rate limit (e.g. IP address, user ID)
+ * @param maxActions Maximum number of actions allowed in the time window
+ * @param windowMs Time window in milliseconds
+ * @returns true if the action is rate limited, false otherwise
+ */
+export function isRateLimited(key: string, maxActions: number, windowMs: number): boolean {
+  const now = Date.now();
+  const entry = rateLimitStore.get(key);
+  
+  // If no entry exists or the window has expired, create a new one
+  if (!entry || now > entry.resetTime) {
+    rateLimitStore.set(key, {
+      count: 1,
+      resetTime: now + windowMs
+    });
+    return false;
+  }
+  
+  // If we're at the limit, return true (rate limited)
+  if (entry.count >= maxActions) {
+    return true;
+  }
+  
+  // Otherwise, increment the count and return false (not rate limited)
+  rateLimitStore.set(key, {
+    count: entry.count + 1,
+    resetTime: entry.resetTime
+  });
+  return false;
+}
+
+=======
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 class RateLimiter {
   private store = new Map<string, RateLimitEntry>();
   private config: RateLimitConfig;
@@ -105,7 +154,7 @@ export const uploadRateLimiter = new RateLimiter({
 
 // Middleware function for Next.js API routes
 export function withRateLimit(limiter: RateLimiter) {
-  return (handler: Function) => {
+  return (handler: (...args: unknown[]) => unknown) => {
     return async (req: NextRequest, ...args: unknown[]) => {
       const result = limiter.check(req);
       

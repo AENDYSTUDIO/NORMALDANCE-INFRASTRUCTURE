@@ -1,28 +1,15 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { z } from 'zod'
-
-// Validation schema for creating/updating users
-const userSchema = z.object({
-  email: z.string().email(),
-  username: z.string().min(3).max(20),
-  displayName: z.string().optional(),
-  bio: z.string().optional(),
-  avatar: z.string().optional(),
-  banner: z.string().optional(),
-  wallet: z.string().optional(),
-  isArtist: z.boolean().default(false),
-})
+import { userSchema, userQuerySchema } from '@/lib/schemas'
+import { handleApiError } from '@/lib/errors/errorHandler'
 
 // GET /api/users - Get all users (with pagination)
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '10')
-    const search = searchParams.get('search') || ''
-    const isArtist = searchParams.get('artist') === 'true'
+    const query = Object.fromEntries(searchParams.entries())
+    const { page, limit, search, artist: isArtist } = userQuerySchema.parse(query)
 
     const skip = (page - 1) * limit
 
@@ -34,8 +21,13 @@ export async function GET(request: NextRequest) {
             { displayName: { contains: search, mode: 'insensitive' as const } },
             { email: { contains: search, mode: 'insensitive' as const } },
           ]
+<<<<<<< HEAD
+        } : Record<string, unknown>,
+        isArtist !== null ? { isArtist } : Record<string, unknown>,
+=======
         } : {},
-        isArtist !== null ? { isArtist } : {},
+        isArtist !== undefined ? { isArtist } : {},
+>>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
         { isActive: true }
       ]
     }
@@ -81,11 +73,7 @@ export async function GET(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Error fetching users:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch users' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -132,17 +120,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(user, { status: 201 })
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: error.errors },
-        { status: 400 }
-      )
-    }
-
-    console.error('Error creating user:', error)
-    return NextResponse.json(
-      { error: 'Failed to create user' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

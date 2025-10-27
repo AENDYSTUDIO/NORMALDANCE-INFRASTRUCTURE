@@ -20,9 +20,9 @@ export class NormalDanceMCPServer {
       version: '1.0.0'
     }, {
       capabilities: {
-        resources: {},
-        tools: {},
-        prompts: {}
+        resources: Record<string, unknown>,
+        tools: Record<string, unknown>,
+        prompts: Record<string, unknown>
       }
     });
 

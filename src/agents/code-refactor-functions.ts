@@ -1,8 +1,6 @@
-import { exec } from "child_process";
 import * as fs from "fs";
-import { promisify } from "util";
 
-const execAsync = promisify(exec);
+// const execAsync = promisify(exec); // Закомментируем неиспользуемую переменную
 
 /**
  * Интерфейс для параметров рефакторинга
@@ -311,7 +309,7 @@ export class CodeRefactorAgent {
         const content = fs.readFileSync(file, "utf8");
 
         // Удаление TypeScript-специфичных элементов
-        let jsContent = content
+        const jsContent = content
           .replace(/:\s*\w+\s*(?=[,);=])/g, "") // Удаление типов параметров
           .replace(/:\s*\w+\s*(?=\s*=>)/g, "") // Удаление типов в стрелочных функциях
           .replace(/<\s*\w+\s*>\s*(?=\()/g, "") // Удаление дженериков
@@ -333,7 +331,7 @@ export class CodeRefactorAgent {
         const content = fs.readFileSync(file, "utf8");
 
         // Добавление базовых типов
-        let tsContent = content;
+        const tsContent = content;
         // Здесь можно добавить логику для добавления типов
 
         fs.writeFileSync(tsFile, tsContent);

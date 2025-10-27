@@ -1,0 +1,17 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "env": {
+    "NEXT_PUBLIC_SOLANA_RPC_URL": "https://api.mainnet-beta.solana.com",
+    "NEXT_PUBLIC_IPFS_GATEWAY": "https://ipfs.io/ipfs/",
+    "DATABASE_URL": "file:./dev.db",
+    "NEXTAUTH_SECRET": "your-secret-here",
+    "NEXTAUTH_URL": "https://your-app.vercel.app"
+  },
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "maxDuration": 30
+    }
+  }
+}

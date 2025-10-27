@@ -107,13 +107,19 @@ health_check() {
     fi
     
     # Check required tools
-    local tools=("npm" "node" "git" "curl")
-    for tool in "${tools[@]}"; do
-        if ! command -v "$tool" &> /dev/null; then
-            log_error "Required tool not found: $tool"
-            exit 1
-        fi
-    done
+    check_tool() {
+      if ! command -v "$1" &> /dev/null; then
+        echo "Required tool not found: $1"
+        return 1
+      fi
+      return 0
+    }
+
+    # Check required tools
+    check_tool "npm" || exit 1
+    check_tool "node" || exit 1
+    check_tool "git" || exit 1
+    check_tool "curl" || exit 1
     
     # Check environment variables
     if [ -f ".env.test" ]; then
@@ -177,23 +183,8 @@ run_integration_tests() {
     
     test_start "Integration Tests"
     
-    # Start test database
-    log_info "Starting test database..."
-    docker run -d --name postgres-test \
-        -e POSTGRES_PASSWORD=test \
-        -e POSTGRES_USER=test \
-        -e POSTGRES_DB=test \
-        -p 5432:5432 \
-        postgres:15-alpine
-    
-    # Wait for database
-    log_info "Waiting for database to be ready..."
-    for i in {1..30}; do
-        if pg_isready -h localhost -p 5432 -U test 2>/dev/null; then
-            break
-        fi
-        sleep 1
-    done
+    # Setup test database
+    setup_test_database
     
     # Run migration
     DATABASE_URL="postgresql://test:test@localhost:5432/test" npm run db:migrate || true
@@ -201,10 +192,48 @@ run_integration_tests() {
     # Run integration tests
     DATABASE_URL="postgresql://test:test@localhost:5432/test" npm run test:integration
     
-    # Cleanup database
-    docker stop postgres-test && docker rm postgres-test || true
-    
     test_end "Integration Tests"
+}
+
+# Setup test database
+setup_test_database() {
+  echo "Setting up test database..."
+  
+  # Check if Docker is available
+  if ! command -v docker &> /dev/null; then
+    echo "Docker not available, using alternative setup"
+    return 1
+  fi
+  
+  # Stop any existing test database
+  docker stop postgres-test 2>/dev/null || true
+  docker rm postgres-test 2>/dev/null || true
+  
+  # Start new test database with health check
+  docker run -d --name postgres-test \
+    -e POSTGRES_PASSWORD=test \
+    -e POSTGRES_USER=test \
+    -e POSTGRES_DB=test \
+    -p 5432:5432 \
+    --health-cmd="pg_isready -U test" \
+    --health-interval=10s \
+    --health-timeout=5s \
+    --health-retries=5 \
+    postgres:15-alpine
+  
+  # Wait for database to be healthy
+  echo "Waiting for database to be ready..."
+  for i in {1..30}; do
+    if docker inspect --format='{{json .State.Health.Status}}' postgres-test | grep -q '"healthy"'; then
+      echo "Database is ready!"
+      return 0
+    fi
+    echo "Waiting... ($i/30)"
+    sleep 2
+  done
+  
+  echo "Database failed to start"
+  return 1
 }
 
 # E2E tests

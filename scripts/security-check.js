@@ -5,8 +5,8 @@
  * Checks for common security issues in the project
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';;
+import path from 'path';;
 
 // Check for exposed API keys and secrets
 function checkForSecrets() {
@@ -32,7 +32,7 @@ function checkForSecrets() {
 
   for (const filePattern of filesToCheck) {
     try {
-      const files = require('glob').sync(filePattern);
+      import files from 'glob';.sync(filePattern);
       
       for (const file of files) {
         if (fs.existsSync(file)) {
@@ -60,7 +60,7 @@ function checkForSecrets() {
 // Check package.json for vulnerable dependencies
 function checkPackageJson() {
   try {
-    const packageJson = require('../package.json');
+    import packageJson from '../package.json';;
     const deps = { ...packageJson.dependencies, ...packageJson.devDependencies };
     
     // Check for known vulnerable packages (as of 2025)
@@ -108,7 +108,7 @@ function checkConfigurations() {
 
   // Check ESLint configuration
   try {
-    const eslintConfig = require('../eslint.config.mjs');
+    import eslintConfig from '../eslint.config.mjs';;
     if (eslintConfig.ignoreDuringBuilds) {
       issues.push({
         file: 'eslint.config.mjs',
@@ -123,7 +123,7 @@ function checkConfigurations() {
 
   // Check TypeScript configuration
   try {
-    const tsConfig = require('../tsconfig.json');
+    import tsConfig from '../tsconfig.json';;
     if (tsConfig.compilerOptions?.noImplicitAny === false) {
       issues.push({
         file: 'tsconfig.json',

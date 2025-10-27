@@ -351,7 +351,7 @@ class AudioLoader {
     options: LoadAudioOptions = {}
   ): Promise<AudioBuffer> {
     let currentQuality = initialQuality
-    let lastLoadTime = 0
+    const lastLoadTime = 0
     let loadCount = 0
 
     const loadWithRetry = async (quality: 'low' | 'medium' | 'high'): Promise<AudioBuffer> => {

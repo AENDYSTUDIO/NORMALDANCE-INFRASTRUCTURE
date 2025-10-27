@@ -116,7 +116,7 @@ async function main() {
   const doFixIcons = args.includes('--fix-icons')
   const start = Date.now()
   const first = await runTscOnce()
-  let actions: string[] = []
+  const actions: string[] = []
   let classified = classify(first.output)
 
   if (!first.ok && doFixIcons) {

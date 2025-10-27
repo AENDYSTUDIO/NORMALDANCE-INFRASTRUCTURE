@@ -1,0 +1,21 @@
+{
+  "name": "music-token",
+  "version": "0.1.0",
+  "description": "Normal Dance Music Token (NDT) - SPL Token for Music Platform",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "anchor test",
+    "build": "anchor build",
+    "deploy": "anchor deploy",
+    "initialize": "ts-node scripts/initialize-token.ts"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.29.0",
+    "@solana/web3.js": "^1.87.6",
+    "@solana/spl-token": "^0.4.1"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2"
+  }
+}

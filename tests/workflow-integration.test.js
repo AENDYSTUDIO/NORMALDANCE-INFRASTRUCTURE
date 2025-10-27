@@ -1,14 +1,14 @@
 // Комплексный тест интеграции workflow для NORMALDANCE Enterprise Automation
 
-const { describe, it, beforeAll, afterAll } = require("@jest/globals");
-const { ChromaSetup } = require("../memorybank/chroma-setup");
-const { MemoryStore } = require("../memorybank/memory-store");
-const { MemoryQuery } = require("../memorybank/memory-query");
-const { TodoistSync } = require("../todoist-integration/todoist-sync");
-const { TodoistAutoSync } = require("../todoist-integration/auto-sync");
-const { AIProcessor } = require("../ai-integration/ai-processor");
-const { AIScheduler } = require("../ai-integration/scheduler");
-const config = require("../config/workflow-config");
+import { describe, it, beforeAll, afterAll  } from '@jest/globals';
+import { ChromaSetup  } from '../memorybank/chroma-setup';
+import { MemoryStore  } from '../memorybank/memory-store';
+import { MemoryQuery  } from '../memorybank/memory-query';
+import { TodoistSync  } from '../todoist-integration/todoist-sync';
+import { TodoistAutoSync  } from '../todoist-integration/auto-sync';
+import { AIProcessor  } from '../ai-integration/ai-processor';
+import { AIScheduler  } from '../ai-integration/scheduler';
+import config from '../config/workflow-config';
 
 describe("Комплексное тестирование workflow NORMALDANCE Enterprise Automation", () => {
   let chromaSetup;
