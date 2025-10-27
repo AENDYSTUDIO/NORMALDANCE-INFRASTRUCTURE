@@ -1,5 +1,5 @@
 # Dockerfile for PostgreSQL with custom initialization
-FROM postgres:15-alpine@sha256:1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b
+FROM postgres:18-alpine@sha256:48c8ad3a7284b82be4482a52076d47d879fd6fb084a1cbfccbd551f9331b0e40
 
 # Install additional tools
 RUN apk add --no-cache curl
