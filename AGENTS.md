@@ -1,99 +1,51 @@
 # AGENTS.md
 
-This file provides guidance to agents when working with code in this repository.
+Критическая проект-специфичная информация для агентов.
 
-## Build/Test Commands (Non-Obvious)
+## Build/Test Commands (Неочевидные)
 
-- **Single test execution**: `npm test -- --testPathPattern="filename.test.ts"` (Jest configured for specific file testing)
-- **Mobile app tests**: `cd mobile-app && npm test` (Separate test environment with extensive mocking)
-- **Development server**: `npm run dev` (Uses nodemon + tsx, not standard Next.js dev server)
-- **Production build**: `npm run build` (Next.js build disabled, uses tsx directly)
-- **MCP server**: `npm run mcp:dev` (Uses tsx watch for hot reload)
+- **Одиночный тест**: `npm test -- --testPathPattern="filename.test.ts"` (Jest для конкретных файлов)
+- **Мобильные тесты**: `cd mobile-app && npm test` (Отдельная среда с моками)
+- **Dev сервер**: `npm run dev` (nodemon + tsx, не стандартный Next.js)
+- **Production сборка**: `npm run build` (Next.js отключен, используется tsx)
+- **MCP сервер**: `npm run mcp:dev` (tsx watch с hot reload)
 
-## Critical Architecture Patterns
+## Критическая архитектура
 
-- **Custom server setup**: Uses `server.ts` with Socket.IO integration, not standard Next.js server
-- **Socket.IO path**: Custom `/api/socketio` path, not standard `/socket.io`
-- **Wallet integration**: Phantom wallet only, custom event emitter system in `src/components/wallet/wallet-adapter.tsx`
-- **Deflationary model**: 2% burn on all transactions, implemented in `src/lib/deflationary-model.ts`
-- **Database**: Prisma with SQLite, global instance pattern in `src/lib/db.ts`
-- **Middleware**: Role-based access control with NextAuth, artist/curator/admin paths protected
+- **Кастомный сервер**: `server.ts` с Socket.IO по пути `/api/socketio` (не `/socket.io`)
+- **Invisible Wallet**: Биометрическая аутентификация в `src/components/wallet/wallet-adapter.tsx`
+- **Deflationary модель**: 2% burn всех транзакций в `src/lib/deflationary-model.ts`
+- **База данных**: Глобальный Prisma инстанс в `src/lib/db.ts` (никогда не создавать новые)
+- **IPFS архитектура**: Мульти-шлюзовая репликация в `src/lib/ipfs-enhanced.ts`
 
-## Code Style (Project-Specific)
+## Web3 особенности
 
-- **ESLint disabled**: All linting rules turned off in `eslint.config.mjs` (intentional)
-- **TypeScript**: `noImplicitAny: false`, `no-non-null-assertion: off` (relaxed for Web3)
-- **Import patterns**: Wallet utilities use custom event system, not standard React patterns
-- **Error handling**: Silent failures in wallet operations, return 0 instead of throwing
+- **ESLint отключен**: Все правила выключены в `eslint.config.mjs` (для Web3)
+- **TypeScript расслаблен**: `noImplicitAny: false`, `no-non-null-assertion: off`
+- **Фиксированные program IDs**: NDT_PROGRAM_ID, TRACKNFT_PROGRAM_ID, STAKING_PROGRAM_ID
+- **Русская локаль**: Форматирование SOL сумм в `formatSol()`
+- **Silent failures**: Кошелек возвращает 0 вместо ошибок
 
-## Testing Setup
+## Мобильное приложение
 
-- **Dual test environments**: Separate Jest configs for main app (`jest.config.js`) and mobile app (`mobile-app/jest.setup.js`)
-- **Extensive mocking**: Mobile app mocks all React Native modules, expo libraries, and WebSocket
-- **Test timeout**: 30 seconds for async operations (longer than standard)
-- **Coverage**: Excludes `__tests__` directories from coverage reports
+- **Expo с моками**: `mobile-app/jest.setup.js` мокает все React Native модули
+- **Отдельная среда**: Изолированная от основного приложения
+- **Таймаут тестов**: 30 секунд для асинхронных операций
 
-## Web3 Specific
+## MCP интеграции
 
-- **Solana programs**: Custom Anchor programs in `programs/` with fixed program IDs
-- **Transaction handling**: Custom transaction creation in `src/components/wallet/wallet-adapter.tsx`
-- **Token formatting**: Russian locale formatting for SOL amounts, custom decimal handling
-- **Wallet state**: Custom context system, not standard wallet-adapter-react patterns
+- **AI сервер**: `src/mcp/server.ts` для интеграций с AI агентами
+- **Hot reload**: `tsx watch` для разработки MCP
 
-## Mobile App
+## Критические пути
 
-- **Expo setup**: Custom service layer in `mobile-app/src/services/mobileService.ts`
-- **Audio handling**: Extensive mocking of expo-av for testing
-- **Wallet integration**: Separate from main app, custom mobile wallet service
-
-## File Storage & CDN
-
-- **IPFS/Filecoin redundancy**: Custom system in `src/lib/ipfs-enhanced.ts` with multiple gateway replication
-- **CDN integration**: Automatic fallback to multiple gateways (ipfs.io, pinata.cloud, cloudflare-ipfs.com)
-- **File chunking**: Large files automatically chunked for IPFS upload
-- **Health monitoring**: Automated file availability checking across multiple gateways
-
-## Инвесторская страница
-
-- **Роут**: `/invest`
-- **Файл**: `src/app/invest/page.tsx`
-- **Обновляется вручную** при смене метрик или условий сделки.
-
-## TON Foundation Grant
-
-- **Роут**: `/ton-grant`
-- **Файл**: `src/app/ton-grant/page.tsx`
-- **Цель**: Получение гранта $50,000 + аудит + трафик от TON Foundation
-- **Статус**: Готов к подаче заявки
-
-## Telegram Partnership
-
-- **Роут**: `/telegram-partnership`
-- **Файл**: `src/app/telegram-partnership/page.tsx`
-- **Цель**: Verified Mini-App + Stars revenue share + App Directory
-- **Статус**: Готов к подаче заявки
-
-## Risk Management
-
-- **Роут**: `/risk-management`
-- **Файл**: `src/app/risk-management/page.tsx`
-- **Цель**: 4-ступенчатая модель страховки, анти-хрупкая архитектура
-- **Статус**: Активная стратегия минимизации рисков
+- **Инвесторы**: `/invest` → `src/app/invest/page.tsx`
+- **TON Grant**: `/ton-grant` → `src/app/ton-grant/page.tsx` ($50,000)
+- **Telegram**: `/telegram-partnership` → `src/app/telegram-partnership/page.tsx`
+- **Risk Management**: `/risk-management` → `src/app/risk-management/page.tsx`
 
 ## AI Агенты
 
-- **Структура файлов**:
-  - `.roo/` - конфигурации и правила для архитектурных агентов
-  - `.kilocode/` - настройки режимов для kilocode агента
-  - `.roo/rules-code/` - правила кодирования
-  - `.roo/rules-architect/` - архитектурные правила
-  - `.roo/rules-ask/` - правила вопросов
-  - `.roo/rules-debug/` - правила отладки
-- **Файлы конфигурации**:
-  - `.vscode/ai-agents.json` - основная конфигурация агентов
-  - `.vscode/agent-prompts.json` - системные промпты и примеры
-  - `.roo/roo-code-settings.json` - настройки Roo code
-  - `.kilocode/agent-config.json` - настройки kilocode
-- **Использование**:
-  - `@roocode:` или `@roo:` для основного агента
-  - `@kilocode:` или `@kilo:` для ассистента кода
+- **Структура**: `.roo/` (архитектура), `.kilocode/` (ассистент кода)
+- **Использование**: `@roocode:` или `@roo:` (основной), `@kilocode:` или `@kilo:` (ассистент)
+- **Конфигурация**: `.vscode/ai-agents.json`, `.vscode/agent-prompts.json`

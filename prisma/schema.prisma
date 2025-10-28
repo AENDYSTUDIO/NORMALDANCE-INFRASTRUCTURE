@@ -4,11 +4,7 @@ generator client {
 }
 
 datasource db {
-<<<<<<< HEAD
-  provider = "postgresql"
-=======
   provider = "sqlite"
->>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
   url      = env("DATABASE_URL")
 }
 
@@ -36,6 +32,8 @@ model User {
   playlists   Playlist[]
   likes       Like[]
   comments    Comment[]
+  kycProfile  KYCProfile?
+  monitoredTransactions MonitoredTransaction[]
   
   @@map("users")
 }
@@ -136,4 +134,268 @@ model Comment {
   track   Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
   
   @@map("comments")
+}
+
+// AML/KYC Module Tables
+
+// KYC Profile model
+model KYCProfile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  walletAddress     String   @unique
+  did               String?  @unique // Decentralized Identifier
+  level             String   @default("BASIC") // KYCLevel as String
+  status            String   @default("PENDING") // KYCStatus as String
+  personalData      Json     // PersonalData as JSON
+  addresses         Json     // AddressData[] as JSON
+  documents         Json     // VerificationDocument[] as JSON
+  riskScore         Float    @default(0)
+  riskCategory      String   @default("LOW") // AMLRiskLevel as String
+  submittedAt       DateTime @default(now())
+  reviewedAt        DateTime?
+  reviewedBy        String?
+  expiresAt         DateTime?
+  lastUpdated       DateTime @updatedAt
+  notes             String?
+  
+  // Relations
+  user              User?    @relation(fields: [userId], references: [id])
+  riskAssessments   UserRiskAssessment[]
+  
+  @@map("kyc_profiles")
+}
+
+// Monitored Transaction model
+model MonitoredTransaction {
+  id                String   @id @default(cuid())
+  transactionHash   String   @unique
+  userId            String
+  walletAddress     String
+  type              String   // TransactionType as String
+  amount            Float
+  currency          String
+  fromAddress       String
+  toAddress         String
+  timestamp         DateTime
+  blockNumber       Int?
+  riskScore         Float    @default(0)
+  riskLevel         String   @default("LOW") // AMLRiskLevel as String
+  monitoringStatus   String   @default("CLEARED") // MonitoringStatus as String
+  flaggedReasons     Json?    // string[] as JSON
+  reviewedAt        DateTime?
+  reviewedBy        String?
+  additionalData    Json?    // Record<string, any> as JSON
+  
+  // Relations
+  user              User?    @relation(fields: [userId], references: [id])
+  
+  @@map("monitored_transactions")
+}
+
+// AML Rule model
+model AMLRule {
+  id                String   @id @default(cuid())
+  name              String
+  description       String
+  category          String   // AMLRuleCategory as String
+  isActive          Boolean  @default(true)
+  priority          String   @default("MEDIUM") // Priority as String
+  conditions        Json     // AMLRuleCondition[] as JSON
+  actions           Json     // AMLRuleAction[] as JSON
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@map("aml_rules")
+}
+
+// Sanctions List model
+model SanctionsList {
+  id                String   @id @default(cuid())
+  name              String
+  source            String   // OFAC, UN, EU, UK, etc.
+  version           String
+  lastUpdated       DateTime @default(now())
+  entries           Json     // SanctionsEntry[] as JSON
+  
+  @@map("sanctions_lists")
+}
+
+// Compliance Report model
+model ComplianceReport {
+  id                String   @id @default(cuid())
+  type              String   // ReportType as String
+  status            String   @default("DRAFT") // ReportStatus as String
+  title             String
+  description       String
+  reportingPeriod   Json     // { startDate, endDate } as JSON
+  submittedBy       String
+  submittedAt       DateTime?
+  reviewedBy        String?
+  reviewedAt        DateTime?
+  data              Json     // Report data as JSON
+  attachments       Json?    // string[] as JSON (IPFS hashes)
+  externalReportId  String?  // ID in regulator system
+  
+  @@map("compliance_reports")
+}
+
+// User Risk Assessment model
+model UserRiskAssessment {
+  id                String   @id @default(cuid())
+  userId            String
+  walletAddress     String
+  overallRiskScore  Float
+  riskLevel         String   // AMLRiskLevel as String
+  factors           Json     // RiskFactor[] as JSON
+  lastAssessed      DateTime @default(now())
+  nextReviewDate     DateTime
+  assessedBy        String
+  
+  // Relations
+  kycProfile        KYCProfile? @relation(fields: [userId], references: [userId])
+  
+  @@map("user_risk_assessments")
+}
+
+// AML/KYC Event model
+model AMLKYCEvent {
+  id                String   @id @default(cuid())
+  type              String   // AMLKYCEventType as String
+  userId            String?
+  walletAddress     String?
+  timestamp         DateTime @default(now())
+  data              Json     // Event data as JSON
+  severity          String   // LOW, MEDIUM, HIGH, CRITICAL
+  processed         Boolean  @default(false)
+  
+  @@map("aml_kyc_events")
+}
+
+// Chainalysis Integration Tables
+
+// Chainalysis Address Analysis model
+model ChainalysisAddressAnalysis {
+  id                String   @id @default(cuid())
+  address           String   @unique
+  asset             String   // ChainalysisAsset as String
+  risk              String   // ChainalysisRiskLevel as String
+  confidence        Float    // 0-100
+  categories        Json     // ChainalysisCategory[] as JSON
+  identifications   Json     // ChainalysisIdentification[] as JSON
+  exposure          Json     // ChainalysisExposure as JSON
+  firstSeen         DateTime
+  lastSeen          DateTime
+  totalReceived     Float    @default(0)
+  totalSent         Float    @default(0)
+  balance           Float    @default(0)
+  transactionCount  Int      @default(0)
+  labels            Json     // string[] as JSON
+  metadata          Json     // Record<string, any> as JSON
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@map("chainalysis_address_analysis")
+}
+
+// Chainalysis Transaction Analysis model
+model ChainalysisTransactionAnalysis {
+  id                String   @id @default(cuid())
+  transactionHash   String   @unique
+  asset             String   // ChainalysisAsset as String
+  timestamp         DateTime
+  blockNumber       Int
+  fromAddress       String
+  toAddress         String
+  amount            Float
+  risk              String   // ChainalysisRiskLevel as String
+  confidence        Float    // 0-100
+  categories        Json     // ChainalysisCategory[] as JSON
+  identifications   Json     // ChainalysisIdentification[] as JSON
+  exposure          Json     // ChainalysisExposure as JSON
+  inputs            Json     // ChainalysisTransactionInput[] as JSON
+  outputs           Json     // ChainalysisTransactionOutput[] as JSON
+  labels            Json     // string[] as JSON
+  metadata          Json     // Record<string, any> as JSON
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@map("chainalysis_transaction_analysis")
+}
+
+// Chainalysis Monitoring Rule model
+model ChainalysisMonitoringRule {
+  id                String   @id @default(cuid())
+  name              String
+  description       String
+  isActive          Boolean  @default(true)
+  conditions        Json     // ChainalysisMonitoringCondition[] as JSON
+  actions           Json     // ChainalysisMonitoringAction[] as JSON
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@map("chainalysis_monitoring_rules")
+}
+
+// Chainalysis Monitoring Event model
+model ChainalysisMonitoringEvent {
+  id                String   @id @default(cuid())
+  ruleId            String
+  ruleName          String
+  address           String?
+  transactionHash   String?
+  asset             String   // ChainalysisAsset as String
+  risk              String   // ChainalysisRiskLevel as String
+  confidence        Float    // 0-100
+  timestamp         DateTime
+  data              Json     // Record<string, any> as JSON
+  processed         Boolean  @default(false)
+  processedAt       DateTime?
+  
+  @@map("chainalysis_monitoring_events")
+}
+
+// Chainalysis Report model
+model ChainalysisReport {
+  id                String   @id @default(cuid())
+  type              String   // ADDRESS_ANALYSIS, TRANSACTION_ANALYSIS, PORTFOLIO_RISK, COMPLIANCE_SUMMARY
+  title             String
+  description       String
+  generatedAt       DateTime @default(now())
+  generatedBy       String
+  startDate         DateTime
+  endDate           DateTime
+  data              Json     // Report data as JSON
+  metadata          Json     // Record<string, any> as JSON
+  
+  @@map("chainalysis_reports")
+}
+
+// Chainalysis Results model (for storing integration results)
+model ChainalysisResult {
+  id                    String   @id @default(cuid())
+  transactionHash        String   @unique
+  riskScore             Float
+  riskLevel             String   // AMLRiskLevel as String
+  factors               Json     // ChainalysisRiskFactor[] as JSON
+  recommendations       Json     // string[] as JSON
+  requiresManualReview  Boolean  @default(false)
+  shouldBlock           Boolean  @default(false)
+  shouldReport          Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  
+  @@map("chainalysis_results")
+}
+
+// User Chainalysis Results model
+model UserChainalysisResult {
+  id                    String   @id @default(cuid())
+  userId                String
+  address               String
+  riskScore             Float
+  riskLevel             String   // AMLRiskLevel as String
+  factors               Json     // ChainalysisRiskFactor[] as JSON
+  recommendations       Json     // string[] as JSON
+  createdAt            DateTime @default(now())
+  
+  @@map("user_chainalysis_results")
 }

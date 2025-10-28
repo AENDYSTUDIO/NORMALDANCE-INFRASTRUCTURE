@@ -1,0 +1,137 @@
+// ============================================================================
+// Travel Rule Schema for NormalDance Music Platform
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// Travel Rule Module Tables
+// ============================================================================
+
+// VASP Registry model
+model VASPRegistry {
+  id                String   @id @default(cuid())
+  vaspInfo          Json     // VASPInfo as JSON
+  technicalEndpoints Json     // Technical endpoints as JSON
+  supportedProtocols String[] // ["IVMS101", "CAT", "OFAC", etc.]
+  supportedFormats  String[] // ["JSON", "XML", etc.]
+  encryptionKeys    Json     // EncryptionKey[] as JSON
+  status            String   @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED
+  lastVerified      DateTime @default(now())
+  reputation        Json     // Reputation info as JSON
+  
+  @@map("vasp_registry")
+}
+
+// Travel Rule Message model
+model TravelRuleMessage {
+  id                String   @id @default(cuid())
+  transactionId     String
+  senderVaspId      String
+  recipientVaspId   String
+  protocol          String   // IVMS101, CAT, OFAC
+  status            String   @default("PENDING") // PENDING, SENT, RECEIVED, ACKNOWLEDGED, COMPLETED, FAILED, REJECTED, EXPIRED
+  timestamp         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  messageData       Json     // TravelRuleMessage | CATMessage | OFACMessage as JSON
+  priority          String   @default("MEDIUM") // LOW, MEDIUM, HIGH
+  processingTime    Int?     // Processing time in seconds
+  errorReason       String?  // Error reason if failed
+  retryCount        Int      @default(0)
+  maxRetries        Int      @default(3)
+  expiresAt         DateTime?
+  
+  // Relations
+  events            TravelRuleEvent[]
+  
+  @@map("travel_rule_messages")
+}
+
+// Travel Rule Event model
+model TravelRuleEvent {
+  id                String   @id @default(cuid())
+  messageId         String?
+  transactionId     String?
+  vaspId            String?
+  type              String   // MESSAGE_SENT, MESSAGE_RECEIVED, MESSAGE_ACKNOWLEDGED, MESSAGE_FAILED, SCREENING_MATCH, etc.
+  timestamp         DateTime @default(now())
+  data              Json     // Event data as JSON
+  severity          String   @default("LOW") // LOW, MEDIUM, HIGH, CRITICAL
+  processed         Boolean  @default(false)
+  processedAt       DateTime?
+  
+  // Relations
+  message           TravelRuleMessage? @relation(fields: [messageId], references: [id])
+  
+  @@map("travel_rule_events")
+}
+
+// VASP Encryption Key model
+model VASPEncryptionKey {
+  id                String   @id @default(cuid())
+  vaspId            String
+  keyId             String
+  algorithm         String   // AES-256-GCM, etc.
+  publicKey         String
+  privateKey        String?  // Only stored for our own VASP
+  validFrom         DateTime
+  validUntil        DateTime?
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  
+  @@map("vasp_encryption_keys")
+}
+
+// Travel Rule Configuration model
+model TravelRuleConfig {
+  id                String   @id @default(cuid())
+  vaspId            String   @unique
+  config            Json     // TravelRuleConfig as JSON
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@map("travel_rule_config")
+}
+
+// Travel Rule Statistics model
+model TravelRuleStatistics {
+  id                String   @id @default(cuid())
+  vaspId            String
+  date              DateTime @default(now())
+  totalMessages      Int      @default(0)
+  sentMessages       Int      @default(0)
+  receivedMessages   Int      @default(0)
+  completedMessages  Int      @default(0)
+  failedMessages    Int      @default(0)
+  averageProcessingTime Float   @default(0) // in seconds
+  protocolUsage     Json     // Protocol usage statistics as JSON
+  
+  @@unique([vaspId, date])
+  @@map("travel_rule_statistics")
+}
+
+// Travel Rule Audit Log model
+model TravelRuleAuditLog {
+  id                String   @id @default(cuid())
+  vaspId            String?
+  messageId         String?
+  action            String   // CREATE, UPDATE, DELETE, SEND, RECEIVE, etc.
+  entityType        String   // MESSAGE, CONFIG, VASP, etc.
+  entityId         String?
+  oldValues         Json?    // Old values as JSON
+  newValues         Json?    // New values as JSON
+  userId            String?  // User who performed the action
+  timestamp         DateTime @default(now())
+  ipAddress         String?
+  userAgent         String?
+  
+  @@map("travel_rule_audit_log")
+}

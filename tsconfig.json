@@ -6,11 +6,7 @@
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
-<<<<<<< HEAD
     "noImplicitAny": false, // Allow implicit any for Web3 compatibility as per AGENTS.md
-=======
-    "noImplicitAny": true, // Allow implicit any for Web3 compatibility as per AGENTS.md
->>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
     "strictNullChecks": true, // Keep strict null checks for safety
     "noUnusedLocals": false, // Allow unused locals during development
     "noUnusedParameters": false, // Allow unused parameters during development
@@ -62,16 +58,7 @@
   "exclude": [
     "node_modules",
     "mobile-app/**",
-<<<<<<< HEAD
     "src/agents/**",
-    "out/**",
-    ".next/**",
-    "dist/**",
-    "build/**",
-    "coverage/**",
-    "test-results/**",
-    "playwright-report/**"
-=======
     "src/components/staking/**/*",
     "src/components/profile/social-integration.tsx",
     "src/components/dex/dual-currency-system.tsx",
@@ -83,7 +70,13 @@
     "src/lib/did/**/*",
     "src/lib/layer-2/**/*",
     "src/lib/web3/nft-enhanced-system.ts",
-    "src/lib/web3/web3-service.ts"
->>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
+    "src/lib/web3/web3-service.ts",
+    "out/**",
+    ".next/**",
+    "dist/**",
+    "build/**",
+    "coverage/**",
+    "test-results/**",
+    "playwright-report/**"
   ]
 }

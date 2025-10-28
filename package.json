@@ -1,10 +1,7 @@
 {
   "name": "normaldance",
-<<<<<<< HEAD
-  "version": "0.0.3",
-=======
-  "version": "0.2.0",
->>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
+  "version": "0.3.0",
+  "type": "module",
   "description": "Децентрализованная музыкальная платформа",
   "repository": {
     "type": "git",
@@ -41,7 +38,7 @@
     "build-storybook": "storybook build",
     "prepare": "husky install",
     "env:validate": "node scripts/validate-env.js",
-    "security:audit": "npm audit",
+    "security:audit": "node scripts/security-audit.js",
     "security:check": "node scripts/security-check.js",
     "security:fix": "npm audit fix",
     "security:secrets": "node -e \"require('./scripts/security-check').runSecurityCheck()\"",
@@ -61,7 +58,54 @@
     "version:changelog": "node scripts/version-manager.js changelog",
     "version:release": "node scripts/version-manager.js release",
     "deploy:check": "node scripts/check-deployment-readiness.js",
-    "deploy:guide": "echo 'Откройте DEPLOYMENT_STEP_BY_STEP_COMPLETE.md для полной инструкции по развертыванию'"
+    "deploy:guide": "echo 'Откройте DEPLOYMENT_STEP_BY_STEP_COMPLETE.md для полной инструкции по развертыванию'",
+    "pr:create": "gh pr create --fill",
+    "pr:merge": "gh pr merge --merge --delete-branch=false",
+    "pr:merge:squash": "gh pr merge --squash --delete-branch=false",
+    "pr:merge:rebase": "gh pr merge --rebase --delete-branch=false",
+    "pr:merge:fast-forward": "gh pr merge --merge --delete-branch=false",
+    "pr:status": "gh pr status",
+    "pr:checkout": "gh pr checkout",
+    "pr:list": "gh pr list --limit 20",
+    "pr:list:all": "gh pr list --state all --limit 50",
+    "pr:review": "gh pr review",
+    "pr:view": "gh pr view",
+    "pr:diff": "gh pr diff",
+    "pr:checks": "gh pr checks",
+    "pr:clean": "gh pr list --state merged --json number --jq '.[].number' | xargs -I {} gh pr delete-branch {}",
+    "pr:auto-merge": "gh pr merge --auto --merge --delete-branch=false",
+    "pr:ready": "gh pr ready",
+    "pr:draft": "gh pr ready --undo",
+    "pr:comment": "gh pr comment",
+    "pr:close": "gh pr close",
+    "pr:reopen": "gh pr reopen",
+    "pr:assign": "gh pr edit --add-assignee",
+    "pr:unassign": "gh pr edit --remove-assignee",
+    "pr:label:add": "gh pr edit --add-label",
+    "pr:label:remove": "gh pr edit --remove-label",
+    "pr:milestone": "gh pr edit --milestone",
+    "git:feature:create": "node scripts/git-workflow.js feature",
+    "git:hotfix:create": "node scripts/git-workflow.js hotfix",
+    "git:dev:update": "git checkout development && git pull origin main && git push origin development",
+    "git:staging:update": "git checkout staging && git pull origin development && git push origin staging",
+    "git:main:update": "git checkout main && git pull origin staging && git push origin main",
+    "git:promote:dev-to-staging": "git checkout staging && git merge development && git push origin staging",
+    "git:promote:staging-to-main": "git checkout main && git merge staging && git push origin main",
+    "git:cleanup:merged": "git branch --merged development | grep -v '\\*\\|main\\|staging\\|development' | xargs -r git branch -d",
+    "git:status": "git status && echo '--- Branches ---' && git branch -a && echo '--- Recent commits ---' && git log --oneline -5",
+    "git:sync:all": "npm run git:dev:update && npm run git:staging:update && npm run git:main:update",
+    "workflow:feature": "npm run git:feature:create && echo 'После работы: npm run pr:create'",
+    "workflow:hotfix": "npm run git:hotfix:create && echo 'После работы: npm run pr:create --base main'",
+    "workflow:promote": "npm run git:promote:dev-to-staging && npm run git:promote:staging-to-main && npm run git:cleanup:merged",
+    "github:secrets:set": "node scripts/github-secrets.js set",
+    "github:secrets:get": "node scripts/github-secrets.js get",
+    "github:secrets:list": "node scripts/github-secrets.js list",
+    "github:secrets:delete": "node scripts/github-secrets.js delete",
+    "github:secrets:sync": "node scripts/github-secrets.js sync",
+    "github:secrets:env-import": "node scripts/github-secrets.js env-import",
+    "github:secrets:backup": "node scripts/github-secrets.js backup",
+    "github:secrets:rotate": "node scripts/github-secrets.js rotate",
+    "github:secrets:validate": "node scripts/github-secrets.js validate"
   },
   "dependencies": {
     "@helia/unixfs": "^6.0.1",
@@ -99,15 +143,9 @@
     "@radix-ui/react-toggle-group": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@react-spring/three": "^9.7.3",
-<<<<<<< HEAD
-    "@react-three/drei": "^9.92.0",
-    "@react-three/fiber": "^8.15.0",
-    "@sentry/nextjs": "^10.11.0",
-=======
     "@react-three/drei": "^10.7.6",
     "@react-three/fiber": "^8.15.0",
     "@sentry/nextjs": "^10.1.0",
->>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
     "@socket.io/redis-adapter": "^8.2.1",
     "@solana/pay": "^0.2.6",
     "@solana/spl-token": "^0.4.14",
@@ -143,11 +181,7 @@
     "helia": "^4.2.2",
     "helmet": "^8.0.0",
     "input-otp": "^1.4.2",
-<<<<<<< HEAD
-    "ioredis": "^5.3.2",
-=======
     "ioredis": "^5.8.1",
->>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
     "isomorphic-dompurify": "^2.16.0",
     "jsonwebtoken": "^9.0.0",
     "logform": "^2.7.0",
@@ -171,11 +205,7 @@
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "sonner": "^2.0.7",
-<<<<<<< HEAD
-    "stripe": "^14.0.0",
-=======
     "stripe": "^14.0",
->>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-react": "^5.29.5",
     "tailwind-merge": "^3.3.1",
@@ -194,11 +224,7 @@
     "@babel/preset-typescript": "^7.27.1",
     "@next/bundle-analyzer": "^15.0.0",
     "@next/eslint-plugin-next": "^15.5.4",
-<<<<<<< HEAD
-    "@playwright/test": "^1.55.0",
-=======
     "@playwright/test": "^1.5.0",
->>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
     "@storybook/addon-a11y": "^8.6.14",
     "@storybook/addon-essentials": "^8.6.14",
     "@storybook/addon-interactions": "^8.6.14",
@@ -214,13 +240,8 @@
     "@types/react-dom": "^18.0.0",
     "@typescript-eslint/eslint-plugin": "^8.46.1",
     "@typescript-eslint/parser": "^8.46.1",
-<<<<<<< HEAD
-    "@upstash/ratelimit": "^1.0.0",
-    "@upstash/redis": "^1.0.0",
-=======
     "@upstash/ratelimit": "^1.0",
     "@upstash/redis": "^1.0",
->>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
     "autoprefixer": "^10.4.21",
     "babel-jest": "^30.2.0",
     "chromatic": "^13.1.4",

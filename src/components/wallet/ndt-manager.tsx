@@ -1,5 +1,9 @@
 'use client'
 
+import { InvisibleDeflationAdapter } from './invisible-deflation-adapter';
+import { TransactionFeeCalculator } from '../../lib/wallet/transaction-fee-calculator';
+import { DeflationaryModel } from '../../lib/deflationary-model';
+
 import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Badge, Progress } from '@/components/ui'
 import { useWalletContext } from './wallet-provider'
@@ -46,6 +50,8 @@ export function NDTManager({ className }: NDTManagerProps) {
   const [isClaiming, setIsClaiming] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [invisibleDeflationAdapter, setInvisibleDeflationAdapter] = useState<InvisibleDeflationAdapter | null>(null)
+  const [feeCalculator, setFeeCalculator] = useState<TransactionFeeCalculator | null>(null)
 
   // Загрузка информации о стейкинге
   const loadStakingInfo = async () => {
@@ -169,6 +175,10 @@ export function NDTManager({ className }: NDTManagerProps) {
   useEffect(() => {
     if (connected && publicKey) {
       loadStakingInfo()
+      
+      // Инициализация InvisibleDeflationAdapter и TransactionFeeCalculator
+      // В реальной реализации нужно передать реальные экземпляры
+      // которые будут интегрированы с wallet adapter
     }
   }, [connected, publicKey])
 

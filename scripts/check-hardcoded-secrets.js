@@ -1,5 +1,5 @@
-import fs from 'fs';
-import path from 'path';
+import fs from "fs";
+import path from "path";
 
 /**
  * Скрипт для проверки наличия потенциальных утечек секретов в файлах проекта
@@ -274,9 +274,7 @@ class SecretsChecker {
 }
 
 // Запуск скрипта, если он вызывается напрямую
-if (require.main === module) {
-  const checker = new SecretsChecker();
-  checker.run();
-}
+const checker = new SecretsChecker();
+checker.run();
 
-module.exports = SecretsChecker;
+export default SecretsChecker;

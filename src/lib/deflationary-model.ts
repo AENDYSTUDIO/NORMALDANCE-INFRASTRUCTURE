@@ -1,14 +1,7 @@
-<<<<<<< HEAD
-import { Connection, PublicKey, Transaction } from '@solana/web3.js'
-import { Mint } from '@solana/spl-token'
-import { NDT_MINT_ADDRESS } from '@/constants/solana'
-import { useState, useEffect } from 'react'
-=======
 import { NDT_MINT_ADDRESS } from "@/constants/solana";
 import { Mint } from "@solana/spl-token";
-import { Transaction } from "@solana/web3.js";
+import { Transaction, Connection, PublicKey } from "@solana/web3.js";
 import { useEffect, useState } from "react";
->>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 
 export interface DeflationaryConfig {
   totalSupply: number;
@@ -145,7 +138,7 @@ export class DeflationaryModel {
   async getTotalBurned(): Promise<number> {
     // Здесь нужно запросить данные из смарт-контракта
     // Временно возвращаем mock значение
-    return 50000000; // 50M NDT сожжено
+    return 5000000; // 5M NDT сожжено
   }
 
   // Получить текущий supply
@@ -288,4 +281,58 @@ export const deflationUtils = {
     if (percentage < 15) return "text-yellow-600";
     return "text-red-600";
   },
+};
+  
+  // Метод для интеграции с Invisible Wallet
+  async distributeToTreasury(amount: number): Promise<boolean> {
+    try {
+      // Логика распределения в казну
+      console.log(`Distributing ${amount} to treasury`);
+      return true;
+    } catch (error) {
+      console.error('Error distributing to treasury:', error);
+      return false;
+    }
+  }
+
+  // Метод для интеграции с Invisible Wallet
+  async distributeToStaking(amount: number): Promise<boolean> {
+    try {
+      // Логика распределения в стейкинг
+      console.log(`Distributing ${amount} to staking`);
+      return true;
+    } catch (error) {
+      console.error('Error distributing to staking:', error);
+      return false;
+    }
+  }
+
+  // Метод для получения сожженных токенов для конкретного токена
+  async getTotalBurnedForToken(tokenMint: string): Promise<number> {
+    // Здесь должна быть логика получения сожженных токенов для конкретного токена
+    // Пока возвращаем общее количество сожженных токенов
+    return await this.getTotalBurned();
+  }
+
+  // Метод для получения казны для конкретного токена
+  async getTotalTreasuryForToken(tokenMint: string): Promise<number> {
+    // Здесь должна быть логика получения казны для конкретного токена
+    // Пока возвращаем общее количество в казне
+    const treasuryData = await this.getTreasuryData();
+    return treasuryData.totalCollected;
+  }
+
+  // Метод для получения стейкинга для конкретного токена
+  async getTotalStakingForToken(tokenMint: string): Promise<number> {
+    // Здесь должна быть логика получения стейкинга для конкретного токена
+    // Пока возвращаем фиксированное значение
+    return 10000000; // 10M NDT в стейкинге
+ }
+
+  // Метод для получения общего supply для конкретного токена
+  async getTotalSupply(tokenMint: string): Promise<number> {
+    // Здесь должна быть логика получения общего supply для конкретного токена
+    // Пока возвращаем конфигурационное значение
+    return this.config.totalSupply;
+  }
 };

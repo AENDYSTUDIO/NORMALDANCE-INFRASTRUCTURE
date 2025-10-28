@@ -229,5 +229,6 @@
     "projectKey": "AENDYSTUDIO_NORMALDANCE-Enterprise"
   },
   "codium.codeCompletion.enable": false,
-  "docwriter.language": "Russian"
+  "docwriter.language": "Russian",
+  "gitlens.telemetry.enabled": false
 }
