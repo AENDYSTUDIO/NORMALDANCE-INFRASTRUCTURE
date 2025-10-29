@@ -144,7 +144,8 @@ services:
     ports:
       - "3002:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=demo123
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_DEMO_PASSWORD:-demo123}
+      - GF_SECURITY_ADMIN_USER=demo
     volumes:
       - demo_grafana_data:/var/lib/grafana
     depends_on:
