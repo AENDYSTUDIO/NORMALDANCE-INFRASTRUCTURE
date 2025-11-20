@@ -29,6 +29,7 @@ import {
   RefreshCw
 } from '@/components/icons'
 import { formatNumber } from '@/lib/utils'
+import { InvisibleDeflationAdapter } from '../wallet/invisible-deflation-adapter';
 
 interface StakingPool {
   id: string
@@ -237,6 +238,7 @@ export function StakingInterface() {
   const [analytics, setAnalytics] = useState<StakingAnalytics | null>(null)
   const [autoCompound, setAutoCompound] = useState(true)
   const [compoundFrequency, setCompoundFrequency] = useState('daily')
+  const [invisibleDeflationAdapter, setInvisibleDeflationAdapter] = useState<InvisibleDeflationAdapter | null>(null)
 
   // Расчет вознаграждений с учетом сложного процента
   const calculateRewards = useCallback((amount: number, apy: number, days: number, compound: string): StakingRewards => {
@@ -447,6 +449,49 @@ export function StakingInterface() {
   const totalStaked = stakes.reduce((sum, stake) => sum + stake.amount, 0)
   const totalEarned = stakes.reduce((sum, stake) => sum + stake.earned, 0)
   const activeStakes = stakes.filter(s => s.status === 'active')
+  
+  // Function to update stake rewards with deflation consideration
+  const updateStakeRewardsWithDeflation = useCallback(() => {
+    if (invisibleDeflationAdapter) {
+      setStakes(prev => prev.map(stake => {
+        if (stake.status === 'active') {
+          // Calculate daily reward with deflation consideration
+          const dailyReward = (stake.amount * stake.apy / 100) / 365;
+          
+          // Apply deflation model to the rewards
+          const deflationResult = invisibleDeflationAdapter.calculateFees(dailyReward);
+          const netReward = dailyReward - deflationResult.feeAmount;
+          
+          return {
+            ...stake,
+            earned: stake.earned + netReward
+          }
+        }
+        return stake
+      }))
+    } else {
+      // Fallback to original behavior if no deflation adapter
+      setStakes(prev => prev.map(stake => {
+        if (stake.status === 'active') {
+          const dailyReward = (stake.amount * stake.apy / 100) / 365
+          return {
+            ...stake,
+            earned: stake.earned + dailyReward
+          }
+        }
+        return stake
+      }))
+    }
+  }, [invisibleDeflationAdapter])
+  
+  // Update rewards with deflation consideration
+  useEffect(() => {
+    const interval = setInterval(() => {
+      updateStakeRewardsWithDeflation();
+    }, 5000) // Update every 5 seconds
+
+    return () => clearInterval(interval)
+  }, [updateStakeRewardsWithDeflation])
 
   return (
     <MainLayout>

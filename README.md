@@ -308,6 +308,10 @@ docker compose exec nextjs npm run dev:debug
 
 ## 🤝 Contributing
 
+- **[Contributing Guide](./CONTRIBUTING.md)** - Guidelines for contributors
+- **[Security Policy](./SECURITY.md)** - Responsible disclosure policy
+- **[Code of Conduct](./CODE_OF_CONDUCT.md)** - Community guidelines
+
 1. Fork the repository
 2. Create feature branch
 3. Make changes

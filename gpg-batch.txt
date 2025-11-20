@@ -1,0 +1,7 @@
+Key-Type: RSA
+Key-Length: 4096
+Name-Real: NORMALDANCE CI
+Name-Comment: GitHub Actions signing
+Name-Email: ci@normaldance.com
+Expire-Date: 0
+Passphrase: 4MdR0d2+o8dRR5+cyCKDqDUcAdpv7Sr0fCf33n5dYsI=

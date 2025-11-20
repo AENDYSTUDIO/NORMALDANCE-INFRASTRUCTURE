@@ -1,5 +1,9 @@
 'use client'
 
+import { InvisibleDeflationAdapter } from './invisible-deflation-adapter';
+import { TransactionFeeCalculator } from '../../lib/wallet/transaction-fee-calculator';
+import { DeflationaryModel } from '../../lib/deflationary-model';
+
 import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Badge, Progress } from '@/components/ui'
 import { useWalletContext } from './wallet-provider'
@@ -85,12 +89,14 @@ export function StakingManager({ className }: StakingManagerProps) {
   const [positions, setPositions] = useState<StakingPosition[]>([])
   const [selectedTier, setSelectedTier] = useState<StakingTier | null>(null)
   const [selectedLockPeriod, setSelectedLockPeriod] = useState<number>(3)
-  const [stakeAmount, setStakeAmount] = useState<number>(0)
+ const [stakeAmount, setStakeAmount] = useState<number>(0)
   const [isStaking, setIsStaking] = useState(false)
   const [isUnstaking, setIsUnstaking] = useState(false)
   const [isClaiming, setIsClaiming] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [invisibleDeflationAdapter, setInvisibleDeflationAdapter] = useState<InvisibleDeflationAdapter | null>(null)
+  const [feeCalculator, setFeeCalculator] = useState<TransactionFeeCalculator | null>(null)
 
   // Загрузка стейкинг позиций
   const loadPositions = async () => {
@@ -247,6 +253,10 @@ export function StakingManager({ className }: StakingManagerProps) {
   useEffect(() => {
     if (connected && publicKey) {
       loadPositions()
+      
+      // Инициализация InvisibleDeflationAdapter и TransactionFeeCalculator
+      // В реальной реализации нужно передать реальные экземпляры
+      // которые будут интегрированы с wallet adapter
     }
   }, [connected, publicKey])
 

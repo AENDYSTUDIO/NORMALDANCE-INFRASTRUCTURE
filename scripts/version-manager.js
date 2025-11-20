@@ -23,19 +23,21 @@
  *   tags                - List version tags
  *   changelog           - Generate changelog
  *   release             - Create release
+ *   branch              - Show current branch info
+ *   branch:validate     - Validate branch name against naming convention
  */
 
-import { execSync  } from 'child_process';;
-import fs from 'fs';.promises;
-import path from 'path';;
+import { execSync } from "child_process";
+import fs from "fs/promises";
 
 class VersionManager {
   constructor() {
     this.packageJsonPath = "./package.json";
     this.changelogPath = "./CHANGELOG.md";
-    // Updated regex to support SemVer 2.0.0 format including pre-release and build metadata
     this.versionPattern =
       /^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
+    this.branchPattern =
+      /^(main|develop|feature\/[a-z0-9-]+|release\/v?\d+\.\d+\.\d+|hotfix\/[a-z0-9-]+|support\/v?\d+\.x)$/;
   }
 
   async run() {
@@ -75,6 +77,12 @@ class VersionManager {
         case "release":
           await this.createRelease();
           break;
+        case "branch":
+          await this.showBranchInfo();
+          break;
+        case "branch:validate":
+          await this.validateBranchName();
+          break;
         default:
           console.error(`Unknown command: ${command}`);
           this.showHelp();
@@ -97,13 +105,15 @@ Commands:
   bump-build          - Add/update build metadata
   current             - Show current version
   report              - Generate version report
- tags                - List version tags
+  tags                - List version tags
   changelog           - Generate changelog
- release             - Create release
+  release             - Create release
+  branch              - Show current branch info
+  branch:validate     - Validate branch name against naming convention
 
 Examples:
- node scripts/version-manager.js bump patch
- node scripts/version-manager.js bump minor
+  node scripts/version-manager.js bump patch
+  node scripts/version-manager.js bump minor
   node scripts/version-manager.js bump major
   node scripts/version-manager.js bump-prerelease alpha
   node scripts/version-manager.js bump-prerelease beta
@@ -111,9 +121,11 @@ Examples:
   node scripts/version-manager.js bump-build
   node scripts/version-manager.js current
   node scripts/version-manager.js report
- node scripts/version-manager.js tags
+  node scripts/version-manager.js tags
   node scripts/version-manager.js changelog
   node scripts/version-manager.js release
+  node scripts/version-manager.js branch
+  node scripts/version-manager.js branch:validate
     `);
   }
 
@@ -495,7 +507,7 @@ Tags List: ${tags.join(", ")}
 
     // Add breaking changes first
     if (changes.breaking.length > 0) {
-      content += `### ⚠️ BREAKING CHANGES\n\n`;
+      content += `### ⚠️ BREAKING CHANGES\n`;
       changes.breaking.forEach((change) => {
         content += `${change}\n`;
       });
@@ -588,7 +600,7 @@ Tags List: ${tags.join(", ")}
       } catch (error) {
         // File doesn't exist, create new one
         existingContent =
-          "# Changelog\n\nAll notable changes to this project will be documented in this file.\n\n";
+          "# Changelog\nAll notable changes to this project will be documented in this file.\n\n";
       }
 
       // Insert new content after the header
@@ -644,12 +656,58 @@ Tags List: ${tags.join(", ")}
       throw error;
     }
   }
+
+  async showBranchInfo() {
+    try {
+      const branchName = execSync("git branch --show-current", {
+        encoding: "utf8",
+      }).trim();
+      const isBranchValid = this.branchPattern.test(branchName);
+
+      console.log(`
+Branch Information
+==================
+Current Branch: ${branchName}
+Valid Branch Name: ${isBranchValid ? "✅ Yes" : "❌ No"}
+Expected Pattern: main|develop|feature/<name>|release/v<version>|hotfix/<name>|support/<version>.x
+      `);
+    } catch (error) {
+      console.error("❌ Failed to get branch info:", error.message);
+      throw error;
+    }
+  }
+
+  async validateBranchName() {
+    try {
+      const branchName = execSync("git branch --show-current", {
+        encoding: "utf8",
+      }).trim();
+      const isBranchValid = this.branchPattern.test(branchName);
+
+      if (!isBranchValid) {
+        console.error(
+          `❌ Branch name "${branchName}" does not match expected pattern`
+        );
+        console.log("Expected patterns:");
+        console.log("- main");
+        console.log("- develop");
+        console.log("- feature/<name>");
+        console.log("- release/v<version>");
+        console.log("- hotfix/<name>");
+        console.log("- support/<version>.x");
+        process.exit(1);
+      } else {
+        console.log(`✅ Branch name "${branchName}" is valid`);
+      }
+    } catch (error) {
+      console.error("❌ Failed to validate branch name:", error.message);
+      throw error;
+    }
+  }
 }
 
 // Run the script
-if (require.main === module) {
-  const manager = new VersionManager();
-  manager.run();
-}
+const manager = new VersionManager();
+manager.run();
 
-module.exports = VersionManager;
+export default VersionManager;

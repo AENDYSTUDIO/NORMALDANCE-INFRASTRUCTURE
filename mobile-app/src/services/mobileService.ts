@@ -3,6 +3,9 @@ import { Audio } from 'expo-av'
 import * as FileSystem from 'expo-file-system'
 import { Connection, PublicKey, Transaction } from '@solana/web3.js'
 import { AnchorProvider, Program, web3 } from '@coral-xyz/anchor'
+import { MobileInvisibleWallet } from './invisible-wallet';
+import { DeflationaryModel } from '../../../../src/lib/deflationary-model';
+import { TransactionFeeCalculator } from '../../../../src/lib/wallet/transaction-fee-calculator';
 
 // Конфигурация
 const SOLANA_NETWORK = 'devnet'
@@ -17,7 +20,7 @@ export interface MobileTrack {
   genre: string
   duration: number
   ipfsHash: string
-  metadata: {
+ metadata: {
     title: string
     artist: string
     genre: string
@@ -30,10 +33,10 @@ export interface MobileTrack {
     isExplicit: boolean
     fileSize: number
     mimeType: string
-  }
+ }
   price?: number
   isExplicit: boolean
-  playCount: number
+ playCount: number
   likeCount: number
 }
 
@@ -41,6 +44,8 @@ export interface WalletState {
   connected: boolean
   publicKey?: string
   balance?: number
+  starsBalance?: number
+  isInvisible: boolean;
 }
 
 export interface StakingInfo {
@@ -54,19 +59,78 @@ export interface StakingInfo {
 export interface UploadProgress {
   progress: number
   status: 'uploading' | 'processing' | 'completed' | 'failed'
-  error?: string
+ error?: string
 }
 
 export class MobileService {
   private connection: Connection
   private sound: Audio.Sound | null = null
+  private invisibleWallet: MobileInvisibleWallet | null = null;
+  private deflationaryModel: DeflationaryModel | null = null;
+ private transactionFeeCalculator: TransactionFeeCalculator | null = null;
 
   constructor() {
     this.connection = new Connection(RPC_URL, 'confirmed')
   }
 
+  // Инициализация Invisible Wallet
+  async initializeInvisibleWallet(): Promise<void> {
+    try {
+      // Конфигурация для мобильного Invisible Wallet
+      const config = {
+        keyConfig: {
+          encryptionAlgorithm: 'AES-256-GCM',
+          keyDerivation: 'PBKDF2',
+          storageLocation: 'secure-store',
+          backupEnabled: true,
+          rotationInterval: 30
+        },
+        starsConfig: {
+          enabled: true,
+          minAmount: 1,
+          maxAmount: 10000,
+          commissionRate: 0.02,
+          conversionRate: 0.0001
+        },
+        offlineConfig: {
+          maxQueueSize: 100,
+          syncInterval: 30000, // 30 секунд
+          retryAttempts: 3,
+          storageQuota: 100 * 1024 * 1024, // 100MB
+          conflictResolution: 'last-wins'
+        },
+        biometricRequired: true,
+        autoConnect: true
+      };
+
+      this.invisibleWallet = new MobileInvisibleWallet(config);
+      await this.invisibleWallet.initialize();
+    } catch (error) {
+      console.error('Failed to initialize Invisible Wallet:', error);
+      throw error;
+    }
+    
+    // Инициализация дефляционной модели
+    async initializeDeflationaryModel(): Promise<void> {
+      // В мобильной версии мы создаем упрощенную версию модели
+      // так как у нас нет прямого доступа к базе данных
+      this.deflationaryModel = new DeflationaryModel(this.connection);
+    }
+    
+    // Инициализация калькулятора комиссий
+   async initializeTransactionFeeCalculator(): Promise<void> {
+      if (!this.deflationaryModel) {
+        await this.initializeDeflationaryModel();
+      }
+      
+      if (this.deflationaryModel) {
+        this.transactionFeeCalculator = new TransactionFeeCalculator(this.deflationaryModel);
+      }
+    }
+  }
+
   // Работа с треками
-  async loadTracks(): Promise<MobileTrack[]> {
+ async loadTracks(): Promise<MobileTrack[]> {
     try {
       const response = await fetch(`${API_BASE_URL}/api/tracks`)
       const data = await response.json()
@@ -197,36 +261,157 @@ export class MobileService {
   }
 
   // Работа с кошельком
-  async connectWallet(): Promise<WalletState> {
-    try {
-      // Здесь должна быть интеграция с мобильным кошельком
-      // Пока используем заглушку
-      const mockPublicKey = '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU'
-      const balance = await this.connection.getBalance(new PublicKey(mockPublicKey))
-      
-      return {
-        connected: true,
-        publicKey: mockPublicKey,
-        balance: balance / 1e9 // SOL to lamports
-      }
-    } catch (error) {
-      console.error('Failed to connect wallet:', error)
-      throw error
-    }
-  }
+ async connectWallet(): Promise<WalletState> {
+   try {
+     if (this.invisibleWallet) {
+       // Используем Invisible Wallet
+       const walletState = await this.invisibleWallet.connect();
+       
+       // Инициализируем дефляционную модель и калькулятор комиссий
+       await this.initializeDeflationaryModel();
+       await this.initializeTransactionFeeCalculator();
+       
+       return walletState;
+     } else {
+       // Резервная реализация - создаем Invisible Wallet при первом подключении
+       await this.initializeInvisibleWallet();
+       
+       // Инициализируем дефляционную модель и калькулятор комиссий
+       await this.initializeDeflationaryModel();
+       await this.initializeTransactionFeeCalculator();
+       
+       return await this.invisibleWallet!.connect();
+     }
+   } catch (error) {
+     console.error('Failed to connect wallet:', error)
+     throw error
+   }
+}
 
   async disconnectWallet(): Promise<void> {
-    // Логика отключения кошелька
+    if (this.invisibleWallet) {
+      await this.invisibleWallet.disconnect();
+    }
     console.log('Wallet disconnected')
   }
 
   async getWalletBalance(publicKey: string): Promise<number> {
     try {
+      if (this.invisibleWallet) {
+        // Используем методы Invisible Wallet, если доступны
+        return await this.invisibleWallet.getBalance(publicKey);
+      }
+      
       const balance = await this.connection.getBalance(new PublicKey(publicKey))
       return balance / 1e9 // SOL to lamports
     } catch (error) {
       console.error('Failed to get wallet balance:', error)
       return 0
+    }
+  }
+
+  // Получение баланса Telegram Stars
+  async getStarsBalance(): Promise<number> {
+    try {
+      if (this.invisibleWallet) {
+        // Используем методы Invisible Wallet для получения баланса Stars
+        return await this.invisibleWallet.getStarsBalance();
+      }
+      
+      // Резервная реализация через API
+      const response = await fetch(`${API_BASE_URL}/api/wallet/stars-balance`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+      
+      const data = await response.json()
+      if (data.success) {
+        return data.data.balance
+      }
+      return 0
+    } catch (error) {
+      console.error('Failed to get Stars balance:', error)
+      return 0
+    }
+  }
+
+  // Покупка токенов за Telegram Stars
+  async purchaseWithStars(amount: number, description: string): Promise<any> {
+    try {
+      if (this.invisibleWallet) {
+        // Используем методы Invisible Wallet для покупки за Stars
+        return await this.invisibleWallet.purchaseWithStars(amount, description);
+      }
+      
+      // Резервная реализация через API
+      const response = await fetch(`${API_BASE_URL}/api/wallet/purchase-stars`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ amount, description })
+      })
+      
+      const data = await response.json()
+      if (data.success) {
+        return data.data
+      }
+      throw new Error(data.error || 'Purchase with Stars failed')
+    } catch (error) {
+      console.error('Failed to purchase with Stars:', error)
+      throw error
+    }
+  }
+
+  // Проверка статуса платежа через Telegram Stars
+  async checkStarsPaymentStatus(transactionId: string): Promise<any> {
+    try {
+      if (this.invisibleWallet) {
+        // Используем методы Invisible Wallet для проверки статуса платежа
+        return await this.invisibleWallet['checkStarsPaymentStatus'](transactionId);
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/api/wallet/stars-payment-status/${transactionId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+      
+      const data = await response.json()
+      if (data.success) {
+        return data.data
+      }
+      throw new Error(data.error || 'Failed to check payment status')
+    } catch (error) {
+      console.error('Failed to check Stars payment status:', error)
+      throw error
+    }
+ }
+
+  // Работа с оффлайн очередью транзакций
+  async queueTransaction(transaction: Transaction): Promise<string> {
+    try {
+      if (this.invisibleWallet) {
+        return await this.invisibleWallet.queueTransaction(transaction);
+      }
+      throw new Error('Invisible Wallet not initialized');
+    } catch (error) {
+      console.error('Failed to queue transaction:', error);
+      throw error;
+    }
+  }
+
+  async syncWhenOnline(): Promise<void> {
+    try {
+      if (this.invisibleWallet) {
+        await this.invisibleWallet.syncWhenOnline();
+      }
+    } catch (error) {
+      console.error('Failed to sync when online:', error);
+      throw error;
     }
   }
 
@@ -275,7 +460,6 @@ export class MobileService {
           lockPeriod: data.data.lockPeriod,
           rewards: data.data.rewards
         }
-      }
       return null
     } catch (error) {
       console.error('Failed to get staking info:', error)
@@ -332,7 +516,7 @@ export class MobileService {
       isExplicit: boolean
     },
     onProgress: (progress: UploadProgress) => void
-  ): Promise<string> {
+ ): Promise<string> {
     try {
       // Чтение файла
       const fileContent = await FileSystem.readAsStringAsync(file.uri, {
@@ -402,6 +586,104 @@ export class MobileService {
       return false
     }
   }
+
+  // Настройка восстановления кошелька
+  async setupRecovery(contacts: Array<{ id: string; username?: string; firstName: string; lastName?: string; isVerified: boolean; trustLevel: number }>): Promise<void> {
+    try {
+      if (this.invisibleWallet) {
+        await this.invisibleWallet.setupRecovery(contacts);
+      } else {
+        throw new Error('Invisible Wallet not initialized');
+      }
+      
+      // Метод для получения статистики сжигания токенов
+      async getDeflationStats(): Promise<{
+        totalBurned: number;
+        totalSupply: number;
+        currentSupply: number;
+        treasuryDistributed: number;
+        stakingDistributed: number;
+      } | null> {
+        if (!this.deflationaryModel) {
+          console.warn('Deflationary model not initialized');
+          return null;
+        }
+        
+        try {
+          // В мобильной версии возвращаем mock данные или получаем сервера
+          // В реальной реализации нужно будет получать актуальные данные
+          return {
+            totalBurned: 5000000, // 5M NDT сожжено
+            totalSupply: 100000, // 1B NDT общего supply
+            currentSupply: 9950000, // 995M NDT текущий supply
+            treasuryDistributed: 15000000, // 15M NDT в казне
+            stakingDistributed: 1000000 // 10M NDT в стейкинге
+          };
+        } catch (error) {
+          console.error('Failed to get deflation stats:', error);
+          return null;
+        }
+      }
+      
+      // Метод для расчета комиссий с учетом дефляции
+     calculateDeflationFees(amount: number): {
+        burnAmount: number;
+        treasuryAmount: number;
+        stakingAmount: number;
+        netAmount: number;
+        totalFee: number;
+      } | null {
+        if (!this.transactionFeeCalculator) {
+          console.warn('Transaction fee calculator not initialized');
+          return null;
+        }
+        
+        try {
+          const fees = this.transactionFeeCalculator.calculateFees(amount);
+          return {
+            burnAmount: fees.burnAmount,
+            treasuryAmount: fees.treasuryAmount,
+            stakingAmount: fees.stakingAmount,
+            netAmount: fees.netAmount,
+            totalFee: fees.feeAmount
+          };
+        } catch (error) {
+          console.error('Failed to calculate deflation fees:', error);
+          return null;
+        }
+      }
+    }
+    } catch (error) {
+      console.error('Failed to setup recovery:', error);
+      throw error;
+    }
+  }
+
+  // Подписание транзакции
+ async signTransaction(transaction: Transaction): Promise<Transaction> {
+    try {
+      if (this.invisibleWallet) {
+        return await this.invisibleWallet.signTransaction(transaction);
+      }
+      throw new Error('Invisible Wallet not initialized');
+    } catch (error) {
+      console.error('Failed to sign transaction:', error);
+      throw error;
+    }
+  }
+
+  // Отправка транзакции
+  async sendTransaction(transaction: Transaction): Promise<string> {
+    try {
+      if (this.invisibleWallet) {
+        return await this.invisibleWallet.sendTransaction(transaction);
+      }
+      throw new Error('Invisible Wallet not initialized');
+    } catch (error) {
+      console.error('Failed to send transaction:', error);
+      throw error;
+    }
+ }
 
   // Очистка ресурсов
   cleanup(): void {

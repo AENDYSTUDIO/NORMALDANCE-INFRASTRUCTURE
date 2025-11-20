@@ -7,6 +7,7 @@ export type CspDirectives = Record<string, string[]>;
 export interface CspOptions {
   isDev?: boolean;
   extraConnectSrc?: string[]; // allow extensions without changing core policy
+  nonce?: string; // CSP nonce for dynamic scripts/styles
 }
 
 function uniq(arr: string[]): string[] {
@@ -50,11 +51,15 @@ export function getCspDirectives(opts: CspOptions = {}): CspDirectives {
     "'wasm-unsafe-eval'", // required by wasm pipelines (Next/Telegram)
     "https://telegram.org",
     "https://vercel.live",
+    // Add nonce support for dynamic scripts
+    ...(opts.nonce ? [`'nonce-${opts.nonce}'`] : []),
   ];
 
   const styleSrc = [
     "'self'",
-    "'unsafe-inline'", // Tailwind/inline styles (documented)
+    // Remove unsafe-inline in production, use nonce instead
+    ...(isDev ? ["'unsafe-inline'"] : []),
+    ...(opts.nonce ? [`'nonce-${opts.nonce}'`] : []),
   ];
 
   const imgSrc = [
@@ -66,6 +71,7 @@ export function getCspDirectives(opts: CspOptions = {}): CspDirectives {
     "https://ipfs.io",
     "https://gateway.pinata.cloud",
     "https://cloudflare-ipfs.com",
+    "https://*.normaldance.com", // Allow own CDN
   ];
 
   const connectSrcBase = [
@@ -75,6 +81,7 @@ export function getCspDirectives(opts: CspOptions = {}): CspDirectives {
     "https://ton.org",
     "https://tonapi.io",
     "https://*.sentry.io",
+    "https://*.chainalysis.com", // For AML compliance
   ];
 
   const devConnectSrc = [
@@ -89,17 +96,23 @@ export function getCspDirectives(opts: CspOptions = {}): CspDirectives {
     ...(opts.extraConnectSrc || []),
   ]);
 
-  const fontSrc = ["'self'", "data:"];
+  const fontSrc = ["'self'", "data:", "https://fonts.gstatic.com"];
   const objectSrc = ["'none'"];
   const baseUri = ["'self'"];
   const formAction = ["'self'"];
   const frameAncestors = ["'none'"];
 
-  // upgrade-insecure-requests is a flag directive (no values)
+  // Additional security directives
+  const scriptSrcAttr = ["'none'"]; // Block inline event handlers
+  const styleSrcAttr = ["'none'"]; // Block inline styles
+  const upgradeInsecureRequests = []; // Flag directive
+
   const directives: CspDirectives = {
     "default-src": defaultSrc,
     "script-src": scriptSrc,
+    "script-src-attr": scriptSrcAttr,
     "style-src": styleSrc,
+    "style-src-attr": styleSrcAttr,
     "img-src": imgSrc,
     "connect-src": connectSrc,
     "font-src": fontSrc,
@@ -107,7 +120,7 @@ export function getCspDirectives(opts: CspOptions = {}): CspDirectives {
     "base-uri": baseUri,
     "form-action": formAction,
     "frame-ancestors": frameAncestors,
-    "upgrade-insecure-requests": [], // flag
+    "upgrade-insecure-requests": upgradeInsecureRequests,
   };
 
   return directives;

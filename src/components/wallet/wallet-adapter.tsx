@@ -16,10 +16,19 @@ import PhantomWalletAdapter from "@solana/wallet-adapter-phantom";
 import { useWallet } from "@solana/wallet-adapter-react";
 import {
   Connection,
-  // LAMPORTS_PER_SOL,
+  LAMPORTS_PER_SOL,
   PublicKey,
   Transaction,
 } from "@solana/web3.js";
+import {
+  InvisibleWalletAdapterImpl,
+  createInvisibleWalletAdapter,
+  createAutoWalletAdapter
+} from "./invisible-wallet-adapter";
+import { TelegramUtils } from "@/lib/wallet/utils";
+import { OfflineTransactionManager } from "@/lib/wallet/offline-transaction-manager";
+import { CacheManager } from "@/lib/wallet/cache-manager";
+import { FallbackStateManager } from "@/lib/wallet/fallback-state-manager";
 
 // Типы для ошибок кошелька
 export class WalletConnectionError extends AppError {
@@ -81,6 +90,15 @@ export interface WalletAdapter {
   ) => Promise<string>;
 }
 
+// Расширенный интерфейс для поддержки Invisible Wallet
+export interface ExtendedWalletAdapter extends WalletAdapter {
+  isInvisible?: boolean;
+  autoConnect?: () => Promise<void>;
+  purchaseWithStars?: (amount: number, description: string) => Promise<any>;
+  setupRecovery?: (contacts: any[]) => Promise<void>;
+  getStarsBalance?: () => Promise<number>;
+}
+
 // Создание подключения к Solana
 export function createConnection(): Connection {
   const timeoutMs = Number(process.env.SOLANA_RPC_TIMEOUT || "8000");
@@ -110,10 +128,47 @@ export function createPhantomWallet(): PhantomWalletAdapter {
   return new PhantomWalletAdapter();
 }
 
+// Создание адаптера кошелька в зависимости от окружения
+export function createWalletAdapter(type?: 'phantom' | 'invisible' | 'auto'): ExtendedWalletAdapter {
+  if (type === 'invisible' || (type === 'auto' && TelegramUtils.isTelegramWebApp())) {
+    const invisibleWallet = createInvisibleWalletAdapter();
+    return {
+      ...invisibleWallet,
+      isInvisible: true,
+      autoConnect: () => invisibleWallet.autoConnect(),
+      purchaseWithStars: (amount: number, description: string) => invisibleWallet.purchaseWithStars(amount, description),
+      setupRecovery: (contacts: any[]) => invisibleWallet.setupRecovery(contacts),
+      getStarsBalance: () => invisibleWallet.getStarsBalance()
+    };
+  }
+  
+  // По умолчанию используем Phantom
+  const phantomWallet = new PhantomWalletAdapter();
+  return {
+    ...phantomWallet,
+    isInvisible: false
+  };
+}
+
+// Автоматическое определение и создание адаптера
+export function createAutoWalletAdapter(): ExtendedWalletAdapter {
+  return createWalletAdapter('auto');
+}
+
 // Хук для использования кошелька
 export function useSolanaWallet() {
   const wallet = useWallet();
   const connection = createConnection();
+  
+  // Автоматическая инициализация Invisible Wallet в Telegram
+  React.useEffect(() => {
+    if (TelegramUtils.isTelegramWebApp() && !wallet.connected) {
+      const invisibleWallet = createAutoWalletAdapter();
+      if (invisibleWallet.isInvisible && invisibleWallet.autoConnect) {
+        invisibleWallet.autoConnect().catch(console.error);
+      }
+    }
+  }, [wallet.connected]);
 
   const connectWallet = async () => {
     if (!wallet.connected) {
@@ -195,9 +250,44 @@ export function useSolanaWallet() {
     }
 
     try {
+      // Check network status before sending transaction
+      const isOnline = navigator.onLine;
+      
+      if (!isOnline) {
+        // Add transaction to offline queue
+        const offlineManager = OfflineTransactionManager.getInstance();
+        const transactionId = offlineManager.addTransaction({
+          type: 'transfer', // Default type, could be more specific
+          data: {
+            transaction: transaction.serialize().toString('base64'),
+            publicKey: wallet.publicKey?.toBase58(),
+          },
+          priority: 'high', // Financial transactions should have high priority
+        });
+        
+        logger.info(`Transaction added to offline queue: ${transactionId}`);
+        return transactionId; // Return transaction ID for offline transaction
+      }
+      
       const signature = await wallet.sendTransaction(transaction, connection);
       return signature;
     } catch (error) {
+      // If network error, add to offline queue
+      if (error instanceof Error && (error.message.includes('network') || error.message.includes('timeout'))) {
+        const offlineManager = OfflineTransactionManager.getInstance();
+        const transactionId = offlineManager.addTransaction({
+          type: 'transfer',
+          data: {
+            transaction: transaction.serialize().toString('base64'),
+            publicKey: wallet.publicKey?.toBase58(),
+          },
+          priority: 'high',
+        });
+        
+        logger.info(`Network error - transaction added to offline queue: ${transactionId}`);
+        return transactionId;
+      }
+      
       logger.error("Error sending transaction", error as Error);
       Sentry.captureException(error);
       throw new ExternalServiceError("wallet-send-transaction", error as Error);
@@ -207,20 +297,53 @@ export function useSolanaWallet() {
   const getBalance = async (): Promise<number> => {
     if (!wallet.publicKey) return 0;
 
+    const cacheKey = `balance_${wallet.publicKey.toBase58()}`;
+    const cacheManager = CacheManager.getInstance();
+    
+    // Try to get from cache first
+    const cachedBalance = await cacheManager.get<number>(cacheKey);
+    if (cachedBalance !== null) {
+      return cachedBalance;
+    }
+
     try {
       const balance = await connection.getBalance(wallet.publicKey);
-      return balance / LAMPORTS_PER_SOL;
+      const balanceInSol = balance / LAMPORTS_PER_SOL;
+      
+      // Cache the balance for 5 minutes
+      await cacheManager.cacheWalletBalance(wallet.publicKey.toBase58(), balanceInSol, 300);
+      
+      return balanceInSol;
     } catch (error) {
       logger.error("Error getting balance", error as Error, {
         publicKey: wallet.publicKey?.toBase58(),
       });
       Sentry.captureException(error);
+      
+      // If network is down, try to get from fallback state
+      if (!navigator.onLine) {
+        const stateManager = FallbackStateManager.getInstance();
+        const localState = await stateManager.getLocalState();
+        if (localState && localState.publicKey === wallet.publicKey.toBase58()) {
+          return localState.balance;
+        }
+      }
+      
       return 0;
     }
   };
 
   const getTokenBalance = async (mintAddress: string): Promise<number> => {
     if (!wallet.publicKey) return 0;
+
+    const cacheKey = `token_balance_${wallet.publicKey.toBase58()}_${mintAddress}`;
+    const cacheManager = CacheManager.getInstance();
+    
+    // Try to get from cache first
+    const cachedBalance = await cacheManager.get<number>(cacheKey);
+    if (cachedBalance !== null) {
+      return cachedBalance;
+    }
 
     try {
       const mintPublicKey = new PublicKey(mintAddress);
@@ -241,6 +364,8 @@ export function useSolanaWallet() {
 
       if (accountInfo === null) {
         // Токен-аккаунт не существует
+        // Cache zero balance for 5 minutes
+        await cacheManager.cacheTokenBalance(wallet.publicKey.toBase58(), mintAddress, 0, 300);
         return 0;
       }
 
@@ -250,20 +375,60 @@ export function useSolanaWallet() {
 
       // Получаем количество десятичных знаков для токена
       const mintInfo = await connection.getParsedAccountInfo(mintPublicKey);
+      let decimals = 9; // Default decimals
       if (mintInfo.value?.data && "parsed" in mintInfo.value.data) {
-        const decimals = mintInfo.value.data.parsed.info.decimals;
-        return balance / Math.pow(10, decimals);
+        decimals = mintInfo.value.data.parsed.info.decimals;
       }
 
-      return balance;
+      const finalBalance = balance / Math.pow(10, decimals);
+      
+      // Cache the token balance for 5 minutes
+      await cacheManager.cacheTokenBalance(wallet.publicKey.toBase58(), mintAddress, finalBalance, 300);
+      
+      return finalBalance;
     } catch (error) {
       logger.error("Error getting token balance", error as Error, {
         mintAddress,
         publicKey: wallet.publicKey?.toBase58(),
       });
       Sentry.captureException(error);
+      
+      // If network is down, try to get from fallback state
+      if (!navigator.onLine) {
+        const stateManager = FallbackStateManager.getInstance();
+        const localState = await stateManager.getLocalState();
+        if (localState && localState.publicKey === wallet.publicKey.toBase58()) {
+          return localState.tokens[mintAddress] || 0;
+        }
+      }
+      
       return 0;
     }
+  };
+
+  // Функции для Invisible Wallet
+  const purchaseWithStars = async (amount: number, description: string) => {
+    const adapter = wallet.adapter as any;
+    if (adapter?.purchaseWithStars) {
+      return await adapter.purchaseWithStars(amount, description);
+    }
+    throw new Error("Stars purchases not supported");
+  };
+
+  const setupRecovery = async (contacts: any[]) => {
+    const adapter = wallet.adapter as any;
+    if (adapter?.setupRecovery) {
+      return await adapter.setupRecovery(contacts);
+    }
+    throw new Error("Recovery setup not supported");
+  };
+
+  const getStarsBalance = async () => {
+    const adapter = wallet.adapter as any;
+    if (adapter?.getStarsBalance) {
+      return await adapter.getStarsBalance();
+    }
+    return 0;
   };
 
   return {
@@ -274,6 +439,10 @@ export function useSolanaWallet() {
     sendTransaction,
     getBalance,
     getTokenBalance,
+    purchaseWithStars,
+    setupRecovery,
+    getStarsBalance,
+    isInvisibleWallet: (wallet.adapter as any)?.isInvisible || false
   };
 }
 

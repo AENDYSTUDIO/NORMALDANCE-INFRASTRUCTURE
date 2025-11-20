@@ -20,8 +20,14 @@ import React, {
 
 import { walletEmitter } from "./wallet-adapter";
 import { WalletConnect } from "./wallet-connect";
+import { createAutoWalletAdapter, ExtendedWalletAdapter } from "./wallet-adapter";
+import { TelegramUtils } from "@/lib/wallet/utils";
+import { AutoConnectProvider } from "./invisible-wallet-provider";
+import { InvisibleTransactionUI } from "./invisible-transaction-ui";
+import { InvisibleWalletDashboard } from "./invisible-wallet-dashboard";
+import { logger } from "@/lib/utils/logger";
 
-// Интерфейс для контекста кошелька
+// Расширенный интерфейс для контекста кошелька
 interface WalletContextType {
   connected: boolean;
   publicKey: PublicKey | null;
@@ -30,6 +36,11 @@ interface WalletContextType {
   disconnect: () => Promise<void>;
   isConnecting: boolean;
   error: string | null;
+  isInvisibleWallet: boolean;
+  purchaseWithStars?: (amount: number, description: string) => Promise<any>;
+  setupRecovery?: (contacts: any[]) => Promise<void>;
+  starsBalance?: number;
+  recoverySetup?: boolean;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -41,12 +52,28 @@ export function WalletProviderWrapper({ children }: { children: ReactNode }) {
 
   // Динамически загружаем адаптеры кошельков только при необходимости
   const [walletAdapters, setWalletAdapters] = useState<any[]>([]);
+  const [isInvisibleWallet, setIsInvisibleWallet] = useState(false);
+  const [starsBalance, setStarsBalance] = useState<number | null>(null);
+  const [recoverySetup, setRecoverySetup] = useState(false);
 
   useEffect(() => {
     // Асинхронно загружаем адаптеры кошельков
     const loadWalletAdapters = async () => {
       try {
-        // Загружаем только те адаптеры, которые действительно нужны
+        // Проверяем, находимся ли в Telegram
+        if (TelegramUtils.isTelegramWebApp()) {
+          logger.info("Telegram WebApp detected, using Invisible Wallet");
+          setIsInvisibleWallet(true);
+          
+          // В Telegram используем только Invisible Wallet
+          const invisibleAdapter = createAutoWalletAdapter();
+          if (invisibleAdapter) {
+            setWalletAdapters([invisibleAdapter]);
+            return;
+          }
+        }
+        
+        // Загружаем стандартные адаптеры для веба
         const phantomModule = await import("@solana/wallet-adapter-phantom");
         const solflareModule = await import("@solana/wallet-adapter-solflare");
 
@@ -59,6 +86,7 @@ export function WalletProviderWrapper({ children }: { children: ReactNode }) {
         ]);
       } catch (error) {
         console.error("Failed to load wallet adapters:", error);
+        logger.error("Failed to load wallet adapters", error as Error);
         // В случае ошибки используем пустой массив адаптеров
         setWalletAdapters([]);
       }
@@ -71,7 +99,17 @@ export function WalletProviderWrapper({ children }: { children: ReactNode }) {
     <ConnectionProvider endpoint={endpoint}>
       <WalletProvider wallets={walletAdapters}>
         <WalletModalProvider>
-          <WalletInnerProvider>{children}</WalletInnerProvider>
+          <AutoConnectProvider>
+            <WalletInnerProvider
+              isInvisibleWallet={isInvisibleWallet}
+              starsBalance={starsBalance}
+              setStarsBalance={setStarsBalance}
+              recoverySetup={recoverySetup}
+              setRecoverySetup={setRecoverySetup}
+            >
+              {children}
+            </WalletInnerProvider>
+          </AutoConnectProvider>
         </WalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>
@@ -79,7 +117,21 @@ export function WalletProviderWrapper({ children }: { children: ReactNode }) {
 }
 
 // Внутренний провайдер для управления состоянием
-function WalletInnerProvider({ children }: { children: ReactNode }) {
+function WalletInnerProvider({
+  children,
+  isInvisibleWallet,
+  starsBalance,
+  setStarsBalance,
+  recoverySetup,
+  setRecoverySetup
+}: {
+  children: ReactNode;
+  isInvisibleWallet: boolean;
+  starsBalance: number | null;
+  setStarsBalance: (balance: number | null) => void;
+  recoverySetup: boolean;
+  setRecoverySetup: (setup: boolean) => void;
+}) {
   const { connected, publicKey, wallet } = useWallet();
   const { connection } = useConnection();
   const [balance, setBalance] = useState<number | null>(null);
@@ -186,6 +238,82 @@ function WalletInnerProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Функции для Invisible Wallet
+  const purchaseWithStars = async (amount: number, description: string) => {
+    const adapter = wallet?.adapter as any;
+    if (adapter?.purchaseWithStars) {
+      try {
+        const result = await adapter.purchaseWithStars(amount, description);
+        return result;
+      } catch (error) {
+        logger.error("Failed to purchase with Stars", error as Error);
+        throw error;
+      }
+    }
+    throw new Error("Stars purchases not supported");
+  };
+
+  const setupRecovery = async (contacts: any[]) => {
+    const adapter = wallet?.adapter as any;
+    if (adapter?.setupRecovery) {
+      try {
+        await adapter.setupRecovery(contacts);
+        setRecoverySetup(true);
+      } catch (error) {
+        logger.error("Failed to setup recovery", error as Error);
+        throw error;
+      }
+    }
+    throw new Error("Recovery setup not supported");
+  };
+
+  const getStarsBalance = async () => {
+    const adapter = wallet?.adapter as any;
+    if (adapter?.getStarsBalance) {
+      try {
+        const balance = await adapter.getStarsBalance();
+        setStarsBalance(balance);
+        return balance;
+      } catch (error) {
+        logger.error("Failed to get Stars balance", error as Error);
+        throw error;
+      }
+    }
+    return 0;
+  };
+
+  // Загрузка баланса Stars для Invisible Wallet
+  useEffect(() => {
+    if (isInvisibleWallet && connected && wallet?.adapter) {
+      const loadStarsBalance = async () => {
+        try {
+          await getStarsBalance();
+        } catch (error) {
+          console.error("Failed to load Stars balance:", error);
+        }
+      };
+      
+      loadStarsBalance();
+    }
+  }, [isInvisibleWallet, connected, wallet?.adapter]);
+
+  // Проверка настройки восстановления
+  useEffect(() => {
+    if (isInvisibleWallet && connected && wallet?.adapter) {
+      const checkRecoverySetup = async () => {
+        try {
+          // В реальной реализации здесь будет проверка настроек восстановления
+          // const setup = await wallet.adapter.isRecoverySetup?.();
+          // setRecoverySetup(setup || false);
+        } catch (error) {
+          console.error("Failed to check recovery setup:", error);
+        }
+      };
+      
+      checkRecoverySetup();
+    }
+  }, [isInvisibleWallet, connected, wallet?.adapter]);
+
   const value: WalletContextType = {
     connected,
     publicKey,
@@ -194,10 +322,19 @@ function WalletInnerProvider({ children }: { children: ReactNode }) {
     disconnect,
     isConnecting,
     error,
+    isInvisibleWallet,
+    purchaseWithStars,
+    setupRecovery,
+    starsBalance,
+    recoverySetup
   };
 
   return (
-    <WalletContext.Provider value={value}>{children}</WalletContext.Provider>
+    <WalletContext.Provider value={value}>
+      {children}
+      <InvisibleTransactionUI />
+      <InvisibleWalletDashboard />
+    </WalletContext.Provider>
   );
 }
 
