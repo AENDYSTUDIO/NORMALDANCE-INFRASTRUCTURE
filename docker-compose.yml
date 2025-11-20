@@ -1,167 +1,284 @@
 version: "3.8"
 
 services:
-  frontend:
-    build:
-      context: .
-<<<<<<< HEAD
-      dockerfile: Dockerfile.dev
+  # Traefik Reverse Proxy
+  traefik:
+    image: traefik:v2.10
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt.acme.email=admin@example.com"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
     ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - DATABASE_URL=postgresql://${DB_USER:-normaldance}:${DB_PASSWORD:-secure_password}@db:5432/normaldance
-      - NEXTAUTH_URL=https://normaldance.com
-      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-default_secret_key_for_dev}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-    volumes:
-      - .:/app # Монтируем весь проект для live reload
-      - /app/node_modules # Исключаем node_modules из монтирования
-      - /app/.next
-    depends_on:
-      db: # Добавляем зависимость от готовности БД
-        condition: service_healthy
-      redis:
-        condition: service_started
-    restart: unless-stopped
-    # Добавляем security конфигурации
-    security_opt:
-      - no-new-privileges:true
-    # Добавляем healthcheck для приложения
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "--quiet",
-          "--tries=1",
-          "--spider",
-          "http://localhost:3000/api/health",
-        ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-    # Ограничиваем ресурсы для безопасности
-    mem_limit: 1g
-    mem_reservation: 512m
-    cpus: "0.5"
-    # Устанавливаем пользователя
-    user: "1000:1000"
-=======
-      dockerfile: docker/nextjs.Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://normaldance:password@postgres:5432/normaldance
-      - REDIS_URL=redis://redis:6379
-      - BACKEND_URL=http://backend:8080
-      - IPFS_SERVICE_URL=http://ipfs:8080
-    depends_on:
-      - postgres
-      - redis
-      - backend
-      - ipfs
-    networks:
-      - normaldance
->>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
-
-  backend:
-    build:
-      context: .
-      dockerfile: docker/backend.Dockerfile
-    ports:
+      - "80:80"
+      - "443:443"
       - "8080:8080"
-    environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://normaldance:password@postgres:5432/normaldance
-      - REDIS_URL=redis://redis:6379
-    depends_on:
-      - postgres
-      - redis
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_letsencrypt:/letsencrypt
     networks:
-      - normaldance
+      - web
+    profiles:
+      - prod
 
-  ipfs:
+  # PostgreSQL Database
+  postgres:
     build:
       context: .
-      dockerfile: docker/ipfs-service.Dockerfile
-    ports:
-      - "8081:8080"
-      - "5001:5001"
-      - "4001:4001"
+      dockerfile: postgres.Dockerfile
     environment:
-      - NODE_ENV=development
-    volumes:
-      - ipfs_data:/data/ipfs
-    networks:
-      - normaldance
-
-  postgres:
-    image: postgres:15-alpine
-    environment:
-<<<<<<< HEAD
-      POSTGRES_USER: ${DB_USER:-normaldance}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-secure_password}
-      POSTGRES_DB: ${DB_NAME:-normaldance}
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d normaldance"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-    # Добавляем security конфигурации
-    security_opt:
-      - no-new-privileges:true
-    # Ограничиваем ресурсы
-    mem_limit: 512m
-    mem_reservation: 256m
-    # Запускаем от непривилегированного пользователя
-    user: "999:999"
-=======
-      - POSTGRES_DB=normaldance
-      - POSTGRES_USER=normaldance
-      - POSTGRES_PASSWORD=password
-    ports:
-      - "5432:5432"
+      POSTGRES_DB: normaldance
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - normaldance
->>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
+      - backend-db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d normaldance"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    profiles:
+      - dev
+      - prod
 
+  # Next.js Frontend
+  nextjs:
+    build:
+      context: .
+      dockerfile: nextjs.Dockerfile
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://api.example.com}
+      DATABASE_URL: ${DATABASE_URL}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`frontend.example.com`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+    networks:
+      - web
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    profiles:
+      - prod
+
+  # NestJS Backend
+  backend:
+    build:
+      context: .
+      dockerfile: backend.Dockerfile
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`api.example.com`)"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.backend.loadbalancer.server.port=4000"
+      - "traefik.http.middlewares.backend-rate-limit.ratelimit.burst=100"
+      - "traefik.http.middlewares.backend-rate-limit.ratelimit.average=50"
+      - "traefik.http.routers.backend.middlewares=backend-rate-limit"
+    networks:
+      - web
+      - backend-db
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    profiles:
+      - prod
+
+  # IPFS Service
+  ipfs-service:
+    build:
+      context: .
+      dockerfile: ipfs-service.Dockerfile
+    environment:
+      IPFS_PATH: /data/ipfs
+    volumes:
+      - ipfs_data:/data/ipfs
+    networks:
+      - ipfs-internal
+    depends_on:
+      - backend
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+    healthcheck:
+      test: ["CMD", "/ipfs-service", "--health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    profiles:
+      - prod
+
+  # Reg.Ru Integration Service
+  regru:
+    build:
+      context: .
+      dockerfile: regru.Dockerfile
+    environment:
+      REG_RU_API_KEY: ${REG_RU_API_KEY}
+      REG_RU_USERNAME: ${REG_RU_USERNAME}
+    networks:
+      - backend-db
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    profiles:
+      - prod
+
+  # Smart Contracts Service
+  smart-contracts:
+    build:
+      context: .
+      dockerfile: smart-contracts.Dockerfile
+    environment:
+      HARDHAT_NETWORK: localhost
+      PRIVATE_KEY: ${PRIVATE_KEY}
+    ports:
+      - "8545:8545"
+    networks:
+      - backend-db
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8545/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    profiles:
+      - prod
+
+  # Monitoring Stack
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/etc/prometheus/console_libraries"
+      - "--web.console.templates=/etc/prometheus/consoles"
+      - "--storage.tsdb.retention.time=200h"
+      - "--web.enable-lifecycle"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - monitoring
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prometheus.rule=Host(`prometheus.example.com`)"
+      - "traefik.http.routers.prometheus.entrypoints=websecure"
+      - "traefik.http.routers.prometheus.tls.certresolver=letsencrypt"
+      - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+    profiles:
+      - prod
+
+  grafana:
+    image: grafana/grafana:10.0.0
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - monitoring
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.example.com`)"
+      - "traefik.http.routers.grafana.entrypoints=websecure"
+      - "traefik.http.routers.grafana.tls.certresolver=letsencrypt"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+    profiles:
+      - prod
+
+  loki:
+    image: grafana/loki:2.8.0
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./monitoring/loki-config.yaml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    networks:
+      - monitoring
+    profiles:
+      - prod
+
+  promtail:
+    image: grafana/promtail:2.8.0
+    volumes:
+      - /var/log:/var/log:ro
+      - ./monitoring/promtail-config.yaml:/etc/promtail/config.yml:ro
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - monitoring
+    profiles:
+      - prod
+
+  # Redis for caching (optional)
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-<<<<<<< HEAD
-    restart: unless-stopped
-    # Добавляем security конфигурации
-    security_opt:
-      - no-new-privileges:true
-    # Ограничиваем ресурсы
-    mem_limit: 256m
-    mem_reservation: 128m
-    # Запускаем от непривилегированного пользователя
-    user: "999:999"
-=======
     networks:
-      - normaldance
->>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
+      - backend-db
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    profiles:
+      - prod
 
 volumes:
   postgres_data:
-  redis_data:
   ipfs_data:
+  prometheus_data:
+  grafana_data:
+  loki_data:
+  traefik_letsencrypt:
 
 networks:
-  normaldance:
+  web:
+    driver: bridge
+  backend-db:
+    driver: bridge
+  ipfs-internal:
+    driver: bridge
+  monitoring:
     driver: bridge

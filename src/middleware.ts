@@ -1,30 +1,8 @@
-<<<<<<< HEAD
 import { NextResponse } from "next/server";
-import { DEFAULT_HEADERS_CONFIG } from "./lib/security/ISecurityService";
-import { SecurityManager } from "./lib/security/SecurityManager";
 import { logger } from "./lib/utils/logger";
 import { checkRateLimit as rateLimiterCheck } from "./middleware/rate-limiter";
-
-// Initialize SecurityManager with default configuration
-const securityManager = new SecurityManager({
-  csrf: {
-    cookieName: "nd_csrf",
-    headerName: "x-csrf-token",
-    ttlSeconds: 3600,
-    sameSite: "strict",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-  },
-  headers: DEFAULT_HEADERS_CONFIG,
-});
-=======
-import type { NextRequest } from "next/server";
-import { NextResponse } from "next/server";
-import { checkRateLimit as rateLimiterCheck } from "./middleware/rate-limiter";
-import { logger } from "./lib/utils/logger";
 
 // Enhanced security middleware for NORMALDANCE
->>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
 
 // Define allowed origins
 const allowedOrigins = [
@@ -48,8 +26,15 @@ function isOriginAllowed(origin: string): boolean {
   });
 }
 
-<<<<<<< HEAD
-// Legacy security headers removed; all security headers are now provided by SecurityManager via config/csp.ts
+// Enhanced security headers
+const securityHeaders = {
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "X-XSS-Protection": "1; mode=block",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
+  "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+};
 
 // Check suspicious patterns in request
 interface SecurityCheck {
@@ -57,7 +42,7 @@ interface SecurityCheck {
   reason?: string;
 }
 
-function checkSuspiciousRequest(request: NextRequest): SecurityCheck {
+function checkSuspiciousRequest(request: any): SecurityCheck {
   const userAgent = request.headers.get("user-agent") || "";
   const url = request.url;
 
@@ -80,57 +65,13 @@ function checkSuspiciousRequest(request: NextRequest): SecurityCheck {
     pattern.test(url)
   );
 
-=======
-// Enhanced security headers
-const securityHeaders = {
-  "X-Content-Type-Options": "nosniff",
-  "X-Frame-Options": "DENY",
-  "X-XSS-Protection": "1; mode=block",
-  "Referrer-Policy": "strict-origin-when-cross-origin",
-  "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
-  "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
-};
-
-// Check suspicious patterns in request
-interface SecurityCheck {
-  isSuspicious: boolean
-  reason?: string
-}
-
-function checkSuspiciousRequest(request: NextRequest): SecurityCheck {
-  const userAgent = request.headers.get("user-agent") || "";
-  const url = request.url;
-  
-  // Check for common bot patterns
-  const botPatterns = [
-    /bot/i,
-    /crawler/i,
-    /spider/i,
-    /scraper/i,
-    /curl/i,
-    /wget/i,
-  ];
-  
-  const isBot = botPatterns.some(pattern => pattern.test(userAgent));
-  
-  // Check for suspicious URL patterns
-  const suspiciousPatterns = [
-    /\.\./,
-    /<script/i,
-    /javascript:/i,
-    /data:text/i,
-  ];
-  
-  const isSuspiciousUrl = suspiciousPatterns.some(pattern => pattern.test(url));
-  
->>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
   return {
     isSuspicious: isBot && isSuspiciousUrl,
     reason: isBot ? "Bot with suspicious patterns detected" : undefined,
   };
 }
 
-export async function middleware(request: NextRequest) {
+export async function middleware(request: any) {
   const origin = request.headers.get("origin");
   const url = request.nextUrl;
   const ip = request.ip || "unknown";
@@ -138,17 +79,10 @@ export async function middleware(request: NextRequest) {
   // Check for suspicious requests
   const securityCheck = checkSuspiciousRequest(request);
   if (securityCheck.isSuspicious) {
-<<<<<<< HEAD
     logger.warn(`Suspicious request blocked: ${securityCheck.reason}`, {
       ip,
       url: url.pathname,
       userAgent: request.headers.get("user-agent"),
-=======
-    logger.warn(`Suspicious request blocked: ${securityCheck.reason}`, { 
-      ip, 
-      url: url.pathname,
-      userAgent: request.headers.get("user-agent") 
->>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
     });
     return new Response("Request blocked", { status: 403 });
   }
@@ -211,16 +145,8 @@ export async function middleware(request: NextRequest) {
   response.headers.set("Access-Control-Allow-Credentials", "true");
   response.headers.set("Access-Control-Max-Age", "86400"); // 24 hours
 
-<<<<<<< HEAD
-  // Get security headers from SecurityManager
-  const { headers } = securityManager.getSecurityHeaders();
-
-  // Add security headers from SecurityManager first
-  Object.entries(headers).forEach(([key, value]) => {
-=======
   // Add security headers
   Object.entries(securityHeaders).forEach(([key, value]) => {
->>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
     response.headers.set(key, value);
   });
 
@@ -232,9 +158,6 @@ export async function middleware(request: NextRequest) {
     });
   }
 
-<<<<<<< HEAD
-  // For non-OPTIONS requests, return the response with all security headers
-=======
   // Set Content Security Policy for Telegram Mini App
   // Don't use unsafe-inline or unsafe-eval as required by Telegram
   response.headers.set(
@@ -253,7 +176,6 @@ export async function middleware(request: NextRequest) {
   );
 
   // For non-OPTIONS requests, return the response with CORS headers and CSP
->>>>>>> bc71d7127c2a35bd8fe59f3b81f67380bae7d337
   return response;
 }
 

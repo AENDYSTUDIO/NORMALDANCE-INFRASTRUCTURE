@@ -1,0 +1,222 @@
+groups:
+  - name: normaldance-performance-alerts
+    rules:
+      # High response time
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time is {{ $value }} seconds for 5 minutes"
+
+      # Very high response time
+      - alert: VeryHighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Very high response time detected"
+          description: "95th percentile response time is {{ $value }} seconds for 5 minutes"
+
+      # High error rate
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value }} errors per second for 5 minutes"
+
+      # Very high error rate
+      - alert: VeryHighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Very high error rate detected"
+          description: "Error rate is {{ $value }} errors per second for 5 minutes"
+
+      # High database query time
+      - alert: HighDatabaseQueryTime
+        expr: rate(pg_stat_database_call_time_total[5m]) / rate(pg_stat_database_calls_total[5m]) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High database query time detected"
+          description: "Average database query time is {{ $value }} seconds for 5 minutes"
+
+      # Very high database query time
+      - alert: VeryHighDatabaseQueryTime
+        expr: rate(pg_stat_database_call_time_total[5m]) / rate(pg_stat_database_calls_total[5m]) > 1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Very high database query time detected"
+          description: "Average database query time is {{ $value }} seconds for 5 minutes"
+
+      # Low cache hit ratio
+      - alert: LowCacheHitRatio
+        expr: rate(cache_hits_total[5m]) / (rate(cache_hits_total[5m]) + rate(cache_misses_total[5m])) < 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low cache hit ratio detected"
+          description: "Cache hit ratio is {{ $value }} for 5 minutes"
+
+      # Very low cache hit ratio
+      - alert: VeryLowCacheHitRatio
+        expr: rate(cache_hits_total[5m]) / (rate(cache_hits_total[5m]) + rate(cache_misses_total[5m])) < 0.5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Very low cache hit ratio detected"
+          description: "Cache hit ratio is {{ $value }} for 5 minutes"
+
+      # High audio streaming error rate
+      - alert: HighAudioStreamingErrorRate
+        expr: rate(audio_stream_errors_total[5m]) / rate(audio_streams_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High audio streaming error rate detected"
+          description: "Audio streaming error rate is {{ $value }} for 5 minutes"
+
+      # Very high audio streaming error rate
+      - alert: VeryHighAudioStreamingErrorRate
+        expr: rate(audio_stream_errors_total[5m]) / rate(audio_streams_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Very high audio streaming error rate detected"
+          description: "Audio streaming error rate is {{ $value }} for 5 minutes"
+
+      # High file upload time
+      - alert: HighFileUploadTime
+        expr: rate(upload_duration_seconds_sum[5m]) / rate(upload_duration_seconds_count[5m]) > 30
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High file upload time detected"
+          description: "Average file upload time is {{ $value }} seconds for 5 minutes"
+
+      # Very high file upload time
+      - alert: VeryHighFileUploadTime
+        expr: rate(upload_duration_seconds_sum[5m]) / rate(upload_duration_seconds_count[5m]) > 60
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Very high file upload time detected"
+          description: "Average file upload time is {{ $value }} seconds for 5 minutes"
+
+      # High WebSocket connection error rate
+      - alert: HighWebSocketConnectionErrorRate
+        expr: rate(ws_connection_errors_total[5m]) / rate(ws_connections_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High WebSocket connection error rate detected"
+          description: "WebSocket connection error rate is {{ $value }} for 5 minutes"
+
+      # Very high WebSocket connection error rate
+      - alert: VeryHighWebSocketConnectionErrorRate
+        expr: rate(ws_connection_errors_total[5m]) / rate(ws_connections_total[5m]) > 0.2
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Very high WebSocket connection error rate detected"
+          description: "WebSocket connection error rate is {{ $value }} for 5 minutes"
+
+      # High API rate limiting
+      - alert: HighAPIRateLimiting
+        expr: rate(api_rate_limited_total[5m]) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High API rate limiting detected"
+          description: "API rate limited requests: {{ $value }} per second for 5 minutes"
+
+      # Very high API rate limiting
+      - alert: VeryHighAPIRateLimiting
+        expr: rate(api_rate_limited_total[5m]) > 5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Very high API rate limiting detected"
+          description: "API rate limited requests: {{ $value }} per second for 5 minutes"
+
+      # Degraded performance score
+      - alert: DegradedPerformance
+        expr: (1 - avg(rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m]))) * 100 < 70
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Degraded application performance detected"
+          description: "Application performance score is {{ $value }}% for 5 minutes"
+
+      # Poor performance score
+      - alert: PoorPerformance
+        expr: (1 - avg(rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m]))) * 100 < 50
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Poor application performance detected"
+          description: "Application performance score is {{ $value }}% for 5 minutes"
+
+      # High concurrent users
+      - alert: HighConcurrentUsers
+        expr: count(count(http_requests_total) by (user)) > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High concurrent users detected"
+          description: "Number of concurrent users is {{ $value }} for 5 minutes"
+
+      # Very high concurrent users
+      - alert: VeryHighConcurrentUsers
+        expr: count(count(http_requests_total) by (user)) > 5000
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Very high concurrent users detected"
+          description: "Number of concurrent users is {{ $value }} for 5 minutes"
+
+      # High system load
+      - alert: HighSystemLoad
+        expr: node_load1 > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High system load detected"
+          description: "System load average is {{ $value }} for 5 minutes"
+
+      # Very high system load
+      - alert: VeryHighSystemLoad
+        expr: node_load1 > 10
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Very high system load detected"
+          description: "System load average is {{ $value }} for 5 minutes"

@@ -1,222 +1,310 @@
-# NORMAL DANCE v0.3.0 - Production-Ready Web3 Music Platform
+# NormalDance Microservices Platform
 
-[![Version](https://img.shields.io/badge/version-0.3.0-blue)](https://github.com/AENDYSTUDIO/NORMALDANCE-REVOLUTION/releases/tag/v0.3.0)
-[![Status](https://img.shields.io/badge/status-production--ready-brightgreen)](https://github.com/AENDYSTUDIO/NORMALDANCE-REVOLUTION)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Solana](https://img.shields.io/badge/Solana-Ready-brightgreen)](https://solana.com)
-[![Web3](https://img.shields.io/badge/Web3-Supported-yellow)](https://web3.foundation)
-[![Kubernetes](https://img.shields.io/badge/Kubernetes-Ready-blue)](https://kubernetes.io)
-[![Docker](https://img.shields.io/badge/Docker-Ready-blue)](https://docker.com)
+Полноценная Docker-инфраструктура для микросервисного проекта на основе сервисов: frontend (Next.js), backend (NestJS), IPFS, Reg.Ru интеграция, смарт-контракты и PostgreSQL.
 
-## 🚀 Platform Overview
+## 🚀 Быстрый старт
 
-NORMAL DANCE v0.3.0 is a production-ready decentralized music platform that revolutionizes music distribution through Web3 technology. Built with Next.js, Solana integration, and IPFS storage, it provides artists with unprecedented control over their music and revenue streams.
-
-### Core Features
-
-- **Web3 Music Distribution**: Decentralized music platform with blockchain verification
-- **Solana Integration**: Native Solana blockchain support with Phantom wallet integration
-- **Deflationary Tokenomics**: Automatic 2% burn with staking rewards and treasury allocation
-- **IPFS/Filecoin Storage**: Redundant decentralized file storage system
-- **NFT Creation**: TrackNFT program for music NFTs with memorial functionality
-- **Mobile App**: React Native application for iOS and Android
-
-## 🏗️ Infrastructure & Architecture
-
-### Production Infrastructure
-
-- **Containerization**: Multi-stage Docker builds optimized for Kubernetes
-- **Orchestration**: Kubernetes with Helm charts and GitOps via Argo CD
-- **CI/CD**: Automated pipelines through GitHub Actions and GitLab CI
-- **Monitoring**: Prometheus + Grafana stack with comprehensive observability
-- **Security**: Network policies, RBAC, and secrets management
-
-### Documentation
-
-📚 **[Complete Infrastructure Guide](./docs/DEPLOYMENT_GUIDE.md)**
-
-- Kubernetes deployment strategies
-- Docker container optimization
-- Helm chart configuration
-- Production scaling and monitoring
-
-🔄 **[CI/CD Pipeline Guide](./docs/CI_CD_GUIDE.md)**
-
-- GitHub Actions workflows
-- GitLab CI configuration
-- Automated deployment strategies
-- Security scanning integration
-
-💻 **[Development Guide](./docs/DEVELOPMENT_GUIDE.md)**
-
-- Local development setup
-- Project structure and conventions
-- Testing and debugging workflows
-- Mobile app development
-
-📖 **[API Documentation](./docs/API_DOCUMENTATION.md)**
-
-- RESTful API reference
-- Authentication and rate limiting
-- WebSocket events
-- SDK examples and integration guides
-
-📊 **[Monitoring Guide](./docs/MONITORING_GUIDE.md)**
-
-- Application and infrastructure metrics
-- Grafana dashboards
-- Alerting and incident response
-- Performance monitoring
-
-💡 **[Usage Examples](./docs/EXAMPLES_GUIDE.md)**
-
-- Code examples and integrations
-- React components and hooks
-- Mobile app development
-- Web3 wallet integration
-
-🔀 **[GitHub PR Workflow](./scripts/github-pr-workflow.md)**
-
-- Comprehensive PR management scripts
-- Automated merge strategies
-- Code review workflows
-- Branch cleanup automation
-
-## 🛡️ Security & Technical Excellence
-
-### Security Framework
-
-- **Wallet Security**: Custom Phantom wallet integration with event emitter system
-- **Transaction Validation**: Blockchain-based transaction verification
-- **Secret Management**: Secure environment configuration with automated scanning
-- **Pre-commit Hooks**: Automated security and quality checks via Husky
-- **CI/CD Pipeline**: Unified pipeline with code quality, security scanning, and testing
-
-### Technical Debt Resolution
-
-✅ **Phase 1 Complete**: Technical debt resolution infrastructure established
-✅ **ESLint Enforcement**: Enabled for production builds with systematic quality checks
-✅ **Environment Validation**: Production-ready environment validation system
-✅ **Security Audit Integration**: Completed and operational
-
-### Security Scripts
-
-- `npm run security:audit` - Check for high-level vulnerabilities
-- `npm run security:check` - Check for moderate-level vulnerabilities
-- `npm run security:secrets` - Scan for potential secret leaks
-- `npm run check:imports` - Validate import statements
-- `npm run check:detect` - Automated detection and fixing
-
-## 🏛️ Architecture
-
-### Technology Stack
-
-- **Frontend**: Next.js 15, TypeScript, Tailwind CSS, Radix UI
-- **Backend**: Custom Socket.IO server, Prisma ORM, SQLite/PostgreSQL
-- **Blockchain**: Solana with custom Anchor programs (NDT, Staking, TrackNFT)
-- **Storage**: IPFS/Filecoin with Helia integration and multi-gateway redundancy
-- **Wallet**: Phantom wallet with custom transaction handling
-- **Mobile**: React Native with Expo
-
-### Development Pipeline
-
-The project uses a unified CI pipeline with standardized checks:
-
-- **Code Quality**: ESLint, TypeScript type checking
-- **Security Scans**: Internal secrets scanner, Trivy, Snyk, CodeQL
-- **Testing**: Unit and integration tests with 700+ test lines
-- **Build Verification**: Application build checks
-- **Technical Debt Resolution**: Systematic Phase 2 plan
-
-The unified CI configuration is available in `.github/workflows/ci-unified.yml`.
-
-### Pre-commit Hooks
-
-The project uses Husky to enforce pre-commit checks:
-
-- Code linting and type checking
-- Unit and integration tests
-- Security scanning (unified approach)
-- Technical debt validation
-
-## 📊 Current Status
-
-### Production Ready
-
-- ✅ Core Web3 music platform functionality
-- ✅ Solana integration with custom programs
-- ✅ IPFS/Filecoin storage system
-- ✅ Wallet integration and authentication
-- ✅ Mobile application (iOS/Android)
-- ✅ Technical debt resolution framework (Phase 1 complete)
-- ✅ Security audit integration
-- ✅ Comprehensive documentation suite
-
-### Version 0.3.0 Highlights
-
-- **GitHub PR Workflow**: Complete PR management automation with 20+ scripts
-- **Infrastructure Enhancement**: Complete Kubernetes and Docker production setup
-- **CI/CD Optimization**: Unified pipeline with security and quality gates
-- **Documentation Suite**: Comprehensive guides for deployment, development, and operations
-- **Production Validation**: Environment validation system for quality assurance
-- **Monitoring Integration**: Complete observability stack
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Node.js 20+
-- Solana CLI tools
-- Docker (for local development)
-- Phantom wallet for testing
-
-### Quick Start
+### Разработка
 
 ```bash
-# Clone repository
-git clone https://github.com/AENDYSTUDIO/NORMALDANCE-REVOLUTION.git
-cd NORMALDANCE-REVOLUTION
+# Запуск среды разработки
+make dev
 
-# Install dependencies
-npm install
-
-# Setup database
-npm run db:generate
-npm run db:migrate
-
-# Run locally with Docker
-docker-compose up -d
-
-# Access application: http://localhost:3000
+# Или вручную
+docker compose -f docker-compose.yml -f docker-compose.override.yml --profile dev up -d
 ```
 
-### Production Deployment
+### Продакшн
 
 ```bash
-# Deploy to Kubernetes
-helm install normaldance ./helm/normaldance \
-  --namespace production \
-  --create-namespace \
-  --values ./helm/normaldance/values-production.yaml
+# Сборка и запуск продакшн среды
+make prod-build
+
+# Или вручную
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile prod up -d --build
 ```
 
-## 📈 Roadmap
+## 📋 Предварительные требования
 
-### Immediate Goals (v0.4.0)
+- Docker 20.10+
+- Docker Compose 2.0+
+- Make (опционально)
+- Node.js 18+ (для локальной разработки)
 
-- [ ] Enhanced mobile app experience with offline support
-- [ ] Advanced recommendation algorithms using AI/ML
-- [ ] Expanded TON blockchain integration
-- [ ] Cross-chain NFT marketplace
-- [ ] Advanced analytics dashboard for artists
+## 🏗️ Архитектура
 
-### Future Development
+### Сервисы
 
-- [ ] Multi-chain compatibility (Ethereum, Polygon, BSC)
-- [ ] Social features (artist collaboration, fan communities)
-- [ ] Live streaming capabilities
-- [ ] AI-powered music discovery and recommendations
-- [ ] Metaverse integration
+- **frontend** (Next.js): SSR/SPA приложение с TypeScript
+- **backend** (NestJS): REST API с TypeScript
+- **ipfs-service** (Go/Node.js): IPFS клиент для децентрализованного хранения
+- **regru** (Node.js): Интеграция с Reg.Ru API
+- **smart-contracts** (Hardhat): Solidity смарт-контракты
+- **postgres**: Основная база данных
+- **redis**: Кэширование и сессии
+- **traefik**: Reverse proxy с автоматическим TLS
+- **prometheus/grafana/loki**: Мониторинг и логирование
+
+### Сети
+
+- `web`: Публичный трафик через Traefik
+- `backend-db`: Внутренняя сеть для БД
+- `ipfs-internal`: IPFS сеть
+- `monitoring`: Мониторинг стек
+
+## 🔧 Конфигурация
+
+### Переменные окружения
+
+Создайте файлы `.env` на основе примеров:
+
+```bash
+cp .env.example .env
+cp .env.development.example .env.development
+cp .env.production.example .env.production
+```
+
+### Секреты
+
+Для продакшна настройте Docker secrets:
+
+```bash
+echo "your-secret" | docker secret create db_password -
+echo "your-jwt-secret" | docker secret create jwt_secret -
+```
+
+## 🛠️ Команды Makefile
+
+```bash
+# Разработка
+make dev              # Запуск dev среды
+make dev-build        # Сборка и запуск dev
+make dev-logs         # Логи dev среды
+make dev-down         # Остановка dev
+
+# Продакшн
+make prod             # Запуск prod среды
+make prod-build       # Сборка и запуск prod
+make prod-logs        # Логи prod среды
+make prod-down        # Остановка prod
+
+# Сборка
+make build            # Сборка всех сервисов
+make build-prod       # Продакшн сборка с multi-arch
+make build-nextjs     # Сборка только Next.js
+make build-backend    # Сборка только backend
+
+# Тестирование
+make test             # Все тесты
+make test-unit        # Unit тесты
+make test-e2e         # E2E тесты
+make test-integration # Интеграционные тесты
+
+# Качество кода
+make lint             # ESLint
+make typecheck        # TypeScript проверка
+make format           # Prettier форматирование
+
+# Безопасность
+make scan             # Trivy сканирование
+make sbom             # Генерация SBOM
+
+# Деплой
+make deploy-dev       # Деплой в dev
+make deploy-staging   # Деплой в staging
+make deploy-prod      # Деплой в prod
+make rollback         # Откат версии
+
+# База данных
+make db-migrate       # Миграции БД
+make db-seed          # Начальные данные
+make db-reset         # Сброс БД
+
+# Мониторинг
+make monitoring       # Запуск мониторинга
+make monitoring-logs  # Логи мониторинга
+
+# Утилиты
+make clean            # Очистка контейнеров
+make clean-all        # Полная очистка
+make logs             # Все логи
+make status           # Статус сервисов
+make health           # Проверка здоровья
+```
+
+## 🌐 Доступ к сервисам
+
+### Разработка
+
+- Frontend: http://localhost:3000
+- API: http://localhost:4000
+- PGAdmin: http://localhost:5050
+- MailHog: http://localhost:8025
+- Traefik Dashboard: http://localhost:8080
+
+### Продакшн
+
+- Frontend: https://frontend.example.com
+- API: https://api.example.com
+- Prometheus: https://prometheus.example.com
+- Grafana: https://grafana.example.com
+- Traefik Dashboard: https://traefik.example.com
+
+## 🔒 Безопасность
+
+### Dockerfile безопасность
+
+- Non-root пользователи (UID 1001)
+- Минимальные базовые образы (Alpine, Distroless)
+- Удаление dev зависимостей в runtime
+- HEALTHCHECK декларативно
+- Drop capabilities в проде
+
+### Secrets management
+
+- Docker secrets для продакшна
+- File-based для разработки
+- Нет hardcoded credentials
+- Валидация переменных на старте
+
+### Мониторинг безопасности
+
+- Trivy сканирование уязвимостей
+- SBOM генерация
+- Cosign подпись образов
+- Audit logs
+
+## 📊 Мониторинг
+
+### Метрики
+
+- Prometheus scraping всех сервисов
+- Node.js metrics endpoint
+- PostgreSQL exporter
+- cAdvisor для контейнеров
+
+### Логи
+
+- Loki для агрегации логов
+- Promtail для сбора
+- JSON structured logging
+- Trace ID корреляция
+
+### Dashboards
+
+- Grafana с преднастроенными дашбордами
+- Node.js app metrics (ID 1860)
+- PostgreSQL metrics (ID 9628)
+- Traefik metrics
+- Custom dashboards для latency/errors
+
+## 🚢 Деплой
+
+### CI/CD
+
+- GitHub Actions workflow
+- Multi-arch сборки (amd64/arm64)
+- Docker cache для быстрой сборки
+- Security scanning
+- Auto deploy на merge
+
+### Production deployment
+
+```bash
+# На сервере
+git clone <repo>
+cd normaldance
+cp .env.production.example .env.production
+# Настроить .env.production
+make prod-build
+make deploy-prod
+```
+
+### Rollback
+
+```bash
+make rollback
+# Или вручную
+docker tag old-image:latest current-service:latest
+docker compose up -d current-service
+```
+
+## 🧪 Тестирование
+
+### Локальное тестирование
+
+```bash
+npm run test:unit      # Unit тесты
+npm run test:e2e       # E2E тесты
+npm run test:int       # Интеграционные
+```
+
+### CI тестирование
+
+- Автоматический запуск на push/PR
+- Coverage >80%
+- E2E на docker-compose
+- Security scan fail on CRITICAL
+
+## 📈 Масштабирование
+
+### Horizontal scaling
+
+```bash
+# Масштабирование backend
+docker compose up -d --scale backend=5
+
+# Масштабирование IPFS
+docker compose up -d --scale ipfs-service=3
+```
+
+### Resource limits
+
+- CPU/Memory limits per service
+- Health-based scaling
+- Rolling updates с zero-downtime
+
+## 🔧 Troubleshooting
+
+### Логи
+
+```bash
+# Все логи
+make logs
+
+# Логи конкретного сервиса
+docker compose logs backend
+
+# Follow логи
+docker compose logs -f backend
+```
+
+### Health checks
+
+```bash
+# Проверка здоровья
+make health
+
+# Ручная проверка
+curl http://localhost:4000/health
+```
+
+### Debug режим
+
+```bash
+# Backend debug
+docker compose exec backend npm run start:debug
+
+# Next.js debug
+docker compose exec nextjs npm run dev:debug
+```
+
+## 📚 Документация
+
+- [API Documentation](./docs/api.md)
+- [Deployment Guide](./docs/deployment.md)
+- [Security Guidelines](./docs/security.md)
+- [Monitoring Guide](./docs/monitoring.md)
 
 ## 🤝 Contributing
 
@@ -224,17 +312,23 @@ helm install normaldance ./helm/normaldance \
 - **[Security Policy](./SECURITY.md)** - Responsible disclosure policy
 - **[Code of Conduct](./CODE_OF_CONDUCT.md)** - Community guidelines
 
-## 📄 License
+1. Fork the repository
+2. Create feature branch
+3. Make changes
+4. Run tests: `make test`
+5. Lint: `make lint`
+6. Create PR
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+## 📄 Лицензия
 
-## 🙏 Acknowledgments
+MIT License - see [LICENSE](LICENSE) file.
 
-- **Solana Labs** for the revolutionary blockchain technology
-- **IPFS/Filecoin** for decentralized storage solutions
-- **Next.js Team** for the amazing React framework
-- **Open Source Community** for continuous inspiration and support
+## 🆘 Поддержка
+
+- Issues: [GitHub Issues](https://github.com/your-org/normaldance/issues)
+- Docs: [Documentation](./docs/)
+- Chat: [Discord/TG link]
 
 ---
 
-_NORMAL DANCE v0.3.0 - Revolutionizing Web3 Music Distribution with Production-Ready Infrastructure_
+**Happy coding! 🎵🎨**
