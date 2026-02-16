@@ -1,6 +1,6 @@
 # Multi-stage Dockerfile for IPFS service (Go/Node.js)
 # Builder stage for Go compilation
-FROM golang:1.25-alpine@sha256:d3f0cf7723f3429e3f9ed846243970b20a2de7bae6a5b66fc5914e228d831bbb AS go-builder
+FROM golang:1.26-alpine@sha256:d4c4845f5d60c6a974c6000ce58ae079328d03ab7f721a0734277e69905473e5 AS go-builder
 
 # Install build dependencies
 RUN apk add --no-cache git ca-certificates
